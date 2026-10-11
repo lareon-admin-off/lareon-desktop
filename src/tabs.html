@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><title>Lareon</title>
+<style>
+html,body{margin:0;height:100%;background:#141119;color:#f3eee8;font:14px system-ui,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none}
+nav{display:flex;gap:4px;padding:6px 8px;height:100%;box-sizing:border-box;align-items:center}
+button{font:inherit;color:#b9b1bd;background:none;border:0;border-radius:8px;padding:6px 14px;cursor:pointer}
+button:hover{background:#241f2b}button[aria-selected=true]{background:#2d2635;color:#fff}
+button:focus-visible{outline:2px solid #ff8a2b;outline-offset:1px}
+</style>
+<nav role="tablist" id="n"></nav>
+<script>
+var n=document.getElementById('n');
+lareon.apps().then(function(a){Object.keys(a).forEach(function(k){var b=document.createElement('button');b.id='t-'+k;b.setAttribute('role','tab');b.textContent=a[k].name;b.onclick=function(){lareon.show(k)};n.appendChild(b)})});
+lareon.onShown(function(k){n.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-selected',b.id==='t-'+k)})});
+</script>
