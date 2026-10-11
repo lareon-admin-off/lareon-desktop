@@ -85,7 +85,7 @@ app.whenReady().then(() => {
       { label: 'Zoom out', accelerator: 'CmdOrCtrl+-', click: () => cur() && cur().setZoomLevel(cur().getZoomLevel() - 0.5) },
       { label: 'Reset zoom', accelerator: 'CmdOrCtrl+0', click: () => cur() && cur().setZoomLevel(0) }] },
     { role: 'windowMenu' },
-    { label: 'Help', submenu: [{ label: 'Lareon help', click: () => shell.openExternal('https://lareon.org/help.html') }, { label: 'Contact help@lareon.org', click: () => shell.openExternal('mailto:help@lareon.org') }] }
+    { label: 'Help', submenu: [{ label: 'Lareon ' + app.getVersion(), enabled: false }, { type: 'separator' }, { label: 'Lareon help', click: () => shell.openExternal('https://lareon.org/help.html') }, { label: 'Contact help@lareon.org', click: () => shell.openExternal('mailto:help@lareon.org') }] }
   ]));
   createWindow();
   app.on('activate', () => { if (!BrowserWindow.getAllWindows().length) createWindow(); });
