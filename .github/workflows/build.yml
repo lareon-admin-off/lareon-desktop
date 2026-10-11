@@ -17,13 +17,21 @@ jobs:
         include:
           - os: windows-latest
             name: windows
-            files: dist/Lareon-Setup.exe
+            files: |
+              dist/Lareon-Setup.exe
+              dist/Lareon-Setup.exe.blockmap
+              dist/latest.yml
           - os: macos-latest
             name: mac
-            files: dist/Lareon.dmg
+            files: |
+              dist/Lareon.dmg
+              dist/Lareon.zip
+              dist/latest-mac.yml
           - os: ubuntu-latest
             name: linux
-            files: dist/Lareon.AppImage
+            files: |
+              dist/Lareon.AppImage
+              dist/latest-linux.yml
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
