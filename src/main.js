@@ -63,7 +63,7 @@ function show(key) {
   layout();
   for (const [k, v] of Object.entries(views)) v.setVisible(k === key);
   current = key;
-  win.setTitle('Lareon · ' + apps[key].name);
+  win.setTitle('Lareon');
   win.webContents.send('shown', key);
   views[key].webContents.focus();
 }
@@ -73,7 +73,7 @@ function stopWatch() { if (watch) { clearInterval(watch); watch = null; } }
 function startSetup() {
   inSetup = true; current = null; stopWatch();
   for (const v of Object.values(views)) v.setVisible(false);
-  win.setTitle('Set up Lareon');
+  win.setTitle('Lareon');
   win.loadFile(path.join(__dirname, 'setup.html'));
 }
 function startTabs() {
