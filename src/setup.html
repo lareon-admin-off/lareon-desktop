@@ -39,7 +39,8 @@ p.lede{color:var(--fg2);margin:0 0 22px;max-width:30em}
 .btn:disabled{opacity:.4;cursor:default}
 :focus-visible{outline:2px solid #fff;outline-offset:2px}
 /* sign in */
-#frame{flex:1;min-height:260px;border-radius:14px;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;color:var(--fg3);font-size:14px;margin-bottom:6px}
+#signin{display:flex;justify-content:center}
+.dragbar{position:fixed;left:0;right:0;top:0;height:44px;-webkit-app-region:drag;z-index:5}
 .ok{align-items:center;text-align:center;justify-content:center;padding-top:0}
 .ok .tick{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,#ff8a2b,#ff4f7a);display:grid;place-items:center;font-size:42px;color:#fff;margin-bottom:18px;transform:scale(.6);transition:transform .5s cubic-bezier(.2,1.4,.4,1)}
 section.on .tick{transform:none}
@@ -76,7 +77,7 @@ footer{width:100%;max-width:560px;padding:12px 24px 22px;display:flex;align-item
 footer .btn{min-width:96px}
 #msg{color:#ff9aa8;font-size:14px;min-height:20px}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
-</style></head><body><div id="app"><main>
+</style></head><body><div class="dragbar"></div><div id="app"><main>
 
 <section class="hello" data-s="hello" aria-label="Welcome">
  <img src="../build/art/lareon-icon.svg" alt="">
@@ -89,7 +90,7 @@ footer .btn{min-width:96px}
  <h1>Lareon is one</h1>
  <p class="lede">One window, one account. Everything you use stays connected, so you never sign in twice.</p>
  <div class="three"><div><img src="../build/art/dusk-icon.svg" alt=""><b>Dusk</b></div><div><img src="../build/art/fledge-logo.svg" alt=""><b>Fledge</b></div><div><img src="../build/art/aster-logo.svg" alt=""><b>Aster</b></div></div>
- <ul class="tips"><li>Switch apps from the tabs at the top of the window.</li><li>One Lareon account signs you in to all three.</li><li>Nothing extra to install. It&rsquo;s all in this app.</li></ul>
+ <ul class="tips"><li>Switch apps from the tabs at the top of the window. Home shows them all.</li><li>One Lareon account signs you in to all three.</li><li>Nothing extra to install. It&rsquo;s all in this app.</li></ul>
 </section>
 
 <section data-s="apps" aria-label="Choose your apps">
@@ -100,8 +101,6 @@ footer .btn{min-width:96px}
   <button class="card" role="switch" data-app="fledge" aria-checked="true"><img src="../build/art/fledge-logo.svg" alt=""><span><b>Fledge</b><small>Email</small></span><span class="sw"></span></button>
   <button class="card" role="switch" data-app="aster" aria-checked="true"><img src="../build/art/aster-logo.svg" alt=""><span><b>Aster</b><small>Your assistant</small></span><span class="sw"></span></button>
  </div>
- <div class="label">Open first</div>
- <div class="chips" id="first" role="radiogroup" aria-label="Open first"></div>
  <div id="msg" role="alert"></div>
 </section>
 
@@ -156,7 +155,7 @@ footer .btn{min-width:96px}
 <section data-s="signin" aria-label="Sign in">
  <h1>Sign in to Lareon</h1>
  <p class="lede">Use your Lareon account. Your password goes straight to Lareon and never passes through this setup.</p>
- <div id="frame">Opening sign-in&hellip;</div>
+ <div id="signin"></div>
 </section>
 
 <section data-s="keys" aria-label="Shortcuts">
@@ -170,7 +169,7 @@ footer .btn{min-width:96px}
  <h1 id="done-h">You&rsquo;re all set</h1>
  <p class="lede" id="done-p">Lareon is ready.</p>
  <ul class="tips">
-  <li><b id="mod">Ctrl</b> + <b>1</b>, <b>2</b>, <b>3</b> switches between your apps.</li>
+  <li><b id="mod">Ctrl</b> + <b>1</b> opens Home, and <b>2</b>, <b>3</b>, <b>4</b> switch between your apps.</li>
   <li>Need help? <b>Help</b> in the menu bar, or write to <b>help@lareon.org</b>.</li>
   <li>You can run this setup again from <b>Help</b>.</li>
  </ul>
@@ -179,6 +178,7 @@ footer .btn{min-width:96px}
 </main>
 <footer><button class="btn ghost" id="back">Back</button><div class="dots" id="dots" aria-hidden="true"></div><button class="btn" id="next">Get started</button></footer>
 </div>
+<script src="signin.js"></script>
 <script>
 var NAMES = { dusk: 'Dusk', fledge: 'Fledge', aster: 'Aster' };
 var PLAT = 'win32', S, order, idx = 0, signedName = null, skipped = false;
@@ -192,15 +192,12 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) setInterval(
 function enabled() { return Object.keys(NAMES).filter(function (k) { return S.apps[k]; }); }
 function renderApps() {
   [].forEach.call(document.querySelectorAll('.card'), function (c) { c.setAttribute('aria-checked', S.apps[c.getAttribute('data-app')] ? 'true' : 'false'); });
-  var en = enabled(); if (en.indexOf(S.first) < 0) S.first = en[0] || 'dusk';
-  $('first').innerHTML = '';
-  en.forEach(function (k) { var b = document.createElement('button'); b.className = 'chip'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', k === S.first ? 'true' : 'false'); b.textContent = NAMES[k]; b.onclick = function () { S.first = k; renderApps(); }; $('first').appendChild(b); });
-}
+  }
 [].forEach.call(document.querySelectorAll('.card'), function (c) { c.onclick = function () { var k = c.getAttribute('data-app'); S.apps[k] = !S.apps[k]; $('msg').textContent = ''; renderApps(); }; });
 function toggle(id, key) { var b = $(id); b.setAttribute('aria-checked', S[key] ? 'true' : 'false'); b.onclick = function () { S[key] = !S[key]; b.setAttribute('aria-checked', S[key] ? 'true' : 'false'); }; }
 $('test-notify').onclick = function () { setup.testNotification(); };
 
-function sendBounds() { var r = $('frame').getBoundingClientRect(); setup.signinBounds({ x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) }); }
+var widget = null;
 function show(i) {
   var name = order[i];
   Object.keys(secs).forEach(function (k) { var j = order.indexOf(k); secs[k].className = (secs[k].className.replace(/\b(on|past)\b/g, '').trim()) + (k === name ? ' on' : (j >= 0 && j < i ? ' past' : '')); });
@@ -212,7 +209,7 @@ function show(i) {
   if (inner.length > 12) inner = [];
   $('dots').innerHTML = inner.map(function (k) { return '<i' + (k === name ? ' class="on"' : '') + '></i>'; }).join('');
   if (name === 'keys') renderKeys();
-  if (name === 'signin') { setTimeout(sendBounds, 420); setup.signinStart(); } else setup.signinHide();
+  if (name === 'signin') { if (!widget) widget = mountSignin($('signin'), { onDone: function (u) { signedName = (u && (u.name || u.username)) || 'friend'; setTimeout(function () { idx = order.indexOf('keys'); show(idx); }, 700); } }); setTimeout(function () { widget.focus(); }, 420); }
   if (name === 'done') {
     var n = enabled().map(function (k) { return NAMES[k]; });
     $('done-h').textContent = signedName ? 'Welcome, ' + signedName : 'You’re all set';
@@ -226,14 +223,14 @@ function buildOrder() {
   o.push('privacy', 'signin', 'keys', 'done'); return o;
 }
 function renderKeys() {
-  var m = PLAT === 'darwin' ? 'Cmd' : 'Ctrl', rows = [];
-  enabled().forEach(function (k, i) { rows.push(['<kbd>' + m + ' + ' + (i + 1) + '</kbd>', 'Open ' + NAMES[k]]); });
+  var m = PLAT === 'darwin' ? 'Cmd' : 'Ctrl', rows = [['<kbd>' + m + ' + 1</kbd>', 'Open Home']];
+  enabled().forEach(function (k, i) { rows.push(['<kbd>' + m + ' + ' + (i + 2) + '</kbd>', 'Open ' + NAMES[k]]); });
   rows.push(['<kbd>' + m + ' + R</kbd>', 'Reload the current app'], ['<kbd>' + m + ' + +</kbd>', 'Zoom in'], ['<kbd>' + m + ' + -</kbd>', 'Zoom out'], ['<kbd>' + m + ' + 0</kbd>', 'Reset zoom']);
   $('kbd').innerHTML = rows.map(function (r) { return r[0] + '<span>' + r[1] + '</span>'; }).join('');
 }
 [].forEach.call(document.querySelectorAll('#thm button'), function (b) { b.onclick = function () { S.theme = b.getAttribute('data-t'); renderTheme(); }; });
 function renderTheme() { [].forEach.call(document.querySelectorAll('#thm button'), function (b) { b.setAttribute('aria-checked', b.getAttribute('data-t') === (S.theme || 'system') ? 'true' : 'false'); }); }
-function save() { return setup.save({ theme: S.theme, apps: S.apps, first: S.first, notifications: S.notifications, launchAtLogin: S.launchAtLogin }); }
+function save() { return setup.save({ theme: S.theme, apps: S.apps, notifications: S.notifications, launchAtLogin: S.launchAtLogin }); }
 $('next').onclick = function () {
   var name = order[idx];
   if (name === 'apps' && !enabled().length) { $('msg').textContent = 'Pick at least one app.'; return; }
@@ -241,13 +238,11 @@ $('next').onclick = function () {
   save(); if (name === 'apps') order = buildOrder(); idx++; show(idx);
 };
 $('back').onclick = function () { if (idx > 0) { idx--; show(idx); } };
-window.addEventListener('resize', function () { if (order && order[idx] === 'signin') sendBounds(); });
-setup.onSignedIn(function (who) { signedName = who || 'friend'; setTimeout(function () { idx = order.indexOf('keys'); show(idx); }, 900); });
-document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.tagName !== 'BUTTON' && !$('next').disabled) $('next').click(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT' && !$('next').disabled) $('next').click(); });
 
 setup.state().then(function (st) {
   S = st.settings; S.apps = S.apps || { dusk: true, fledge: true, aster: true };
-  PLAT = st.platform; order = buildOrder(); renderTheme();
+  PLAT = st.platform; if (st.user) signedName = st.user.name || st.user.username; order = buildOrder(); renderTheme();
   $('mod').textContent = st.platform === 'darwin' ? 'Cmd' : 'Ctrl';
   renderApps(); toggle('sw-notify', 'notifications'); toggle('sw-startup', 'launchAtLogin');
   show(0);
