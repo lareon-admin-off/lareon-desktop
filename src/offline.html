@@ -1,0 +1,5 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline</title>
+<style>:root{color-scheme:light dark}body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 system-ui,sans-serif;background:#141119;color:#f3eee8}
+main{max-width:26rem;padding:2rem}h1{font-size:1.4rem;margin:0 0 .5rem}p{margin:.25rem 0 1.25rem;color:#b9b1bd}button{font:inherit;padding:.6rem 1.2rem;border-radius:8px;border:0;background:#ff8a2b;color:#201006;cursor:pointer}button:focus-visible{outline:2px solid #fff;outline-offset:2px}</style>
+<main><h1 id="t">You are offline</h1><p>Check your internet connection. Your work is not lost, and the app will reconnect when you try again.</p><button id="b">Try again</button></main>
+<script>var q=new URLSearchParams(location.search);document.getElementById('t').textContent=(q.get('app')||'The app')+' can’t connect';document.getElementById('b').onclick=function(){location.href=q.get('url')||'https://lareon.org'}</script>
