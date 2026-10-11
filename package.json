@@ -24,6 +24,7 @@
     "files": [
       "src/**/*",
       "build/icon.png",
+      "build/art/*.svg",
       "package.json"
     ],
     "win": {
@@ -61,7 +62,8 @@
     },
     "mac": {
       "target": [
-        "dmg"
+        "dmg",
+        "zip"
       ],
       "category": "public.app-category.productivity",
       "icon": "build/icon.png",
@@ -70,6 +72,16 @@
     "dmg": {
       "title": "Lareon",
       "backgroundColor": "#141119"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "lareon-admin-off",
+        "repo": "lareon-desktop"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
   }
 }
