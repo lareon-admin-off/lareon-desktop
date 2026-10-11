@@ -4,3 +4,4 @@ contextBridge.exposeInMainWorld('lareon', {
   show: (k) => ipcRenderer.send('show', k),
   onShown: (cb) => ipcRenderer.on('shown', (_e, k) => cb(k))
 });
+// wizard bridge
