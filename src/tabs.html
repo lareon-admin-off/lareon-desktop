@@ -1,14 +1,144 @@
-<!doctype html><meta charset="utf-8"><title>Lareon</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lareon</title>
 <style>
-html,body{margin:0;height:100%;background:#141119;color:#f3eee8;font:14px system-ui,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none}
-nav{display:flex;gap:4px;padding:6px 8px;height:100%;box-sizing:border-box;align-items:center}
-button{font:inherit;color:#b9b1bd;background:none;border:0;border-radius:8px;padding:6px 14px;cursor:pointer}
-button:hover{background:#241f2b}button[aria-selected=true]{background:#2d2635;color:#fff}
-button:focus-visible{outline:2px solid #ff8a2b;outline-offset:1px}
-</style>
-<nav role="tablist" id="n"></nav>
+:root{--bg:#141119;--panel:#1d1826;--panel2:#272031;--line:#352d42;--fg:#f3eee8;--fg2:#b9b1bd;--fg3:#827a8c;--orange:#ff8a2b}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none}
+/* title bar: the tabs are the title bar, the window buttons sit inside it */
+.bar{position:fixed;left:0;right:0;top:0;height:44px;display:flex;align-items:center;gap:6px;padding:0 8px 0 10px;-webkit-app-region:drag;background:var(--bg);z-index:2}
+.mac .bar{padding-left:86px}
+.bar{padding-right:calc(100vw - env(titlebar-area-x,0px) - env(titlebar-area-width,100vw) + 8px)}
+.bar button,.bar a{-webkit-app-region:no-drag}
+.brand{width:22px;height:22px;margin-right:6px;flex:none}
+nav{display:flex;gap:2px;align-items:center}
+.tab{font:inherit;font-size:14px;color:var(--fg2);background:none;border:0;border-radius:8px;padding:6px 13px;cursor:pointer}
+.tab:hover{background:#241f2b}.tab[aria-selected=true]{background:#2d2635;color:#fff}
+.tab:focus-visible,.acct:focus-visible{outline:2px solid var(--orange);outline-offset:1px}
+.sp{flex:1}
+.acct{display:flex;align-items:center;gap:8px;font:inherit;font-size:14px;color:var(--fg2);background:none;border:0;border-radius:999px;padding:3px 12px 3px 4px;cursor:pointer}
+.acct:hover{background:#241f2b;color:#fff}
+.av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#ff8a2b,#ff4f7a);color:#fff;font-weight:700;font-size:13px;display:grid;place-items:center}
+.av.off{background:#3a3245;color:var(--fg2)}
+/* home */
+#home{position:fixed;left:0;right:0;top:44px;bottom:0;overflow:auto;background:radial-gradient(110% 60% at 50% 115%,#33204a 0%,#1b1426 45%,var(--bg) 100%)}
+#home[hidden],#out[hidden],#in[hidden]{display:none}
+.wrap{max-width:860px;margin:0 auto;padding:44px 28px 40px}
+h1{font-size:clamp(28px,4.4vw,40px);line-height:1.1;letter-spacing:-.03em;font-weight:650;margin:0 0 6px}
+.sub{color:var(--fg2);margin:0 0 26px}
+.note{background:#33212a;border:1px solid #6b3340;color:#ffc7cf;border-radius:12px;padding:10px 14px;margin:0 0 20px;font-size:14px}
+.note[hidden]{display:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-bottom:22px}
+.app{display:flex;flex-direction:column;gap:10px;text-align:left;font:inherit;color:inherit;background:var(--panel);border:1.5px solid var(--line);border-radius:20px;padding:20px;cursor:pointer;min-height:176px;transition:border-color .15s,transform .15s,background .15s}
+.app:hover{border-color:#5a4770;background:var(--panel2);transform:translateY(-2px)}
+.app:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.app img{width:44px;height:44px}
+.app b{font-size:19px;letter-spacing:-.01em}
+.app .what{color:var(--fg2);font-size:14px}
+.app .live{margin-top:auto;font-size:14px;color:#ffb347;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.stat small{color:var(--fg3);display:block;font-size:13px}.stat b{font-size:18px}
+.bar2{height:6px;border-radius:3px;background:#2d2635;margin-top:8px;overflow:hidden}.bar2 i{display:block;height:100%;width:2%;background:linear-gradient(90deg,#ff8a2b,#ff4f7a)}
+.foot{margin-top:28px;color:var(--fg3);font-size:13px}
+/* signed out */
+.hello{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:6vh}
+.hello img{width:72px;height:72px;margin-bottom:14px}
+.hello .sub{max-width:30em}
+.hello .card{width:100%;max-width:420px;display:flex;justify-content:center}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+<div class="bar">
+ <svg class="brand" viewBox="0 0 150 150" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#c84bff"/></linearGradient></defs><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#g)"/></svg>
+ <nav role="tablist" id="n"></nav>
+ <div class="sp"></div>
+ <button class="acct" id="acct" aria-haspopup="menu"><span class="av off" id="av">?</span><span id="an">Sign in</span></button>
+</div>
+
+<main id="home" tabindex="-1"><div class="wrap">
+ <div id="out" class="hello" hidden>
+  <img src="../build/art/lareon-icon.svg" alt="">
+  <h1>Welcome to Lareon</h1>
+  <p class="sub">Sign in once. Dusk, Fledge and Aster open already signed in.</p>
+  <div class="note" id="note-out" role="status" hidden></div>
+  <div class="card" id="signin"></div>
+ </div>
+ <div id="in" hidden>
+  <h1 id="greet">Hello</h1>
+  <p class="sub" id="date"></p>
+  <div class="note" id="note-in" role="status" hidden></div>
+  <div class="grid" id="grid"></div>
+  <div class="row2">
+   <div class="stat"><small>Storage used</small><b id="store">&mdash;</b><div class="bar2"><i id="bar"></i></div></div>
+   <div class="stat"><small>Signed in as</small><b id="who">&mdash;</b></div>
+  </div>
+  <div class="foot" id="ver"></div>
+ </div>
+</div></main>
+
+<script src="signin.js"></script>
 <script>
-var n=document.getElementById('n');
-lareon.apps().then(function(a){Object.keys(a).forEach(function(k){var b=document.createElement('button');b.id='t-'+k;b.setAttribute('role','tab');b.textContent=a[k].name;b.onclick=function(){lareon.show(k)};n.appendChild(b)})});
-lareon.onShown(function(k){n.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-selected',b.id==='t-'+k)})});
-</script>
+var APPS = {}, ART = { dusk: '../build/art/dusk-icon.svg', fledge: '../build/art/fledge-logo.svg', aster: '../build/art/aster-logo.svg' };
+var WHAT = { dusk: 'Calendar, tasks and notes', fledge: 'Email', aster: 'Your assistant' };
+var LIVE = { dusk: 'Open your calendar', fledge: 'Open your inbox', aster: 'Ask anything' };
+var $ = function (id) { return document.getElementById(id); };
+var user = null, cur = 'home', widget = null;
+
+function tabs() {
+  var n = $('n'); n.innerHTML = '';
+  function add(k, label) { var b = document.createElement('button'); b.className = 'tab'; b.id = 't-' + k; b.setAttribute('role', 'tab'); b.textContent = label; b.setAttribute('aria-selected', k === cur ? 'true' : 'false'); b.onclick = function () { lareon.show(k); }; n.appendChild(b); }
+  add('home', 'Home'); Object.keys(APPS).forEach(function (k) { add(k, APPS[k].name); });
+}
+function setAcct() {
+  $('av').textContent = user ? ((user.name || user.username || '?').charAt(0).toUpperCase()) : '?';
+  $('av').className = 'av' + (user ? '' : ' off');
+  $('an').textContent = user ? (user.name || user.username) : 'Sign in';
+}
+function note(m) { ['note-out', 'note-in'].forEach(function (id) { var e = $(id); e.textContent = m || ''; e.hidden = !m; }); }
+function grid() {
+  var g = $('grid'); g.innerHTML = '';
+  Object.keys(APPS).forEach(function (k) {
+    var b = document.createElement('button'); b.className = 'app'; b.id = 'c-' + k;
+    b.innerHTML = '<img src="' + ART[k] + '" alt=""><b>' + APPS[k].name + '</b><span class="what">' + WHAT[k] + '</span><span class="live" id="l-' + k + '">' + LIVE[k] + '</span>';
+    b.onclick = function () { lareon.show(k); };
+    g.appendChild(b);
+  });
+}
+function greet() {
+  var h = new Date().getHours(), p = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  var first = user ? String(user.name || user.username || '').split(' ')[0] : '';
+  $('greet').textContent = p + (first ? ', ' + first : '');
+  $('date').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+}
+function render() {
+  setAcct();
+  $('home').hidden = cur !== 'home';
+  $('out').hidden = !!user; $('in').hidden = !user;
+  if (user) { greet(); grid(); $('who').textContent = (user.username || '') + '@lareon.org'; refresh(); }
+  else if (widget) widget.focus();
+  [].forEach.call(document.querySelectorAll('.tab'), function (b) { b.setAttribute('aria-selected', b.id === 't-' + cur ? 'true' : 'false'); });
+}
+function refresh() {
+  if (!user) return;
+  lareon.summary().then(function (d) {
+    if (!d) return;
+    if (APPS.fledge) {
+      var l = d.recent && d.recent[0], e = $('l-fledge');
+      if (e) e.textContent = d.unread ? (d.unread + ' unread' + (l && l.subject ? ' · ' + l.subject : '')) : 'You are all caught up';
+    }
+    var mb = d.used >= 1073741824 ? (d.used / 1073741824).toFixed(1) + ' GB' : (d.used / 1048576).toFixed(d.used < 10485760 ? 1 : 0) + ' MB';
+    $('store').textContent = mb; $('bar').style.width = Math.max(2, d.percent || 0) + '%';
+  });
+}
+$('acct').onclick = function () { var r = $('acct').getBoundingClientRect(); lareon.menu({ x: r.left, y: r.bottom + 4 }); };
+lareon.onShown(function (k) { cur = k; render(); });
+lareon.onNote(function (m) { note(m); });
+lareon.onSession(function (u) { user = u; if (u) note(''); render(); });
+setInterval(function () { if (cur === 'home') refresh(); }, 120000);
+
+widget = mountSignin($('signin'), { onDone: function (u) { user = u; note(''); cur = 'home'; render(); } });
+Promise.all([lareon.apps(), lareon.session(), lareon.info()]).then(function (r) {
+  APPS = r[0]; user = r[1];
+  if (r[2].platform === 'darwin') document.documentElement.className = 'mac';
+  $('ver').textContent = 'Lareon ' + r[2].version;
+  tabs(); render();
+});
+</script></body></html>
