@@ -1,0 +1,255 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Set up Lareon</title>
+<style>
+:root{--bg:#141119;--panel:#1d1826;--panel2:#272031;--line:#352d42;--fg:#f3eee8;--fg2:#b9b1bd;--fg3:#827a8c;--orange:#ff8a2b;--violet:#a35cf5}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none}
+body{background:radial-gradient(110% 70% at 50% 110%,#3a1f55 0%,#1d1428 45%,var(--bg) 100%)}
+#app{height:100%;display:flex;flex-direction:column;align-items:center}
+main{flex:1;width:100%;max-width:560px;min-height:0;position:relative;padding:0 24px}
+section{position:absolute;inset:0 24px;display:flex;flex-direction:column;opacity:0;visibility:hidden;transform:translateX(36px);transition:opacity .35s,transform .35s,visibility 0s .35s;padding-top:6vh}
+section.on{opacity:1;visibility:visible;transform:none;transition:opacity .35s,transform .35s}
+section.past{transform:translateX(-36px)}
+h1{font-size:clamp(28px,5vw,38px);line-height:1.1;letter-spacing:-.03em;font-weight:650;margin:0 0 10px}
+p.lede{color:var(--fg2);margin:0 0 22px;max-width:30em}
+.grow{flex:1;min-height:0}
+/* hello */
+#hello-word{font-size:clamp(54px,12vw,92px);letter-spacing:-.04em;font-weight:700;height:1.2em;margin:0;text-align:center;background:linear-gradient(180deg,#ffb347,#ff4f7a 55%,#c84bff);-webkit-background-clip:text;background-clip:text;color:transparent;transition:opacity .5s}
+.hello{align-items:center;text-align:center;justify-content:center;padding-top:0;padding-bottom:70px}
+.hello img{width:84px;height:84px;margin-bottom:6px}
+.hello p.lede{margin:14px auto 0}
+/* cards and switches */
+.cards{display:grid;gap:10px;margin-bottom:18px}
+.card{display:flex;align-items:center;gap:14px;width:100%;text-align:left;font:inherit;color:inherit;background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;cursor:pointer;transition:border-color .2s,background .2s}
+.card img{width:40px;height:40px;flex:none}
+.card b{display:block;font-size:17px}.card small{color:var(--fg2);font-size:14px}
+.card .sw{margin-left:auto}
+.card[aria-checked=true]{border-color:var(--orange);background:var(--panel2)}
+.sw{width:46px;height:28px;border-radius:14px;background:#3c3447;position:relative;flex:none;transition:background .2s}
+.sw:after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s}
+[aria-checked=true] .sw{background:var(--orange)}[aria-checked=true] .sw:after{transform:translateX(18px)}
+.row{display:flex;align-items:center;gap:14px;width:100%;text-align:left;font:inherit;color:inherit;background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:16px;cursor:pointer;margin-bottom:12px}
+.row span.t b{display:block}.row span.t small{color:var(--fg2);font-size:14px}.row .sw{margin-left:auto}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
+.chip{font:inherit;color:var(--fg2);background:none;border:1.5px solid var(--line);border-radius:999px;padding:6px 16px;cursor:pointer}
+.chip[aria-checked=true]{color:#201006;background:var(--orange);border-color:var(--orange);font-weight:600}
+.label{color:var(--fg3);font-size:14px;margin-top:6px}
+.btn{font:inherit;font-weight:600;border:0;border-radius:14px;padding:13px 26px;cursor:pointer;background:linear-gradient(135deg,#ff8a2b,#ff4f7a);color:#fff}
+.btn.ghost{background:none;color:var(--fg2);font-weight:500;padding:13px 14px}
+.btn.line{background:var(--panel2);color:var(--fg);border:1px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+:focus-visible{outline:2px solid #fff;outline-offset:2px}
+/* sign in */
+#frame{flex:1;min-height:260px;border-radius:14px;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;color:var(--fg3);font-size:14px;margin-bottom:6px}
+.ok{align-items:center;text-align:center;justify-content:center;padding-top:0}
+.ok .tick{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,#ff8a2b,#ff4f7a);display:grid;place-items:center;font-size:42px;color:#fff;margin-bottom:18px;transform:scale(.6);transition:transform .5s cubic-bezier(.2,1.4,.4,1)}
+section.on .tick{transform:none}
+ul.tips{list-style:none;padding:0;margin:0 0 18px;display:grid;gap:8px;text-align:left}
+ul.tips li{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;color:var(--fg2);font-size:15px}
+ul.tips b{color:var(--fg)}
+/* tour + mocks */
+.big{width:56px;height:56px;margin-bottom:14px}
+.mock{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;display:grid;gap:8px;margin:2px 0 16px;font-size:14px}
+.mock .ev{display:flex;gap:10px;align-items:center;background:var(--panel2);border-radius:10px;padding:8px 10px;border-left:4px solid var(--orange)}
+.mock .ev.v{border-color:var(--violet)}.mock .ev.p{border-color:#ff4f7a}
+.mock .ev em{font-style:normal;color:var(--fg3);font-size:12px;min-width:52px}
+.mock .ml{display:flex;gap:10px;align-items:center;background:var(--panel2);border-radius:10px;padding:8px 10px}
+.mock .ml i{width:8px;height:8px;border-radius:50%;background:var(--orange);flex:none}.mock .ml i.r{background:transparent}
+.mock .ml b{font-weight:600}.mock .ml span{color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mock .me,.mock .ai{max-width:84%;padding:8px 12px;border-radius:14px}
+.mock .me{justify-self:end;background:linear-gradient(135deg,#ff8a2b,#ff4f7a);color:#fff}
+.mock .ai{background:var(--panel2);color:var(--fg2)}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 16px}
+.three div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center}
+.three img{width:38px;height:38px;display:block;margin:0 auto 6px}.three b{font-size:14px}
+.thm{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.thm button{font:inherit;color:inherit;background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:10px;cursor:pointer;text-align:center}
+.thm button[aria-checked=true]{border-color:var(--orange);background:var(--panel2)}
+.thm i{display:block;height:46px;border-radius:8px;margin-bottom:8px;border:1px solid var(--line)}
+.kbd{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;align-items:center;margin:0 0 16px}
+.kbd kbd{font:600 13px system-ui;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:7px;padding:3px 9px;justify-self:start}
+.kbd span{color:var(--fg2);font-size:15px}
+/* bottom bar */
+footer{width:100%;max-width:560px;padding:12px 24px 22px;display:flex;align-items:center;gap:12px}
+.dots{display:flex;gap:7px;margin:0 auto}
+.dots i{width:7px;height:7px;border-radius:50%;background:#4a4156;transition:background .2s,transform .2s}
+.dots i.on{background:var(--orange);transform:scale(1.25)}
+footer .btn{min-width:96px}
+#msg{color:#ff9aa8;font-size:14px;min-height:20px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body><div id="app"><main>
+
+<section class="hello" data-s="hello" aria-label="Welcome">
+ <img src="../build/art/lareon-icon.svg" alt="">
+ <div id="hello-word" aria-hidden="true">Hello</div>
+ <h1 style="margin-top:18px">Welcome to Lareon</h1>
+ <p class="lede">Dusk, Fledge and Aster, together in one app. Let&rsquo;s set it up. It takes about a minute.</p>
+</section>
+
+<section data-s="one" aria-label="Lareon is one">
+ <h1>Lareon is one</h1>
+ <p class="lede">One window, one account. Everything you use stays connected, so you never sign in twice.</p>
+ <div class="three"><div><img src="../build/art/dusk-icon.svg" alt=""><b>Dusk</b></div><div><img src="../build/art/fledge-logo.svg" alt=""><b>Fledge</b></div><div><img src="../build/art/aster-logo.svg" alt=""><b>Aster</b></div></div>
+ <ul class="tips"><li>Switch apps from the tabs at the top of the window.</li><li>One Lareon account signs you in to all three.</li><li>Nothing extra to install. It&rsquo;s all in this app.</li></ul>
+</section>
+
+<section data-s="apps" aria-label="Choose your apps">
+ <h1>Choose your apps</h1>
+ <p class="lede">Pick the ones you want in your window. You can change this later.</p>
+ <div class="cards" role="group" aria-label="Apps">
+  <button class="card" role="switch" data-app="dusk" aria-checked="true"><img src="../build/art/dusk-icon.svg" alt=""><span><b>Dusk</b><small>Calendar, tasks and notes</small></span><span class="sw"></span></button>
+  <button class="card" role="switch" data-app="fledge" aria-checked="true"><img src="../build/art/fledge-logo.svg" alt=""><span><b>Fledge</b><small>Email</small></span><span class="sw"></span></button>
+  <button class="card" role="switch" data-app="aster" aria-checked="true"><img src="../build/art/aster-logo.svg" alt=""><span><b>Aster</b><small>Your assistant</small></span><span class="sw"></span></button>
+ </div>
+ <div class="label">Open first</div>
+ <div class="chips" id="first" role="radiogroup" aria-label="Open first"></div>
+ <div id="msg" role="alert"></div>
+</section>
+
+<section data-s="t-dusk" aria-label="About Dusk">
+ <img class="big" src="../build/art/dusk-icon.svg" alt=""><h1>Plan your day in Dusk</h1>
+ <p class="lede">Your calendar, tasks and notes in one place.</p>
+ <div class="mock" aria-hidden="true"><div class="ev"><em>9:00</em>Team standup</div><div class="ev v"><em>12:30</em>Lunch with Sam</div><div class="ev p"><em>Due</em>Send the invoice</div></div>
+ <ul class="tips"><li><b>Events</b> remind you before they start.</li><li><b>Tasks</b> and <b>notes</b> sit beside your calendar.</li></ul>
+</section>
+<section data-s="t-fledge" aria-label="About Fledge">
+ <img class="big" src="../build/art/fledge-logo.svg" alt=""><h1>Email, made calm</h1>
+ <p class="lede">Fledge is your inbox, with your Lareon address.</p>
+ <div class="mock" aria-hidden="true"><div class="ml"><i></i><b>Maya</b><span>Photos from the weekend</span></div><div class="ml"><i></i><b>Dusk</b><span>Reminder: dentist at 3:00</span></div><div class="ml"><i class="r"></i><b>Lareon</b><span>Welcome to Fledge</span></div></div>
+ <ul class="tips"><li><b>Compose</b> and reply right in the window.</li><li><b>Notifications</b> tell you when new mail arrives.</li></ul>
+</section>
+<section data-s="t-aster" aria-label="About Aster">
+ <img class="big" src="../build/art/aster-logo.svg" alt=""><h1>Ask Aster anything</h1>
+ <p class="lede">Your assistant for questions, writing and ideas.</p>
+ <div class="mock" aria-hidden="true"><div class="me">Help me plan Saturday</div><div class="ai">Sure. Want it outdoors, or something quiet at home?</div></div>
+ <ul class="tips"><li>Ask in plain words. No special commands.</li><li>Start a new chat any time for a fresh topic.</li></ul>
+</section>
+
+<section data-s="look" aria-label="Appearance">
+ <h1>Choose a look</h1>
+ <p class="lede">Match your computer, or pick light or dark.</p>
+ <div class="thm" id="thm" role="radiogroup" aria-label="Appearance">
+  <button role="radio" data-t="system" aria-checked="true"><i style="background:linear-gradient(90deg,#f6f2ee 50%,#141119 50%)"></i>Automatic</button>
+  <button role="radio" data-t="light" aria-checked="false"><i style="background:#f6f2ee"></i>Light</button>
+  <button role="radio" data-t="dark" aria-checked="false"><i style="background:#0c0a10;border-color:#5a4f6b"></i>Dark</button>
+ </div>
+</section>
+
+<section data-s="notify" aria-label="Notifications">
+ <h1>Stay in the loop</h1>
+ <p class="lede">Get a notification when an event starts in Dusk or new mail arrives in Fledge.</p>
+ <button class="row" role="switch" id="sw-notify" aria-checked="true"><span class="t"><b>Notifications</b><small>Shown while Lareon is open</small></span><span class="sw"></span></button>
+ <div><button class="btn line" id="test-notify">Send a test notification</button></div>
+</section>
+
+<section data-s="startup" aria-label="Start with your computer">
+ <h1>Always at hand</h1>
+ <p class="lede">Open Lareon when you turn on your computer, so reminders are never missed.</p>
+ <button class="row" role="switch" id="sw-startup" aria-checked="false"><span class="t"><b>Open Lareon at startup</b><small>You can turn this off any time in your computer&rsquo;s settings</small></span><span class="sw"></span></button>
+</section>
+
+<section data-s="privacy" aria-label="Privacy">
+ <h1>Your account, your data</h1>
+ <p class="lede">A few things worth knowing before you sign in.</p>
+ <ul class="tips"><li>Lareon only opens <b>lareon.org</b> pages inside the app. Other links open in your browser.</li><li>Your password goes to Lareon directly. This app never sees or stores it.</li><li>You stay signed in on this computer until you choose <b>Sign out</b>.</li></ul>
+</section>
+
+<section data-s="signin" aria-label="Sign in">
+ <h1>Sign in to Lareon</h1>
+ <p class="lede">Use your Lareon account. Your password goes straight to Lareon and never passes through this setup.</p>
+ <div id="frame">Opening sign-in&hellip;</div>
+</section>
+
+<section data-s="keys" aria-label="Shortcuts">
+ <h1>Handy shortcuts</h1>
+ <p class="lede">Get around without lifting your hands.</p>
+ <div class="kbd" id="kbd"></div>
+</section>
+
+<section class="ok" data-s="done" aria-label="All set">
+ <div class="tick" aria-hidden="true">&#10003;</div>
+ <h1 id="done-h">You&rsquo;re all set</h1>
+ <p class="lede" id="done-p">Lareon is ready.</p>
+ <ul class="tips">
+  <li><b id="mod">Ctrl</b> + <b>1</b>, <b>2</b>, <b>3</b> switches between your apps.</li>
+  <li>Need help? <b>Help</b> in the menu bar, or write to <b>help@lareon.org</b>.</li>
+  <li>You can run this setup again from <b>Help</b>.</li>
+ </ul>
+</section>
+
+</main>
+<footer><button class="btn ghost" id="back">Back</button><div class="dots" id="dots" aria-hidden="true"></div><button class="btn" id="next">Get started</button></footer>
+</div>
+<script>
+var NAMES = { dusk: 'Dusk', fledge: 'Fledge', aster: 'Aster' };
+var PLAT = 'win32', S, order, idx = 0, signedName = null, skipped = false;
+var secs = {}; [].forEach.call(document.querySelectorAll('section'), function (s) { secs[s.getAttribute('data-s')] = s; });
+var $ = function (id) { return document.getElementById(id); };
+
+// "Hello" in many languages, like a new phone
+var words = ['Hello', 'Hola', 'Bonjour', 'こんにちは', 'Hallo', 'Ciao', '안녕하세요', 'Olá', 'مرحبا', 'Namaste'], wi = 0, hw = $('hello-word');
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) setInterval(function () { hw.style.opacity = 0; setTimeout(function () { wi = (wi + 1) % words.length; hw.textContent = words[wi]; hw.style.opacity = 1; }, 450); }, 2200);
+
+function enabled() { return Object.keys(NAMES).filter(function (k) { return S.apps[k]; }); }
+function renderApps() {
+  [].forEach.call(document.querySelectorAll('.card'), function (c) { c.setAttribute('aria-checked', S.apps[c.getAttribute('data-app')] ? 'true' : 'false'); });
+  var en = enabled(); if (en.indexOf(S.first) < 0) S.first = en[0] || 'dusk';
+  $('first').innerHTML = '';
+  en.forEach(function (k) { var b = document.createElement('button'); b.className = 'chip'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', k === S.first ? 'true' : 'false'); b.textContent = NAMES[k]; b.onclick = function () { S.first = k; renderApps(); }; $('first').appendChild(b); });
+}
+[].forEach.call(document.querySelectorAll('.card'), function (c) { c.onclick = function () { var k = c.getAttribute('data-app'); S.apps[k] = !S.apps[k]; $('msg').textContent = ''; renderApps(); }; });
+function toggle(id, key) { var b = $(id); b.setAttribute('aria-checked', S[key] ? 'true' : 'false'); b.onclick = function () { S[key] = !S[key]; b.setAttribute('aria-checked', S[key] ? 'true' : 'false'); }; }
+$('test-notify').onclick = function () { setup.testNotification(); };
+
+function sendBounds() { var r = $('frame').getBoundingClientRect(); setup.signinBounds({ x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) }); }
+function show(i) {
+  var name = order[i];
+  Object.keys(secs).forEach(function (k) { var j = order.indexOf(k); secs[k].className = (secs[k].className.replace(/\b(on|past)\b/g, '').trim()) + (k === name ? ' on' : (j >= 0 && j < i ? ' past' : '')); });
+  $('back').style.visibility = (i === 0 || name === 'done') ? 'hidden' : 'visible';
+  $('next').textContent = name === 'hello' ? 'Get started' : name === 'done' ? 'Open Lareon' : name === 'signin' ? 'Skip for now' : 'Continue';
+  $('next').className = 'btn' + (name === 'signin' ? ' line' : '');
+  $('dots').style.visibility = (name === 'hello' || name === 'done') ? 'hidden' : 'visible';
+  var inner = order.filter(function (k) { return k !== 'hello' && k !== 'done'; });
+  if (inner.length > 12) inner = [];
+  $('dots').innerHTML = inner.map(function (k) { return '<i' + (k === name ? ' class="on"' : '') + '></i>'; }).join('');
+  if (name === 'keys') renderKeys();
+  if (name === 'signin') { setTimeout(sendBounds, 420); setup.signinStart(); } else setup.signinHide();
+  if (name === 'done') {
+    var n = enabled().map(function (k) { return NAMES[k]; });
+    $('done-h').textContent = signedName ? 'Welcome, ' + signedName : 'You’re all set';
+    $('done-p').textContent = (signedName ? 'You’re signed in. ' : 'You can sign in when Lareon opens. ') + n.join(', ').replace(/, ([^,]*)$/, ' and $1') + (n.length > 1 ? ' are' : ' is') + ' ready.';
+  }
+}
+function buildOrder() {
+  var en = enabled(), o = ['hello', 'one', 'apps'];
+  en.forEach(function (k) { o.push('t-' + k); });
+  o.push('look', 'notify'); if (PLAT !== 'linux') o.push('startup');
+  o.push('privacy', 'signin', 'keys', 'done'); return o;
+}
+function renderKeys() {
+  var m = PLAT === 'darwin' ? 'Cmd' : 'Ctrl', rows = [];
+  enabled().forEach(function (k, i) { rows.push(['<kbd>' + m + ' + ' + (i + 1) + '</kbd>', 'Open ' + NAMES[k]]); });
+  rows.push(['<kbd>' + m + ' + R</kbd>', 'Reload the current app'], ['<kbd>' + m + ' + +</kbd>', 'Zoom in'], ['<kbd>' + m + ' + -</kbd>', 'Zoom out'], ['<kbd>' + m + ' + 0</kbd>', 'Reset zoom']);
+  $('kbd').innerHTML = rows.map(function (r) { return r[0] + '<span>' + r[1] + '</span>'; }).join('');
+}
+[].forEach.call(document.querySelectorAll('#thm button'), function (b) { b.onclick = function () { S.theme = b.getAttribute('data-t'); renderTheme(); }; });
+function renderTheme() { [].forEach.call(document.querySelectorAll('#thm button'), function (b) { b.setAttribute('aria-checked', b.getAttribute('data-t') === (S.theme || 'system') ? 'true' : 'false'); }); }
+function save() { return setup.save({ theme: S.theme, apps: S.apps, first: S.first, notifications: S.notifications, launchAtLogin: S.launchAtLogin }); }
+$('next').onclick = function () {
+  var name = order[idx];
+  if (name === 'apps' && !enabled().length) { $('msg').textContent = 'Pick at least one app.'; return; }
+  if (name === 'done') { save().then(function () { setup.finish(); }); return; }
+  save(); if (name === 'apps') order = buildOrder(); idx++; show(idx);
+};
+$('back').onclick = function () { if (idx > 0) { idx--; show(idx); } };
+window.addEventListener('resize', function () { if (order && order[idx] === 'signin') sendBounds(); });
+setup.onSignedIn(function (who) { signedName = who || 'friend'; setTimeout(function () { idx = order.indexOf('keys'); show(idx); }, 900); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.tagName !== 'BUTTON' && !$('next').disabled) $('next').click(); });
+
+setup.state().then(function (st) {
+  S = st.settings; S.apps = S.apps || { dusk: true, fledge: true, aster: true };
+  PLAT = st.platform; order = buildOrder(); renderTheme();
+  $('mod').textContent = st.platform === 'darwin' ? 'Cmd' : 'Ctrl';
+  renderApps(); toggle('sw-notify', 'notifications'); toggle('sw-startup', 'launchAtLogin');
+  show(0);
+});
+</script></body></html>
