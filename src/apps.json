@@ -1,0 +1,17 @@
+{
+  "dusk": {
+    "name": "Dusk",
+    "url": "https://dusk.lareon.org/app",
+    "ua": "DuskApp"
+  },
+  "fledge": {
+    "name": "Fledge",
+    "url": "https://mail.lareon.org/",
+    "ua": "FledgeApp"
+  },
+  "aster": {
+    "name": "Aster",
+    "url": "https://aster.lareon.org/",
+    "ua": "AsterApp"
+  }
+}
