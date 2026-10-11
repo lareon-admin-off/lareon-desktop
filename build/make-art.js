@@ -28,7 +28,12 @@ function headSvg() {
     nested('lareon-icon.svg', 'pe_', 24, 11, 34) + wordmark(64, 35, 17, 'start') + '</svg>';
 }
 function iconSvg() {
-  return '<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">' + nested('lareon-icon.svg', 'pf_', -193, -221, 1410) + '</svg>';
+  // night-sky tile: deep violet fading up from the horizon, a few stars, the Lareon mark in front
+  const stars = [[150,170,5],[860,150,6],[780,300,4],[230,330,4],[120,640,3.5],[900,610,4],[560,110,3.5],[330,120,3],[700,90,3]].map((s) => '<circle cx="' + s[0] + '" cy="' + s[1] + '" r="' + s[2] + '" fill="#fff" opacity=".7"/>').join('');
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">' +
+    '<defs><radialGradient id="nb" cx="50%" cy="108%" r="95%"><stop offset="0" stop-color="#4a2a78"/><stop offset=".5" stop-color="#241a3d"/><stop offset="1" stop-color="#13111b"/></radialGradient></defs>' +
+    '<rect width="1024" height="1024" rx="228" fill="url(#nb)"/>' + stars +
+    nested('lareon-icon.svg', 'pf_', 75, 60, 874) + '</svg>';
 }
 // 24-bit BMP from raw top-down RGB, the format the Windows installer wants
 function bmp(raw, w, h) {
