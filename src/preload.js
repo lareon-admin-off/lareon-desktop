@@ -12,7 +12,14 @@ contextBridge.exposeInMainWorld('lareon', {
   summary: () => ipcRenderer.invoke('account:summary'),
   menu: (pos) => ipcRenderer.send('menu:account', pos),
   openExternal: (u) => ipcRenderer.send('open-external', u),
-  info: () => ipcRenderer.invoke('app:info')
+  info: () => ipcRenderer.invoke('app:info'),
+  onLoading: (cb) => ipcRenderer.on('loading', (_e, v) => cb(v)),
+  onPalette: (cb) => ipcRenderer.on('palette', () => cb()),
+  homeData: () => ipcRenderer.invoke('home:data'),
+  addTask: (t) => ipcRenderer.invoke('home:add-task', t),
+  doneTask: (id, d) => ipcRenderer.invoke('home:done-task', id, d),
+  signOut: () => ipcRenderer.send('auth:signout'),
+  checkUpdates: () => ipcRenderer.send('app:check-updates')
 });
 contextBridge.exposeInMainWorld('setup', {
   state: () => ipcRenderer.invoke('setup:state'),
