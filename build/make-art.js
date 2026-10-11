@@ -11,7 +11,7 @@ function nested(name, prefix, x, y, size) {
   return '<svg x="' + x + '" y="' + y + '" width="' + size + '" height="' + size + '" viewBox="' + vb + '">' + inner + '</svg>';
 }
 const FONT = 'Segoe UI, Arial, Helvetica, sans-serif';
-const wordmark = (x, y, size, anchor) => '<text x="' + x + '" y="' + y + '" text-anchor="' + anchor + '" font-family="' + FONT + '" font-size="' + size + '" font-weight="600" fill="#f3eee8">Lareon<tspan fill="#ff8a2b">.</tspan></text>';
+const wordmark = (x, y, size, anchor) => '<text x="' + x + '" y="' + y + '" text-anchor="' + anchor + '" font-family="' + FONT + '" font-size="' + size + '" font-weight="600" fill="#f3eee8">Lareon</text>';
 
 function sideSvg() {
   return '<svg xmlns="http://www.w3.org/2000/svg" width="164" height="314" viewBox="0 0 164 314">' +
@@ -28,7 +28,7 @@ function headSvg() {
     nested('lareon-icon.svg', 'pe_', 24, 11, 34) + wordmark(64, 35, 17, 'start') + '</svg>';
 }
 function iconSvg() {
-  return '<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="224" fill="#141119"/>' + nested('lareon-icon.svg', 'pf_', 192, 192, 640) + '</svg>';
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">' + nested('lareon-icon.svg', 'pf_', -193, -221, 1410) + '</svg>';
 }
 // 24-bit BMP from raw top-down RGB, the format the Windows installer wants
 function bmp(raw, w, h) {
