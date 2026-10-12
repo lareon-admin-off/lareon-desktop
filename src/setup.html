@@ -1,13 +1,17 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Set up Lareon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#141119;--panel:#1d1826;--panel2:#272031;--line:#352d42;--fg:#f3eee8;--fg2:#b9b1bd;--fg3:#827a8c;--orange:#ff8a2b;--violet:#a35cf5}
+:root{--bg:#13111b;--panel:rgba(26,24,36,.88);--panel2:#211e2d;--line:#2b2838;--fg:#ece9f5;--fg2:#a7a4ba;--fg3:#74718a;--orange:#ff7c1f;--violet:#a35cf5}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none}
-body{background:radial-gradient(110% 70% at 50% 110%,#3a1f55 0%,#1d1428 45%,var(--bg) 100%)}
-#app{height:100%;display:flex;flex-direction:column;align-items:center}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:16px/1.5 Geist,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden;-webkit-user-select:none;user-select:none}
+body{background:radial-gradient(80% 55% at 20% -10%,rgba(163,92,245,.2),transparent 60%),radial-gradient(60% 45% at 100% 0,rgba(255,124,31,.1),transparent 60%),var(--bg)}
+#app{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center}
 main{flex:1;width:100%;max-width:560px;min-height:0;position:relative;padding:0 24px}
-section{position:absolute;inset:0 24px;display:flex;flex-direction:column;opacity:0;visibility:hidden;transform:translateX(36px);transition:opacity .35s,transform .35s,visibility 0s .35s;padding-top:6vh}
-section.on{opacity:1;visibility:visible;transform:none;transition:opacity .35s,transform .35s}
+section{position:absolute;inset:0 24px;display:flex;flex-direction:column;opacity:0;visibility:hidden;transform:translateX(36px);transition:opacity .5s cubic-bezier(.2,.7,.2,1),transform .5s cubic-bezier(.2,.7,.2,1),visibility 0s .5s;padding-top:6vh}
+section.on{opacity:1;visibility:visible;transform:none;transition:opacity .5s cubic-bezier(.2,.7,.2,1),transform .5s cubic-bezier(.2,.7,.2,1)}
+section.on>*{animation:up .6s cubic-bezier(.2,.7,.2,1) both}section.on>*:nth-child(2){animation-delay:.06s}section.on>*:nth-child(3){animation-delay:.12s}section.on>*:nth-child(4){animation-delay:.18s}section.on>*:nth-child(n+5){animation-delay:.24s}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.btn{transition:transform .12s,filter .2s}.btn:active{transform:scale(.97)}
 section.past{transform:translateX(-36px)}
 h1{font-size:clamp(28px,5vw,38px);line-height:1.1;letter-spacing:-.03em;font-weight:650;margin:0 0 10px}
 p.lede{color:var(--fg2);margin:0 0 22px;max-width:30em}
@@ -33,7 +37,7 @@ p.lede{color:var(--fg2);margin:0 0 22px;max-width:30em}
 .chip{font:inherit;color:var(--fg2);background:none;border:1.5px solid var(--line);border-radius:999px;padding:6px 16px;cursor:pointer}
 .chip[aria-checked=true]{color:#201006;background:var(--orange);border-color:var(--orange);font-weight:600}
 .label{color:var(--fg3);font-size:14px;margin-top:6px}
-.btn{font:inherit;font-weight:600;border:0;border-radius:14px;padding:13px 26px;cursor:pointer;background:linear-gradient(135deg,#ff8a2b,#ff4f7a);color:#fff}
+.btn{font:inherit;font-weight:500;border:0;border-radius:10px;padding:12px 26px;cursor:pointer;background:linear-gradient(90deg,#ff7c1f,#d94fc4 60%,#a35cf5);color:#fff}
 .btn.ghost{background:none;color:var(--fg2);font-weight:500;padding:13px 14px}
 .btn.line{background:var(--panel2);color:var(--fg);border:1px solid var(--line)}
 .btn:disabled{opacity:.4;cursor:default}
@@ -178,8 +182,10 @@ footer .btn{min-width:96px}
 </main>
 <footer><button class="btn ghost" id="back">Back</button><div class="dots" id="dots" aria-hidden="true"></div><button class="btn" id="next">Get started</button></footer>
 </div>
+<script src="scene.js"></script>
 <script src="signin.js"></script>
 <script>
+mountScene();
 var NAMES = { dusk: 'Dusk', fledge: 'Fledge', aster: 'Aster' };
 var PLAT = 'win32', S, order, idx = 0, signedName = null, skipped = false;
 var secs = {}; [].forEach.call(document.querySelectorAll('section'), function (s) { secs[s.getAttribute('data-s')] = s; });
