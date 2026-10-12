@@ -222,7 +222,7 @@
   };
   Object.keys(X).forEach(function (l) { for (var k in X[l]) D[l][k] = X[l][k]; });
   var MORE = window.LAREON_MORE || {};
-  Object.keys(MORE).forEach(function (l) { D[l] = MORE[l]; });
+  Object.keys(MORE).forEach(function (l) { D[l] = D[l] || {}; for (var k in MORE[l]) D[l][k] = MORE[l][k]; });
   var NAMES = { en: 'English', es: 'Español', fr: 'Français', de: 'Deutsch', pt: 'Português', it: 'Italiano', ru: 'Русский', tr: 'Türkçe', sv: 'Svenska', ja: '日本語', ko: '한국어', zh: '中文', hi: 'हिन्दी', ar: 'العربية', fa: 'فارسی', sw: 'Kiswahili', ary: 'الدارجة' };
   var RTL = { ar: 1, fa: 1, ary: 1 };
   // Flags drawn as small inline pictures, so they show on every system (Windows has no flag emoji).

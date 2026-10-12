@@ -35,7 +35,11 @@ contextBridge.exposeInMainWorld('lareon', {
   online: () => ipcRenderer.invoke('net:online'),
   onAppsChanged: (cb) => ipcRenderer.on('apps-changed', () => cb()),
   notify: (t, b) => ipcRenderer.send('notify:show', t, b),
-  setupAgain: () => ipcRenderer.send('setup:again')
+  setupAgain: () => ipcRenderer.send('setup:again'),
+  onShowQuick: (cb) => ipcRenderer.on('quick:show', () => cb()),
+  quickClose: () => ipcRenderer.send('quick:close'),
+  onWhatsNew: (cb) => ipcRenderer.on('whatsnew', (_e, v) => cb(v)),
+  seenWhatsNew: () => ipcRenderer.send('wn:seen')
 });
 contextBridge.exposeInMainWorld('setup', {
   state: () => ipcRenderer.invoke('setup:state'),

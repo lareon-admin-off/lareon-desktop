@@ -122,6 +122,11 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
 .fo{display:flex;align-items:center;gap:18px;flex-wrap:wrap}.fo .big{min-width:130px;font-variant-numeric:tabular-nums;font-family:var(--mono);font-weight:500;font-size:34px}
 .fo p{color:var(--fg2);font-size:13px;flex:1;min-width:180px}
 .fbar{height:4px;border-radius:2px;background:var(--line);margin-top:12px;overflow:hidden}.fbar i{display:block;height:100%;width:0;background:var(--grad);transition:width 1s linear}
+.wn{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(10,8,16,.5);backdrop-filter:blur(10px);animation:fade .35s both;padding:20px}
+.wn .box{width:min(520px,100%);max-height:calc(100vh - 60px);overflow:auto;background:var(--solid);border:1px solid var(--line2);border-radius:20px;padding:28px 28px 22px;box-shadow:var(--shadow);animation:rise .6s var(--ease) both}
+.wn h2{font-size:26px;letter-spacing:-.03em;font-weight:600}.wn .vv{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);margin:4px 0 18px}
+.wn li{list-style:none;padding:11px 0;border-top:1px solid var(--line)}.wn li b{display:block;font-weight:600}.wn li span{color:var(--fg2);font-size:14px}
+.wn .btn{margin-top:18px;width:100%;padding:11px}
 </style></head><body>
 <div class="bar">
  <svg class="brand" viewBox="0 0 150 150" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#c84bff"/></linearGradient></defs><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#g)"/></svg>
@@ -166,6 +171,7 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
  </div>
 </main>
 <section id="set" hidden><div class="wrap"><div class="hd"><h1 data-i="set.title"></h1><button class="btn pri" id="setx" data-i="set.close"></button></div><div id="setb"></div></div></section>
+<div class="wn" id="wn" hidden><div class="box"><h2 data-i="wn.title"></h2><div class="vv" id="wnv"></div><ul id="wnl"></ul><button class="btn pri" id="wnb" data-i="wn.btn"></button></div></div>
 <div id="opening" hidden><div><img id="op-img" alt=""><span id="op-t"></span></div></div>
 <div id="pal" hidden><div class="box"><input id="pi" data-ip="jump.ph" autocomplete="off"><ul id="pl"></ul></div></div>
 
@@ -275,7 +281,7 @@ function load(manual) {
 }
 $('addf').onsubmit = function (e) {
   e.preventDefault(); var v = $('addi').value.trim(); if (!v) return; $('addi').value = '';
-  lareon.addTask(v).then(function (ok) { if (ok) load(); else note(t('tk.fail')); });
+  lareon.addTask(v).then(function (ok) { if (ok === 'queued') toast(t('tk.queued')); else if (ok) load(); else note(t('tk.fail')); });
 };
 $('acct').onclick = function () { var r = $('acct').getBoundingClientRect(); lareon.menu({ x: Math.round(r.left), y: Math.round(r.bottom + 4) }); };
 $('lg').onclick = function () { i18n.menu($('lg')); };
@@ -333,8 +339,10 @@ function renderSet() {
   b.appendChild(group(t('set.startup'), [
     row(t('set.login'), '', sw(S.launchAtLogin, function (v) { put({ launchAtLogin: v }); })),
     row(t('set.start'), '', pick(startOpts, S.startApp, function (v) { put({ startApp: v }); })),
-    row(t('set.badge'), '', sw(S.badge, function (v) { put({ badge: v }); }))
-  ]));
+    row(t('set.badge'), '', sw(S.badge, function (v) { put({ badge: v }); })),
+    S.platform !== 'darwin' ? row(t('set.bg'), t('set.bg.d'), sw(S.background, function (v) { put({ background: v }); })) : null,
+    row(t('set.qk'), t('set.qk.d', { k: mod === 'Cmd' ? '⌘⇧Space' : 'Ctrl+Shift+Space' }), sw(S.quickAdd, function (v) { put({ quickAdd: v }); }))
+  ].filter(Boolean)));
   var names = { dusk: 'Dusk', fledge: 'Fledge', aster: 'Aster' };
   b.appendChild(group(t('set.apps'), Object.keys(names).map(function (k) { return row(names[k], k === 'dusk' ? t('d.dusk') : k === 'fledge' ? t('d.fledge') : t('d.aster'), sw(S.apps[k] !== false, function (v) { put({ apps: (function () { var o = {}; o[k] = v; return o; })() }).then(function () { return Promise.all([lareon.apps()]); }).then(function (r) { APPS = r[0]; tabs(); grid(); renderSet(); }); })); })));
   b.appendChild(group(t('set.updates'), [
@@ -345,7 +353,7 @@ function renderSet() {
   b.appendChild(group(t('set.shortcuts'), [
     row(t('sc.jump'), '', mk('span', 'sk2', m + 'K')), row(t('sc.set'), '', mk('span', 'sk2', m + ',')), row(t('sc.apps'), '', mk('span', 'sk2', m + '1–' + m + apps))
   ]));
-  b.appendChild(group(t('set.about'), [row('Lareon', t('set.version', { v: S.version }) + ' · Larsonia', (function () { var x = mk('button', 'btn', esc(t('set.setup'))); x.onclick = function () { lareon.setupAgain(); }; return x; })())]));
+  b.appendChild(group(t('set.about'), [row('Lareon', t('set.version', { v: S.version }) + ' · Larsonia', (function () { var d = mk('div', 'btns'); var w = mk('button', 'btn', esc(t('wn.link'))); w.onclick = function () { showWN(S.version); }; var x = mk('button', 'btn', esc(t('set.setup'))); x.onclick = function () { lareon.setupAgain(); }; d.appendChild(w); d.appendChild(x); return d; })())]));
   $('set').scrollTop = keep;
 }
 function openSetNow() { lareon.getSettings().then(function (r) { S = r; $('set').hidden = false; renderSet(); $('set').focus(); }); }
@@ -358,6 +366,24 @@ function effTheme() { var a = document.documentElement.getAttribute('data-theme'
 function flipTheme() { var v = effTheme() === 'light' ? 'dark' : 'light'; applyTheme(v); put({ theme: v }).then(renderSet); }
 $('th').onclick = flipTheme;
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('set').hidden && $('pal').hidden) closeSet(); });
+
+// ---- what's new ----
+var WN = {
+  '1.0.6': [
+    ['Quick add from anywhere', 'Press Ctrl+Shift+Space (⌘⇧Space on Mac) in any app to add a task to Dusk. You can turn this off in Settings.'],
+    ['Keeps running in the background', 'Closing the window now hides Lareon to the tray, so reminders and new-mail alerts keep arriving. Quit from the tray menu.'],
+    ['Tasks save while you’re offline', 'Add a task without a connection and Lareon sends it as soon as you’re back online.'],
+    ['What’s new, after every update', 'You’re looking at it. Find it again any time under Help, or in Settings under About.']
+  ]
+};
+function showWN(v) {
+  var items = WN[v] || WN['1.0.6'];
+  $('wnv').textContent = t('wn.v', { v: v });
+  $('wnl').innerHTML = items.map(function (x) { return '<li><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></li>'; }).join('');
+  $('wn').hidden = false; closeSet();
+}
+$('wnb').onclick = function () { $('wn').hidden = true; lareon.seenWhatsNew(); };
+lareon.onWhatsNew(showWN);
 
 // ---- focus timer ----
 var FK = 'lareon.focus', fmin = 25, fend = 0, ftick = 0;

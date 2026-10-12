@@ -1,4 +1,4 @@
-const { app, BrowserWindow, WebContentsView, shell, Menu, session, ipcMain, Notification, nativeTheme, safeStorage, net, dialog } = require('electron');
+const { app, BrowserWindow, Tray, globalShortcut, nativeImage, WebContentsView, shell, Menu, session, ipcMain, Notification, nativeTheme, safeStorage, net, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const apps = require('./apps.json');
@@ -17,7 +17,7 @@ const external = (u) => { if (/^https?:\/\//.test(u) || u === 'mailto:help@lareo
 if (!app.requestSingleInstanceLock()) app.quit();
 
 // ---- settings (chosen in the setup wizard) ----
-const DEFAULTS = { setupDone: false, apps: { dusk: true, fledge: true, aster: true }, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
+const DEFAULTS = { setupDone: false, apps: { dusk: true, fledge: true, aster: true }, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, lastSeen: '', taskQueue: [], launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 let settings = { ...DEFAULTS };
 function loadSettings() {
@@ -298,9 +298,18 @@ ipcMain.handle('home:data', async () => {
   } catch { out.ok = false; }
   return out;
 });
+async function postTask(title, day) { const r = await api('/api/dusk/tasks', { method: 'POST', token: sess.token, body: { title, due: day } }); return r.status === 200; }
+async function flushQueue() {
+  if (!sess || !settings.taskQueue || !settings.taskQueue.length) return;
+  const rest = [];
+  for (const q of settings.taskQueue) { try { if (!(await postTask(q.title, q.day))) { /* server said no: drop it */ } } catch { rest.push(q); } }
+  settings.taskQueue = rest; writeSettings();
+}
 ipcMain.handle('home:add-task', async (_e, title) => {
   title = String(title || '').trim().slice(0, 200); if (!sess || !title) return false;
-  try { const r = await api('/api/dusk/tasks', { method: 'POST', token: sess.token, body: { title, due: isoDay(new Date()) } }); return r.status === 200; } catch { return false; }
+  const day = isoDay(new Date());
+  try { return await postTask(title, day); }
+  catch { settings.taskQueue = (settings.taskQueue || []).concat([{ title, day }]).slice(-50); writeSettings(); return 'queued'; }
 });
 ipcMain.handle('home:done-task', async (_e, id, done) => {
   if (!sess || !id) return false;
@@ -325,7 +334,8 @@ ipcMain.on('menu:account', (_e, pos) => {
   if (sess) t.push({ label: nameOf(sess.user) + '  (' + (sess.user.username || '') + '@lareon.org)', enabled: false }, { type: 'separator' });
   else t.push({ label: 'Sign in', click: () => showHome() }, { type: 'separator' });
   if (sess) t.push({ label: 'Account settings', click: () => show('account') });
-  t.push({ label: 'Check for updates', click: () => checkUpdates(true) },
+  t.push({ label: 'What’s new', click: () => { if (!inSetup) { showHome(); whatsNew(true); } } },
+      { label: 'Check for updates', click: () => checkUpdates(true) },
     { label: 'Run setup again', click: () => { settings.setupDone = false; writeSettings(); startSetup(); } },
     { label: 'Lareon help', click: () => show('help') },
     { label: 'Contact help@lareon.org', click: () => shell.openExternal('mailto:help@lareon.org') });
@@ -340,10 +350,58 @@ function startSetup() {
   win.setTitle('Lareon');
   win.loadFile(path.join(__dirname, 'setup.html'));
 }
+
+// ---- tray, quick add and what's new ----
+let tray = null, quick = null;
+function makeTray() {
+  try {
+    const img = nativeImage.createFromPath(path.join(__dirname, '..', 'build', 'icon.png'));
+    if (img.isEmpty()) return;
+    tray = new Tray(img.resize({ width: isMac ? 18 : 16 }));
+    tray.setToolTip('Lareon');
+    tray.setContextMenu(Menu.buildFromTemplate([
+      { label: 'Open Lareon', click: showMain },
+      { label: 'Quick add a task', click: openQuick },
+      { type: 'separator' },
+      { label: 'Quit Lareon', click: () => { quitting = true; app.quit(); } }
+    ]));
+    tray.on('click', showMain);
+  } catch {}
+}
+function makeQuick() {
+  quick = new BrowserWindow({
+    width: 540, height: 110, show: false, frame: false, resizable: false, alwaysOnTop: true, skipTaskbar: true, fullscreenable: false,
+    backgroundColor: BG(), webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false }
+  });
+  quick.loadFile(path.join(__dirname, 'quick.html'));
+  quick.on('blur', () => { if (quick && quick.isVisible()) quick.hide(); });
+  quick.on('closed', () => { quick = null; });
+}
+function openQuick() {
+  if (!settings.setupDone) return;
+  if (!quick) makeQuick();
+  if (quick.isVisible()) { quick.hide(); return; }
+  quick.center(); quick.show(); quick.focus(); quick.webContents.send('quick:show');
+}
+function applyQuick() {
+  try { globalShortcut.unregister('CommandOrControl+Shift+Space'); } catch {}
+  if (settings.quickAdd !== false) { try { globalShortcut.register('CommandOrControl+Shift+Space', openQuick); } catch {} }
+}
+ipcMain.on('quick:close', () => { if (quick) quick.hide(); });
+function whatsNew(force) {
+  const v = app.getVersion();
+  if (force) return send('whatsnew', v);
+  if (settings.lastSeen === v) return;
+  if (!settings.lastSeen && !settings.setupDone) { settings.lastSeen = v; writeSettings(); return; }
+  setTimeout(() => send('whatsnew', v), 1400);
+}
+ipcMain.on('wn:seen', () => { settings.lastSeen = app.getVersion(); writeSettings(); });
+app.on('will-quit', () => { try { globalShortcut.unregisterAll(); } catch {} });
 function startPage() {
   showHome();
   const want = settings.startApp === 'last' ? settings.lastApp : settings.startApp;
   if (sess && want && want !== 'home' && enabledKeys().includes(want)) show(want);
+  whatsNew(false);
 }
 function startTabs() {
   inSetup = false;
@@ -365,7 +423,7 @@ ipcMain.handle('setup:save', (_e, p) => {
 ipcMain.on('setup:test-notification', () => {
   try { if (Notification.isSupported()) new Notification({ title: 'Lareon', body: 'Notifications are on. Reminders and new mail will show up like this.' }).show(); } catch {}
 });
-ipcMain.on('setup:finish', () => { settings.setupDone = true; writeSettings(); startTabs(); });
+ipcMain.on('setup:finish', () => { settings.setupDone = true; if (!settings.lastSeen) settings.lastSeen = app.getVersion(); writeSettings(); startTabs(); });
 
 function createWindow() {
   const s = loadState();
@@ -386,17 +444,17 @@ function createWindow() {
     startSetup();
   }
   win.on('resize', layout);
-  win.on('close', saveState);
+  win.on('close', (e) => { saveState(); if (!quitting && !isMac && settings.background !== false && sess && settings.setupDone) { e.preventDefault(); win.hide(); } });
   win.on('closed', () => { win = null; for (const k of Object.keys(views)) delete views[k]; });
 }
 
 ipcMain.on('theme:get', (e) => { e.returnValue = ['light', 'dark'].includes(settings.theme) ? settings.theme : ''; });
-const publicSettings = () => ({ theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
+const publicSettings = () => ({ theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
 ipcMain.handle('settings:get', () => publicSettings());
 ipcMain.handle('settings:set', (_e, p) => {
   p = p || {};
   const bool = (k) => { if (typeof p[k] === 'boolean') settings[k] = p[k]; };
-  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound'].forEach(bool);
+  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound', 'background', 'quickAdd'].forEach(bool);
   if (typeof p.launchAtLogin === 'boolean') { settings.launchAtLogin = p.launchAtLogin; applyLogin(); }
   if (['system', 'light', 'dark'].includes(p.theme)) { settings.theme = p.theme; nativeTheme.themeSource = p.theme; paintChrome(); }
   if (['en', 'es', 'fr', 'de', 'pt', 'it', 'ru', 'tr', 'sv', 'ja', 'ko', 'zh', 'hi', 'ar', 'fa', 'sw', 'ary'].includes(p.lang)) settings.lang = p.lang;
@@ -410,7 +468,7 @@ ipcMain.handle('settings:set', (_e, p) => {
     if (!p.apps[k] && views[k]) { try { win.contentView.removeChildView(views[k]); views[k].webContents.close(); } catch {} delete views[k]; if (current === k) showHome(); }
     else if (p.apps[k] && sess && !views[k]) views[k] = makeView(k);
   }
-  writeSettings();
+  writeSettings(); if (p.quickAdd !== undefined) applyQuick();
   if (appsChanged) { buildMenu(); send('apps-changed'); }
   if (p.badge !== undefined) setBadge(lastUnread);
   return publicSettings();
@@ -421,7 +479,10 @@ let wasOnline = true;
 setInterval(() => { try { const o = net.isOnline(); if (o !== wasOnline) { wasOnline = o; send('online', o); if (o) pollNotifications(); } } catch {} }, 4000);
 ipcMain.handle('apps', () => { const o = {}; for (const k of enabledKeys()) o[k] = apps[k]; return o; });
 ipcMain.on('show', (_e, k) => { if (!inSetup && (k === 'home' || k === 'account' || k === 'help' || enabledKeys().includes(k))) show(k); });
-app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+app.on('second-instance', () => showMain());
+let quitting = false;
+app.on('before-quit', () => { quitting = true; });
+function showMain() { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } else if (app.isReady()) createWindow(); }
 
 const openSettings = () => { if (inSetup || !win) return; showHome(); send('settings'); };
 function setupAgain() { if (win) { settings.setupDone = false; writeSettings(); startSetup(); } }
@@ -455,7 +516,7 @@ function notify(title, body, key) {
   try {
     if (!Notification.isSupported() || Date.now() < (settings.snoozeUntil || 0)) return;
     const n = new Notification({ title, body, silent: settings.notifSound === false });
-    n.on('click', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } if (key) show(key); });
+    n.on('click', () => { showMain(); if (key) show(key); });
     n.show();
   } catch {}
 }
@@ -467,6 +528,7 @@ function setBadge(n) {
 const fromName = (a) => { a = String(a || ''); const m = a.match(/^\s*"?([^"<]+?)"?\s*<.*>\s*$/); return m ? m[1] : (a.split('@')[0] || a); };
 async function pollNotifications() {
   if (!sess || !settings.setupDone) return;
+  flushQueue();
   const t = sess.token;
   if (enabledKeys().includes('fledge')) {
     try {
@@ -579,6 +641,7 @@ app.whenReady().then(() => {
   });
   buildMenu();
   createWindow();
+  makeTray(); applyQuick();
   if (sess && settings.setupDone) for (const k of enabledKeys()) views[k] = makeView(k); // ready in the background
   startUpdater();
   setTimeout(pollNotifications, 12000); setInterval(pollNotifications, 60000);

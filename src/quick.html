@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lareon</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+<style>
+html,body{height:100%;overflow:hidden}body{background:var(--solid);display:flex;align-items:center;padding:0 18px;-webkit-app-region:drag}
+.q{display:flex;align-items:center;gap:12px;width:100%;-webkit-app-region:no-drag}
+.q img{width:30px;height:30px;flex:none}
+input{flex:1;min-width:0;font:inherit;font-size:19px;color:var(--fg);background:none;border:0;outline:0;padding:10px 0;-webkit-user-select:text;user-select:text}
+input::placeholder{color:var(--fg3)}input:focus{box-shadow:none;border:0;outline:0}
+.m{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:13px;color:var(--fg3);min-height:18px}
+.m.ok{color:var(--green)}.m.bad{color:var(--red)}
+</style></head><body>
+<div class="q"><img src="../build/art/dusk-icon.svg" alt=""><input id="i" maxlength="200" autocomplete="off" data-ip="tk.ph"></div>
+<div class="m" id="m"></div>
+<script src="i18n-more.js"></script><script src="i18n.js"></script>
+<script>
+var $=function(i){return document.getElementById(i)},t=function(k,v){return i18n.t(k,v)},busy=false;
+lareon.info().then(function(r){i18n.set(r.lang||i18n.guess(r.locale),true)});
+function reset(){$('i').value='';$('m').textContent='';$('m').className='m';busy=false;$('i').focus()}
+lareon.onShowQuick(reset);
+function msg(k,c){$('m').textContent=t(k);$('m').className='m '+(c||'')}
+document.addEventListener('keydown',function(e){
+ if(e.key==='Escape'){lareon.quickClose();return}
+ if(e.key!=='Enter'||busy)return;
+ var v=$('i').value.trim();if(!v)return;busy=true;
+ lareon.session().then(function(u){
+  if(!u){msg('sess','bad');busy=false;return}
+  return lareon.addTask(v).then(function(ok){
+   if(ok==='queued'){msg('tk.queued','ok');setTimeout(lareon.quickClose,1400)}
+   else if(ok){msg('qa.added','ok');setTimeout(lareon.quickClose,700)}
+   else{msg('tk.fail','bad');busy=false}
+  });
+ });
+});
+setTimeout(function(){$('i').focus()},50);
+</script></body></html>
