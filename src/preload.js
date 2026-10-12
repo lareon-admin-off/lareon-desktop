@@ -1,4 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
+try { contextBridge.exposeInMainWorld('themePref', ipcRenderer.sendSync('theme:get')); } catch {}
 // Only Lareon's own pages (Home and setup) get this bridge. The product sites inside the app do not.
 contextBridge.exposeInMainWorld('lareon', {
   apps: () => ipcRenderer.invoke('apps'),
@@ -26,7 +27,15 @@ contextBridge.exposeInMainWorld('lareon', {
   addTask: (t) => ipcRenderer.invoke('home:add-task', t),
   doneTask: (id, d) => ipcRenderer.invoke('home:done-task', id, d),
   signOut: () => ipcRenderer.send('auth:signout'),
-  checkUpdates: () => ipcRenderer.send('app:check-updates')
+  checkUpdates: () => ipcRenderer.send('app:check-updates'),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  setSettings: (s) => ipcRenderer.invoke('settings:set', s),
+  onSettings: (cb) => ipcRenderer.on('settings', () => cb()),
+  onOnline: (cb) => ipcRenderer.on('online', (_e, v) => cb(v)),
+  online: () => ipcRenderer.invoke('net:online'),
+  onAppsChanged: (cb) => ipcRenderer.on('apps-changed', () => cb()),
+  notify: (t, b) => ipcRenderer.send('notify:show', t, b),
+  setupAgain: () => ipcRenderer.send('setup:again')
 });
 contextBridge.exposeInMainWorld('setup', {
   state: () => ipcRenderer.invoke('setup:state'),

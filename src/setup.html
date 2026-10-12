@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lareon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
 <style>
 #app{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center}
 main{flex:1;width:100%;max-width:580px;min-height:0;position:relative;padding:0 24px}
@@ -35,7 +35,7 @@ p.lede{color:var(--fg2);margin:0 0 22px;max-width:30em;font-size:16px}
 .btn.line{background:var(--panel2);color:var(--fg);border:1px solid var(--line);box-shadow:none}
 .btn:disabled{opacity:.4;cursor:default}
 .dragbar{position:fixed;left:0;right:0;top:0;height:44px;-webkit-app-region:drag;z-index:5}
-.lgb{position:fixed;right:18px;top:14px;z-index:6;display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 13px 6px 10px;font-size:13px;color:var(--fg2);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:color .2s,border-color .2s}.lgb:hover{color:var(--fg);border-color:var(--line2)}.lgb svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.lgb svg.fl{width:22px;height:15px;stroke:none}.lgb{position:fixed;right:18px;top:14px;z-index:6;display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 13px 6px 10px;font-size:13px;color:var(--fg2);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:color .2s,border-color .2s}.lgb:hover{color:var(--fg);border-color:var(--line2)}.lgb svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 #signin{display:flex;justify-content:center}
 .ok{align-items:center;text-align:center;justify-content:center;padding-top:0}
 .ok .tick{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#ff8a2b,#ff4f7a);display:grid;place-items:center;margin-bottom:20px;transform:scale(.6);transition:transform .6s var(--ease);box-shadow:0 20px 50px -14px rgba(255,79,122,.7)}
@@ -126,6 +126,7 @@ footer .btn{min-width:100px}
 </main>
 <footer><button class="btn ghost" id="back" data-i="btn.back"></button><div class="dots" id="dots" aria-hidden="true"></div><button class="btn" id="next"></button></footer>
 </div>
+<script src="i18n-more.js"></script>
 <script src="i18n.js"></script>
 <script src="scene.js"></script>
 <script src="signin.js"></script>
@@ -148,7 +149,7 @@ var widget = null;
 function labels() {
   var name = order[idx];
   $('next').textContent = t(name === 'hello' ? 'btn.start' : name === 'done' ? 'btn.open' : name === 'signin' && !signedName ? 'btn.skip' : 'btn.cont');
-  $('lgn').textContent = i18n.names[i18n.lang];
+  $('lgn').textContent = i18n.names[i18n.lang]; $('lg').firstElementChild.outerHTML = i18n.flag(i18n.lang);
   $('dn-1').textContent = t('dn.t1', { k: mod() });
   if (name === 'keys') renderKeys();
   if (name === 'done') doneText();
@@ -182,7 +183,7 @@ function renderKeys() {
   $('kbd').innerHTML = rows.map(function (r) { return r[0] + '<span>' + r[1] + '</span>'; }).join('');
 }
 function save() { return setup.save({ theme: S.theme, apps: S.apps, notifications: S.notifications, launchAtLogin: S.launchAtLogin, lang: i18n.lang }); }
-[].forEach.call(document.querySelectorAll('#thm button'), function (b) { b.onclick = function () { S.theme = b.getAttribute('data-t'); renderTheme(); save(); }; });
+[].forEach.call(document.querySelectorAll('#thm button'), function (b) { b.onclick = function () { S.theme = b.getAttribute('data-t'); if (window.setTheme) window.setTheme(S.theme === 'system' ? '' : S.theme, true); renderTheme(); save(); }; });
 function renderTheme() { [].forEach.call(document.querySelectorAll('#thm button'), function (b) { b.setAttribute('aria-checked', b.getAttribute('data-t') === (S.theme || 'system') ? 'true' : 'false'); }); }
 $('next').onclick = function () {
   var name = order[idx];

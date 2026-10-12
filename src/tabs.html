@@ -1,11 +1,11 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lareon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
 <style>
 body{background:var(--bg)}
 /* title bar: the tabs are the title bar, the window buttons sit inside it */
-.bar{position:fixed;left:0;right:0;top:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;-webkit-app-region:drag;background:var(--bar);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);z-index:5;border-bottom:1px solid var(--line)}
+.bar{direction:ltr;position:fixed;left:0;right:0;top:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;-webkit-app-region:drag;background:var(--bar);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);z-index:5;border-bottom:1px solid var(--line)}
 .mac .bar{padding-left:86px}
 .bar{padding-right:calc(100vw - env(titlebar-area-x,0px) - env(titlebar-area-width,100vw) + 8px)}
 .bar button{-webkit-app-region:no-drag}
@@ -92,16 +92,50 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
 #pal ul{list-style:none;max-height:300px;overflow:auto;padding:6px}
 #pal li{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;cursor:pointer;color:var(--fg2)}
 #pal li[aria-selected=true]{background:var(--panel2);color:var(--fg)}
+
+/* chip, banner, toast */
+.chip{display:none;align-items:center;gap:6px;font-size:12px;color:var(--fg);background:rgba(255,68,102,.14);border:1px solid rgba(255,68,102,.45);border-radius:999px;padding:3px 10px;-webkit-app-region:no-drag}
+.chip.on{display:flex;animation:fade .3s both}.chip i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+#ban{position:fixed;left:50%;top:54px;transform:translate(-50%,-14px);opacity:0;pointer-events:none;z-index:7;background:var(--solid);border:1px solid rgba(255,68,102,.5);color:var(--fg);border-radius:12px;padding:9px 16px;font-size:14px;box-shadow:var(--shadow);transition:opacity .35s var(--ease),transform .45s var(--ease);max-width:calc(100vw - 32px)}
+#ban.on{opacity:1;transform:translate(-50%,0)}
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,16px);opacity:0;pointer-events:none;z-index:30;background:var(--solid);border:1px solid var(--line2);color:var(--fg);border-radius:12px;padding:10px 18px;font-size:14px;box-shadow:var(--shadow);transition:opacity .35s var(--ease),transform .45s var(--ease)}
+#toast.on{opacity:1;transform:translate(-50%,0)}#toast.bad{border-color:rgba(255,68,102,.55)}
+.lerr{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.lerr span{flex:1;min-width:180px}
+/* settings */
+#set{position:fixed;left:0;right:0;top:44px;bottom:0;overflow:auto;z-index:4;background:var(--bg);animation:fade .3s both}
+#set .wrap{max-width:680px}
+.sg{margin-bottom:18px}.sg h3{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);margin:0 0 8px 4px}
+.sg .card{padding:4px 16px}
+.sr{display:flex;align-items:center;gap:16px;padding:13px 0;border-top:1px solid var(--line)}.sr:first-child{border-top:0}
+.sr .l{flex:1;min-width:0}.sr .l b{font-weight:500;display:block}.sr .l small{display:block;color:var(--fg2);font-size:13px;margin-top:2px}
+.sw{width:42px;height:25px;border-radius:13px;border:0;background:var(--line2);position:relative;flex:none;transition:background .3s var(--ease)}
+.sw i{position:absolute;left:3px;top:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);transition:transform .35s var(--ease)}
+.sw[aria-checked=true]{background:var(--grad)}.sw[aria-checked=true] i{transform:translateX(17px)}
+.seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:2px;flex:none}
+.seg button{border:0;background:none;color:var(--fg2);font-size:13px;padding:5px 14px;border-radius:8px;transition:background .25s,color .25s}
+.seg button[aria-checked=true]{background:var(--solid);color:var(--fg);box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.sel{font:inherit;font-size:13px;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 10px;outline:0;max-width:200px}
+.sel:focus{border-color:var(--orange)}
+.ib svg.fl{width:22px;height:15px;stroke:none}.lgsel{display:flex;align-items:center;gap:9px}.sk2{font:500 12px var(--mono);color:var(--fg2)}
+/* focus */
+.c-focus{grid-column:span 12}
+.fo{display:flex;align-items:center;gap:18px;flex-wrap:wrap}.fo .big{min-width:130px;font-variant-numeric:tabular-nums;font-family:var(--mono);font-weight:500;font-size:34px}
+.fo p{color:var(--fg2);font-size:13px;flex:1;min-width:180px}
+.fbar{height:4px;border-radius:2px;background:var(--line);margin-top:12px;overflow:hidden}.fbar i{display:block;height:100%;width:0;background:var(--grad);transition:width 1s linear}
 </style></head><body>
 <div class="bar">
  <svg class="brand" viewBox="0 0 150 150" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#c84bff"/></linearGradient></defs><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#g)"/></svg>
  <nav role="tablist" id="n"><i class="ind" id="ind"></i></nav>
  <div class="sp"></div>
+ <span class="chip" id="chip"><i></i><span data-i="net.off"></span></span>
  <button class="kb" id="kb"><span data-i="jump"></span><kbd id="kbk">Ctrl K</kbd></button>
+ <button class="ib" id="th" data-ia="tm.toggle"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg></button>
+ <button class="ib" id="st" data-ia="set.title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
  <button class="ib" id="lg" aria-label="Language" title="Language"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg></button>
  <button class="acct" id="acct" aria-haspopup="menu"><span class="av off" id="av">?</span><span id="an"></span></button>
 </div>
 <div class="load" id="load"><i></i></div>
+<div id="ban" role="status" data-i="net.banner"></div><div id="toast" role="status"></div>
 
 <main id="home" tabindex="-1">
  <div class="center" id="out" hidden>
@@ -111,6 +145,7 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
  <div class="wrap" id="in" hidden>
   <div class="hd rise"><div><h1 id="greet"></h1><p class="sub" id="date"></p></div></div>
   <div class="note" id="note-in" role="status" hidden></div>
+  <div class="note" id="lerr" hidden><div class="lerr"><span id="lerrt"></span><button class="btn" id="lretry" data-i="net.retry"></button></div></div>
   <div class="grid">
    <section class="card c-today rise" style="--i:1"><h2><span data-i="today"></span> <button class="link" id="open-dusk" data-i="open.dusk"></button></h2>
     <div id="today"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
@@ -120,6 +155,7 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
     <div class="big" id="unread">&mdash;</div>
     <div class="mail" id="mail" style="margin-top:12px"><div class="sk"></div><div class="sk"></div></div>
    </section>
+   <section class="card c-focus rise" style="--i:3"><h2 data-i="focus.t"></h2><div class="fo"><div class="big" id="fclock">25:00</div><div class="seg" id="fseg"></div><button class="btn pri" id="fgo" data-i="focus.start"></button><p id="fhint" data-i="focus.idle"></p></div><div class="fbar"><i id="fbar"></i></div></section>
    <section class="card c-apps rise" style="--i:3"><h2 data-i="apps"></h2><div class="apps" id="grid"></div></section>
    <section class="card c-acct rise" style="--i:4"><div class="acct-row">
      <div class="who"><div class="mono" data-i="signedas"></div><b id="who">&mdash;</b><small id="store"></small><div class="bar2"><i id="bar"></i></div></div>
@@ -129,9 +165,11 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
   <div class="foot" id="ver"></div>
  </div>
 </main>
+<section id="set" hidden><div class="wrap"><div class="hd"><h1 data-i="set.title"></h1><button class="btn pri" id="setx" data-i="set.close"></button></div><div id="setb"></div></div></section>
 <div id="opening" hidden><div><img id="op-img" alt=""><span id="op-t"></span></div></div>
 <div id="pal" hidden><div class="box"><input id="pi" data-ip="jump.ph" autocomplete="off"><ul id="pl"></ul></div></div>
 
+<script src="i18n-more.js"></script>
 <script src="i18n.js"></script>
 <script src="scene.js"></script>
 <script src="signin.js"></script>
@@ -154,6 +192,7 @@ function moveInd() {
   [].forEach.call(document.querySelectorAll('.tab'), function (b) { b.setAttribute('aria-selected', b.id === 't-' + cur ? 'true' : 'false'); });
   $('acct').setAttribute('aria-selected', cur === 'account' ? 'true' : 'false');
 }
+function setFlag() { var g = $('lg'); g.innerHTML = i18n.flag(i18n.lang); g.style.width = 'auto'; g.style.padding = '0 8px'; }
 function setAcct() {
   $('av').textContent = user ? ((user.name || user.username || '?').charAt(0).toUpperCase()) : '?';
   $('av').className = 'av' + (user ? '' : ' off');
@@ -221,9 +260,18 @@ function paint() {
     $('store').textContent = t('store', { s: txt }); $('bar').style.width = Math.max(2, s.percent || 0) + '%';
   }
 }
-function load() {
+function load(manual) {
   if (!user) return;
-  lareon.homeData().then(function (d) { if (!d) { if (!data) { $('today').innerHTML = '<div class="empty">' + esc(t('offline')) + '</div>'; $('mail').innerHTML = ''; } return; } data = d; paint(); });
+  function fail() {
+    showErr(true);
+    if (!data) { var c = stashed(); if (c) { data = c; paint(); } else { $('today').innerHTML = '<div class="empty">' + esc(t('net.fail')) + '</div>'; $('mail').innerHTML = ''; } }
+    if (manual) toast(t('net.fail'), true);
+  }
+  lareon.homeData().then(function (d) {
+    if (!d) return;
+    if (!d.ok) return fail();
+    data = d; stamp = Date.now(); stash(d); showErr(false); paint(); if (manual) toast('✓');
+  }).catch(fail);
 }
 $('addf').onsubmit = function (e) {
   e.preventDefault(); var v = $('addi').value.trim(); if (!v) return; $('addi').value = '';
@@ -234,11 +282,110 @@ $('lg').onclick = function () { i18n.menu($('lg')); };
 $('open-dusk').onclick = function () { lareon.show('dusk'); }; $('open-fledge').onclick = function () { lareon.show('fledge'); };
 $('b-acct').onclick = function () { lareon.show('account'); }; $('b-upd').onclick = function () { lareon.checkUpdates(); }; $('b-out').onclick = function () { lareon.signOut(); };
 
+
+// ---- connection state, toasts ----
+var online = true, stamp = 0, S = null, toastT = 0, SKEY = 'lareon.home';
+function toast(m, bad) { var e = $('toast'); e.textContent = m; e.className = (bad ? 'bad ' : '') + 'on'; clearTimeout(toastT); toastT = setTimeout(function () { e.className = ''; }, 3200); }
+function setOnline(v, quiet) {
+  if (v === online) return; online = v;
+  $('chip').className = 'chip' + (v ? '' : ' on'); $('ban').className = v ? '' : 'on';
+  if (v) { if (!quiet) toast(t('net.back')); if (user) load(); }
+}
+function stash(d) { try { localStorage.setItem(SKEY, JSON.stringify({ at: Date.now(), u: user && user.username, d: d })); } catch (e) {} }
+function stashed() { try { var o = JSON.parse(localStorage.getItem(SKEY) || 'null'); if (o && user && o.u === user.username) { stamp = o.at; return o.d; } } catch (e) {} return null; }
+function showErr(on) {
+  var e = $('lerr'); e.hidden = !on; if (!on) return;
+  $('lerrt').textContent = t('net.fail') + (stamp ? ' ' + t('net.stale', { t: new Date(stamp).toLocaleTimeString(i18n.lang, { hour: 'numeric', minute: '2-digit' }) }) : '');
+}
+window.addEventListener('online', function () { setOnline(true); }); window.addEventListener('offline', function () { setOnline(false); });
+lareon.onOnline(function (v) { setOnline(!!v); });
+lareon.online().then(function (v) { if (!v) setOnline(false, true); });
+$('lretry').onclick = function () { load(true); };
+
+// ---- settings ----
+function mk(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+function row(label, desc, ctl) { var r = mk('div', 'sr'); r.appendChild(mk('div', 'l', '<b>' + esc(label) + '</b>' + (desc ? '<small>' + esc(desc) + '</small>' : ''))); if (ctl) r.appendChild(ctl); return r; }
+function sw(on, cb) { var b = mk('button', 'sw', '<i></i>'); b.setAttribute('role', 'switch'); b.setAttribute('aria-checked', on ? 'true' : 'false'); b.onclick = function () { var v = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', v ? 'true' : 'false'); cb(v); }; return b; }
+function seg(opts, val, cb) { var d = mk('div', 'seg'); d.setAttribute('role', 'radiogroup'); opts.forEach(function (o) { var b = mk('button', '', esc(o[1])); b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', o[0] === val ? 'true' : 'false'); b.onclick = function () { [].forEach.call(d.children, function (x) { x.setAttribute('aria-checked', x === b ? 'true' : 'false'); }); cb(o[0]); }; d.appendChild(b); }); return d; }
+function pick(opts, val, cb) { var s2 = mk('select', 'sel'); opts.forEach(function (o) { var op = mk('option', '', esc(o[1])); op.value = o[0]; if (String(o[0]) === String(val)) op.selected = true; s2.appendChild(op); }); s2.onchange = function () { cb(s2.value); }; return s2; }
+function put(p) { return lareon.setSettings(p).then(function (r) { if (r) S = r; return r; }); }
+function group(title, rows) { var g = mk('div', 'sg'); g.appendChild(mk('h3', '', esc(title))); var c = mk('div', 'card'); rows.forEach(function (r) { c.appendChild(r); }); g.appendChild(c); return g; }
+function applyTheme(v) { if (window.setTheme) window.setTheme(v === 'system' ? '' : v, true); }
+function renderSet() {
+  if (!S || $('set').hidden) return;
+  var b = $('setb'), keep = $('set').scrollTop; b.innerHTML = '';
+  b.appendChild(group(t('set.appearance'), [
+    row(t('set.theme'), '', seg([['system', t('th.system')], ['light', t('th.light')], ['dark', t('th.dark')]], S.theme || 'system', function (v) { applyTheme(v); put({ theme: v }); })),
+    row(t('set.lang'), '', (function () { var x = mk('button', 'btn lgsel', i18n.flag(i18n.lang) + '<span>' + esc(i18n.names[i18n.lang]) + '</span>'); x.onclick = function () { i18n.menu(x); }; return x; })())
+  ]));
+  var paused = S.snoozeUntil && S.snoozeUntil > Date.now();
+  b.appendChild(group(t('set.notif'), [
+    row(t('set.mail'), t('set.mail.d'), sw(S.notifications, function (v) { put({ notifications: v }); })),
+    row(t('set.ev'), t('set.ev.d'), sw(S.remindEvents, function (v) { put({ remindEvents: v }).then(renderSet); })),
+    S.remindEvents ? row(t('set.lead'), '', pick([0, 1, 5, 10, 15, 30].map(function (n) { return [n, n ? t('lead.n', { n: n }) : t('lead.0')]; }), S.remindLead, function (v) { put({ remindLead: +v }); })) : null,
+    row(t('set.sound'), '', sw(S.notifSound, function (v) { put({ notifSound: v }); if (v) lareon.notify('Lareon', t('set.notif')); })),
+    row(t('set.pause'), paused ? t('set.paused', { t: new Date(S.snoozeUntil).toLocaleString(i18n.lang, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) }) : '', pick([['off', t('pause.off')], ['1h', t('pause.1h')], ['tom', t('pause.tom')]], paused ? (S.snoozeUntil - Date.now() < 7200000 ? '1h' : 'tom') : 'off', function (v) {
+      var at = 0; if (v === '1h') at = Date.now() + 3600000; else if (v === 'tom') { var d = new Date(); d.setDate(d.getDate() + 1); d.setHours(8, 0, 0, 0); at = d.getTime(); }
+      put({ snoozeUntil: at }).then(renderSet);
+    }))
+  ].filter(Boolean)));
+  var startOpts = [['home', t('start.home')], ['last', t('start.last')]].concat(Object.keys(APPS).map(function (k) { return [k, APPS[k].name]; }));
+  b.appendChild(group(t('set.startup'), [
+    row(t('set.login'), '', sw(S.launchAtLogin, function (v) { put({ launchAtLogin: v }); })),
+    row(t('set.start'), '', pick(startOpts, S.startApp, function (v) { put({ startApp: v }); })),
+    row(t('set.badge'), '', sw(S.badge, function (v) { put({ badge: v }); }))
+  ]));
+  var names = { dusk: 'Dusk', fledge: 'Fledge', aster: 'Aster' };
+  b.appendChild(group(t('set.apps'), Object.keys(names).map(function (k) { return row(names[k], k === 'dusk' ? t('d.dusk') : k === 'fledge' ? t('d.fledge') : t('d.aster'), sw(S.apps[k] !== false, function (v) { put({ apps: (function () { var o = {}; o[k] = v; return o; })() }).then(function () { return Promise.all([lareon.apps()]); }).then(function (r) { APPS = r[0]; tabs(); grid(); renderSet(); }); })); })));
+  b.appendChild(group(t('set.updates'), [
+    row(t('set.auto'), '', sw(S.autoUpdate, function (v) { put({ autoUpdate: v }); })),
+    row(t('set.version', { v: S.version }), '', (function () { var x = mk('button', 'btn', esc(t('set.check'))); x.onclick = function () { lareon.checkUpdates(); }; return x; })())
+  ]));
+  var m = mod === 'Cmd' ? '⌘' : 'Ctrl+', apps = Object.keys(APPS).length + 1;
+  b.appendChild(group(t('set.shortcuts'), [
+    row(t('sc.jump'), '', mk('span', 'sk2', m + 'K')), row(t('sc.set'), '', mk('span', 'sk2', m + ',')), row(t('sc.apps'), '', mk('span', 'sk2', m + '1–' + m + apps))
+  ]));
+  b.appendChild(group(t('set.about'), [row('Lareon', t('set.version', { v: S.version }) + ' · Larsonia', (function () { var x = mk('button', 'btn', esc(t('set.setup'))); x.onclick = function () { lareon.setupAgain(); }; return x; })())]));
+  $('set').scrollTop = keep;
+}
+function openSetNow() { lareon.getSettings().then(function (r) { S = r; $('set').hidden = false; renderSet(); $('set').focus(); }); }
+function openSet() { if (cur !== 'home') { lareon.show('home'); setTimeout(openSetNow, 80); } else openSetNow(); }
+function closeSet() { $('set').hidden = true; }
+$('st').onclick = function () { $('set').hidden ? openSet() : closeSet(); }; $('setx').onclick = closeSet;
+lareon.onSettings(openSetNow);
+lareon.onAppsChanged(function () { lareon.apps().then(function (a) { APPS = a; tabs(); grid(); renderSet(); }); });
+function effTheme() { var a = document.documentElement.getAttribute('data-theme'); return a || (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'); }
+function flipTheme() { var v = effTheme() === 'light' ? 'dark' : 'light'; applyTheme(v); put({ theme: v }).then(renderSet); }
+$('th').onclick = flipTheme;
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('set').hidden && $('pal').hidden) closeSet(); });
+
+// ---- focus timer ----
+var FK = 'lareon.focus', fmin = 25, fend = 0, ftick = 0;
+try { var fo = JSON.parse(localStorage.getItem(FK) || 'null'); if (fo && fo.end > Date.now()) { fend = fo.end; fmin = fo.min; } } catch (e) {}
+function fpaint() {
+  var left = fend ? Math.max(0, fend - Date.now()) : fmin * 60000, s = Math.ceil(left / 1000), mm = Math.floor(s / 60), ss = s % 60;
+  $('fclock').textContent = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+  $('fbar').style.width = fend ? Math.min(100, (1 - left / (fmin * 60000)) * 100) + '%' : '0%';
+  $('fgo').textContent = t(fend ? 'focus.stop' : 'focus.start'); $('fgo').className = fend ? 'btn' : 'btn pri';
+  [].forEach.call($('fseg').children, function (b) { b.setAttribute('aria-checked', +b.getAttribute('data-m') === fmin ? 'true' : 'false'); b.disabled = !!fend; });
+  document.title = fend ? $('fclock').textContent + ' · Lareon' : 'Lareon';
+}
+function fstop(done) { fend = 0; clearInterval(ftick); try { localStorage.removeItem(FK); } catch (e) {} fpaint(); if (done) { lareon.notify(t('focus.done'), t('focus.donebody')); toast(t('focus.done')); } }
+function frun() {
+  clearInterval(ftick);
+  ftick = setInterval(function () { if (fend && Date.now() >= fend) fstop(true); else fpaint(); }, 1000); fpaint();
+}
+function fstart(m) { if (m) fmin = m; fend = Date.now() + fmin * 60000; try { localStorage.setItem(FK, JSON.stringify({ end: fend, min: fmin })); } catch (e) {} frun(); }
+function fseg() { var d = $('fseg'); d.innerHTML = ''; [15, 25, 50].forEach(function (m) { var b = mk('button', '', esc(t('focus.min', { n: m }))); b.setAttribute('data-m', m); b.setAttribute('role', 'radio'); b.onclick = function () { fmin = m; fpaint(); }; d.appendChild(b); }); fpaint(); }
+$('fgo').onclick = function () { fend ? fstop(false) : fstart(); };
+fseg(); if (fend) frun();
+
 // jump to anything (Cmd/Ctrl + K)
 var items = [], sel = 0;
 function palItems() {
   var a = [{ n: t('home'), k: 'home' }]; Object.keys(APPS).forEach(function (k) { a.push({ n: t('open.x', { a: APPS[k].name }), k: k }); });
   if (user) { a.push({ n: t('acct'), k: 'account' }, { n: t('upd'), f: function () { lareon.checkUpdates(); } }, { n: t('out'), f: function () { lareon.signOut(); } }); }
+  a.push({ n: t('set.title'), f: openSet }, { n: t('tm.toggle'), f: flipTheme }, { n: t('focus.t') + ' · ' + t('focus.min', { n: 25 }), f: function () { lareon.show('home'); if (!fend) fstart(25); } });
   a.push({ n: t('lang'), f: function () { i18n.menu($('lg')); } });
   return a;
 }
@@ -263,14 +410,14 @@ document.addEventListener('keydown', function (e) {
 });
 window.addEventListener('resize', moveInd);
 
-lareon.onShown(function (k) { cur = k; render(); if (k === 'home' && user) load(); });
+lareon.onShown(function (k) { cur = k; closeSet(); render(); if (k === 'home' && user) load(); });
 lareon.onLoading(function (v) { loading[v.key] = v.on; render(); });
 lareon.onPalette(palOpen);
 lareon.onNote(function (m) { note(m); });
-lareon.onSession(function (u) { user = u; data = null; if (u) { note(''); render(); load(); } else render(); });
+lareon.onSession(function (u) { user = u; data = null; showErr(false); if (!u) { try { localStorage.removeItem(SKEY); } catch (e) {} } if (u) { note(''); render(); load(); } else render(); });
 setInterval(function () { if (cur === 'home' && user) load(); }, 90000);
 
-function relabel() { i18n.apply(); tabs(); grid(); setAcct(); if (user) { greet(); paint(); } if ($('pal') && !$('pal').hidden) palRender(); }
+function relabel() { i18n.apply(); setFlag(); [].forEach.call(document.querySelectorAll('[data-ia]'), function (e) { var v = t(e.getAttribute('data-ia')); e.setAttribute('aria-label', v); e.title = v; }); fseg(); renderSet(); if (!$('lerr').hidden) showErr(true); tabs(); grid(); setAcct(); if (user) { greet(); paint(); } if ($('pal') && !$('pal').hidden) palRender(); }
 i18n.onPick(function (l) { lareon.setLang(l); });
 i18n.onChange(function () { relabel(); });
 
@@ -281,7 +428,7 @@ Promise.all([lareon.apps(), lareon.session(), lareon.info()]).then(function (r) 
   $('kbk').textContent = mod === 'Cmd' ? '⌘K' : 'Ctrl K';
   $('ver').textContent = 'Lareon ' + r[2].version;
   i18n.set(r[2].lang || i18n.guess(r[2].locale), true);
-  render(); if (user) load();
+  render(); if (user) load(); relabel();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveInd);
 });
 </script></body></html>

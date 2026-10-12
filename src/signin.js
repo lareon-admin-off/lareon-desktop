@@ -38,7 +38,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   var T = function (k, v) { return window.i18n.t(k, v); };
   var uid = 0;
-  function E(r) { if (!r) return ''; if (r.code === 'region') return T('err.region'); if (r.code === 'maint') return T('err.maint'); return r.error || ''; }
+  function E(r) { if (!r) return ''; if (r.code === 'region') return T('err.region'); if (r.code === 'maint') return T('err.maint'); if (r.code === 'net') return T('err.net'); return r.error || ''; }
 
   var ARROW = '<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
   function fld(label, inner, extra) { return '<div class="fld"><label class="sr" data-i="' + label + '"></label>' + inner + (extra || '') + '</div>'; }

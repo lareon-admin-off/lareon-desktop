@@ -17,7 +17,7 @@ const external = (u) => { if (/^https?:\/\//.test(u) || u === 'mailto:help@lareo
 if (!app.requestSingleInstanceLock()) app.quit();
 
 // ---- settings (chosen in the setup wizard) ----
-const DEFAULTS = { setupDone: false, apps: { dusk: true, fledge: true, aster: true }, notifications: true, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
+const DEFAULTS = { setupDone: false, apps: { dusk: true, fledge: true, aster: true }, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 let settings = { ...DEFAULTS };
 function loadSettings() {
@@ -160,6 +160,7 @@ function show(key) {
   if (!sess && key !== 'help') return showHome('Sign in to open ' + appOf(key).name + '.');
   if (!views[key]) views[key] = makeView(key);
   current = key;
+  if (key !== 'help' && key !== 'account') { settings.lastApp = key; writeSettings(); }
   win.setTitle('Lareon');
   for (const v of Object.values(views)) v.setVisible(false);
   send('shown', key);
@@ -193,7 +194,7 @@ ipcMain.handle('auth:login', async (_e, c) => {
     if (status === 403 && j && j.error === 'banned') return { error: 'This account is not available. Write to help@lareon.org.' };
     if (status === 429) return { error: 'Too many attempts. Wait a few minutes and try again.' };
     return { error: (j && j.error) || 'Could not sign in. Try again.' };
-  } catch { return { error: 'Can’t reach Lareon. Check your connection.' }; }
+  } catch { return { code: 'net' }; }
 });
 ipcMain.handle('auth:verify', async (_e, c) => {
   if (!pending2fa) return { error: 'Start again from the sign-in screen.' };
@@ -208,7 +209,7 @@ ipcMain.handle('auth:verify', async (_e, c) => {
       return finishLogin(j.token, j.user);
     }
     return { error: (j && j.error) || 'That code did not work. Try again.' };
-  } catch { return { error: 'Can’t reach Lareon. Check your connection.' }; }
+  } catch { return { code: 'net' }; }
 });
 const clean = (u) => String(u || '').trim().toLowerCase().replace(/@lareon\.org$/, '');
 ipcMain.handle('auth:check-username', async (_e, u) => {
@@ -227,10 +228,10 @@ ipcMain.handle('auth:register', async (_e, d) => {
     const l = await api('/api/login', { method: 'POST', body: { username, password, device: '' } });
     if (l.j && l.j.token) return finishLogin(l.j.token, l.j.user);
     return { error: 'Your account was created. Sign in to continue.' };
-  } catch { return { error: 'Can’t reach Lareon. Check your connection.' }; }
+  } catch { return { code: 'net' }; }
 });
 ipcMain.handle('auth:reset-request', async (_e, u) => {
-  try { const { status, j } = await api('/api/auth/reset-request', { method: 'POST', body: { username: clean(u) } }); if (status >= 400 || !j || j.error) return { error: j && j.error === 'no_recovery' ? 'This account has no recovery email, so the password cannot be reset.' : (j && j.error) || 'Could not send the code.' }; return { contact: j.contact || '' }; } catch { return { error: 'Can’t reach Lareon. Check your connection.' }; }
+  try { const { status, j } = await api('/api/auth/reset-request', { method: 'POST', body: { username: clean(u) } }); if (status >= 400 || !j || j.error) return { error: j && j.error === 'no_recovery' ? 'This account has no recovery email, so the password cannot be reset.' : (j && j.error) || 'Could not send the code.' }; return { contact: j.contact || '' }; } catch { return { code: 'net' }; }
 });
 ipcMain.handle('auth:reset-verify', async (_e, d) => {
   d = d || {};
@@ -239,7 +240,7 @@ ipcMain.handle('auth:reset-verify', async (_e, d) => {
     const { status, j } = await api(path2, { method: 'POST', body: { username: clean(d.username), code: String(d.code || '').trim(), newPassword: String(d.newPassword || '') } });
     if (status >= 400 || !j || j.error) return { error: (j && j.error) || 'That did not work.' };
     return { ok: true };
-  } catch { return { error: 'Can’t reach Lareon. Check your connection.' }; }
+  } catch { return { code: 'net' }; }
 });
 const legalCache = {};
 ipcMain.handle('legal:get', async (_e, name) => {
@@ -277,12 +278,12 @@ function occursOn(e, day) {
 }
 ipcMain.handle('home:data', async () => {
   if (!sess) return null;
-  const out = { summary: null, events: [], tasks: [], overdue: 0 };
+  const out = { summary: null, events: [], tasks: [], overdue: 0, ok: true };
   try {
     const a = await api('/api/account/summary', { token: sess.token });
     if (a.status === 401) { endSession('Your session ended. Sign in again.'); return null; }
-    if (a.status === 200) out.summary = a.j;
-  } catch {}
+    if (a.status === 200) out.summary = a.j; else out.ok = false;
+  } catch { out.ok = false; }
   try {
     const d = await api('/api/dusk/all', { token: sess.token });
     if (d.status === 200 && d.j) {
@@ -293,8 +294,8 @@ ipcMain.handle('home:data', async () => {
       out.overdue = open.filter((t) => t.due && t.due < day).length;
       out.tasks = open.sort((x, y) => (y.pri - x.pri) || String(x.due || '9').localeCompare(String(y.due || '9'))).slice(0, 7)
         .map((t) => ({ id: t.id, title: t.title, due: t.due || '', pri: !!t.pri }));
-    }
-  } catch {}
+    } else out.ok = false;
+  } catch { out.ok = false; }
   return out;
 });
 ipcMain.handle('home:add-task', async (_e, title) => {
@@ -317,7 +318,7 @@ ipcMain.on('open-external', (_e, u) => { if (typeof u === 'string' && (u === 'ht
 ipcMain.on('auth:signout', () => signOut());
 ipcMain.on('app:check-updates', () => checkUpdates(true));
 ipcMain.handle('app:info', () => ({ version: app.getVersion(), platform: process.platform, lang: settings.lang || '', locale: app.getLocale() }));
-ipcMain.on('app:lang', (_e, l) => { if (['en', 'es', 'fr', 'de', 'pt', 'ja'].includes(l)) { settings.lang = l; writeSettings(); } });
+ipcMain.on('app:lang', (_e, l) => { if (['en', 'es', 'fr', 'de', 'pt', 'it', 'ru', 'tr', 'sv', 'ja', 'ko', 'zh', 'hi', 'ar', 'fa', 'sw', 'ary'].includes(l)) { settings.lang = l; writeSettings(); } });
 ipcMain.on('menu:account', (_e, pos) => {
   if (!win) return;
   const t = [];
@@ -339,11 +340,16 @@ function startSetup() {
   win.setTitle('Lareon');
   win.loadFile(path.join(__dirname, 'setup.html'));
 }
+function startPage() {
+  showHome();
+  const want = settings.startApp === 'last' ? settings.lastApp : settings.startApp;
+  if (sess && want && want !== 'home' && enabledKeys().includes(want)) show(want);
+}
 function startTabs() {
   inSetup = false;
   buildMenu();
   win.loadFile(path.join(__dirname, 'tabs.html'));
-  win.webContents.once('did-finish-load', () => showHome());
+  win.webContents.once('did-finish-load', startPage);
 }
 ipcMain.handle('setup:state', () => ({ platform: process.platform, locale: app.getLocale(), settings: { ...settings, apps: { ...settings.apps }, sess: undefined, td: undefined }, user: sessInfo() }));
 ipcMain.handle('setup:save', (_e, p) => {
@@ -352,7 +358,7 @@ ipcMain.handle('setup:save', (_e, p) => {
   if (['system', 'light', 'dark'].includes(p.theme)) { settings.theme = p.theme; nativeTheme.themeSource = p.theme; }
   if (typeof p.notifications === 'boolean') settings.notifications = p.notifications;
   if (typeof p.launchAtLogin === 'boolean') settings.launchAtLogin = p.launchAtLogin;
-  if (['en', 'es', 'fr', 'de', 'pt', 'ja'].includes(p.lang)) settings.lang = p.lang;
+  if (['en', 'es', 'fr', 'de', 'pt', 'it', 'ru', 'tr', 'sv', 'ja', 'ko', 'zh', 'hi', 'ar', 'fa', 'sw', 'ary'].includes(p.lang)) settings.lang = p.lang;
   writeSettings(); applyLogin();
   return true;
 });
@@ -375,7 +381,7 @@ function createWindow() {
   if (s.max) win.maximize();
   if (settings.setupDone) {
     win.loadFile(path.join(__dirname, 'tabs.html'));
-    win.webContents.once('did-finish-load', () => showHome());
+    win.webContents.once('did-finish-load', startPage);
   } else {
     startSetup();
   }
@@ -384,18 +390,50 @@ function createWindow() {
   win.on('closed', () => { win = null; for (const k of Object.keys(views)) delete views[k]; });
 }
 
+ipcMain.on('theme:get', (e) => { e.returnValue = ['light', 'dark'].includes(settings.theme) ? settings.theme : ''; });
+const publicSettings = () => ({ theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
+ipcMain.handle('settings:get', () => publicSettings());
+ipcMain.handle('settings:set', (_e, p) => {
+  p = p || {};
+  const bool = (k) => { if (typeof p[k] === 'boolean') settings[k] = p[k]; };
+  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound'].forEach(bool);
+  if (typeof p.launchAtLogin === 'boolean') { settings.launchAtLogin = p.launchAtLogin; applyLogin(); }
+  if (['system', 'light', 'dark'].includes(p.theme)) { settings.theme = p.theme; nativeTheme.themeSource = p.theme; paintChrome(); }
+  if (['en', 'es', 'fr', 'de', 'pt', 'it', 'ru', 'tr', 'sv', 'ja', 'ko', 'zh', 'hi', 'ar', 'fa', 'sw', 'ary'].includes(p.lang)) settings.lang = p.lang;
+  if ([0, 1, 5, 10, 15, 30].includes(p.remindLead)) settings.remindLead = p.remindLead;
+  if (typeof p.snoozeUntil === 'number') settings.snoozeUntil = Math.max(0, p.snoozeUntil);
+  if (typeof p.startApp === 'string' && (p.startApp === 'home' || p.startApp === 'last' || enabledKeys().includes(p.startApp))) settings.startApp = p.startApp;
+  let appsChanged = false;
+  if (p.apps) for (const k of Object.keys(apps)) if (typeof p.apps[k] === 'boolean' && settings.apps[k] !== p.apps[k]) {
+    if (!p.apps[k] && enabledKeys().length <= 1) continue; // keep at least one app on
+    settings.apps[k] = p.apps[k]; appsChanged = true;
+    if (!p.apps[k] && views[k]) { try { win.contentView.removeChildView(views[k]); views[k].webContents.close(); } catch {} delete views[k]; if (current === k) showHome(); }
+    else if (p.apps[k] && sess && !views[k]) views[k] = makeView(k);
+  }
+  writeSettings();
+  if (appsChanged) { buildMenu(); send('apps-changed'); }
+  if (p.badge !== undefined) setBadge(lastUnread);
+  return publicSettings();
+});
+ipcMain.on('notify:show', (_e, t, b) => { if (t) notify(String(t).slice(0, 80), String(b || '').slice(0, 200), null); });
+ipcMain.handle('net:online', () => net.isOnline());
+let wasOnline = true;
+setInterval(() => { try { const o = net.isOnline(); if (o !== wasOnline) { wasOnline = o; send('online', o); if (o) pollNotifications(); } } catch {} }, 4000);
 ipcMain.handle('apps', () => { const o = {}; for (const k of enabledKeys()) o[k] = apps[k]; return o; });
 ipcMain.on('show', (_e, k) => { if (!inSetup && (k === 'home' || k === 'account' || k === 'help' || enabledKeys().includes(k))) show(k); });
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
 
+const openSettings = () => { if (inSetup || !win) return; showHome(); send('settings'); };
+function setupAgain() { if (win) { settings.setupDone = false; writeSettings(); startSetup(); } }
+ipcMain.on('setup:again', setupAgain);
 function buildMenu() {
   const cur = () => (current && views[current] ? views[current].webContents : null);
   const go = (k) => () => { if (!inSetup) show(k); };
   const palette = () => { if (inSetup) return; showHome(); send('palette'); };
   Menu.setApplicationMenu(Menu.buildFromTemplate([
-    ...(isMac ? [{ role: 'appMenu' }] : []),
+    ...(isMac ? [{ label: 'Lareon', submenu: [{ role: 'about' }, { type: 'separator' }, { label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: openSettings }, { type: 'separator' }, { role: 'services' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' }] }] : []),
     { role: 'editMenu' },
-    { label: 'Apps', submenu: [{ label: 'Jump to…', accelerator: 'CmdOrCtrl+K', click: palette }, { type: 'separator' }, { label: 'Home', accelerator: 'CmdOrCtrl+1', click: go('home') }, ...enabledKeys().map((k, i) => ({ label: apps[k].name, accelerator: 'CmdOrCtrl+' + (i + 2), click: go(k) }))] },
+    { label: 'Apps', submenu: [...(isMac ? [] : [{ label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: openSettings }, { type: 'separator' }]), { label: 'Jump to…', accelerator: 'CmdOrCtrl+K', click: palette }, { type: 'separator' }, { label: 'Home', accelerator: 'CmdOrCtrl+1', click: go('home') }, ...enabledKeys().map((k, i) => ({ label: apps[k].name, accelerator: 'CmdOrCtrl+' + (i + 2), click: go(k) }))] },
     { label: 'View', submenu: [{ label: 'Reload', accelerator: 'CmdOrCtrl+R', click: () => cur() && cur().reload() }, { role: 'togglefullscreen' }, { type: 'separator' },
       { label: 'Zoom in', accelerator: 'CmdOrCtrl+Plus', click: () => cur() && cur().setZoomLevel(cur().getZoomLevel() + 0.5) },
       { label: 'Zoom out', accelerator: 'CmdOrCtrl+-', click: () => cur() && cur().setZoomLevel(cur().getZoomLevel() - 0.5) },
@@ -403,7 +441,7 @@ function buildMenu() {
     { role: 'windowMenu' },
     { label: 'Help', submenu: [{ label: 'Lareon ' + app.getVersion(), enabled: false }, { type: 'separator' },
       { label: 'Check for updates', click: () => checkUpdates(true) },
-      { label: 'Run setup again', click: () => { if (win) { settings.setupDone = false; writeSettings(); startSetup(); } } },
+      { label: 'Run setup again', click: setupAgain },
       { label: 'Lareon help', click: () => show('help') },
       { label: 'Contact help@lareon.org', click: () => shell.openExternal('mailto:help@lareon.org') }] }
   ]));
@@ -415,15 +453,20 @@ function buildMenu() {
 const seen = { mailTop: null, unread: null, events: new Set() };
 function notify(title, body, key) {
   try {
-    if (!Notification.isSupported()) return;
-    const n = new Notification({ title, body, silent: false });
+    if (!Notification.isSupported() || Date.now() < (settings.snoozeUntil || 0)) return;
+    const n = new Notification({ title, body, silent: settings.notifSound === false });
     n.on('click', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } if (key) show(key); });
     n.show();
   } catch {}
 }
+let lastUnread = 0;
+function setBadge(n) {
+  lastUnread = n;
+  try { app.setBadgeCount(settings.badge === false ? 0 : n); } catch {}
+}
 const fromName = (a) => { a = String(a || ''); const m = a.match(/^\s*"?([^"<]+?)"?\s*<.*>\s*$/); return m ? m[1] : (a.split('@')[0] || a); };
 async function pollNotifications() {
-  if (!sess || !settings.setupDone || settings.notifications === false) return;
+  if (!sess || !settings.setupDone) return;
   const t = sess.token;
   if (enabledKeys().includes('fledge')) {
     try {
@@ -431,11 +474,12 @@ async function pollNotifications() {
       if (a.status === 200 && a.j) {
         const rec = (a.j.recent || []).map((m) => ({ from: fromName(m.from_address), subject: m.subject || '', at: new Date(m.created_at).getTime() || 0 })).sort((x, y) => y.at - x.at);
         const top = rec.length ? rec[0].at : 0, unread = a.j.unread || 0;
+        setBadge(unread);
         if (seen.mailTop === null) { seen.mailTop = top; seen.unread = unread; }
         else {
           const fresh = rec.filter((m) => m.at > seen.mailTop);
           const watching = win && win.isFocused() && current === 'fledge';
-          if (fresh.length && unread >= (seen.unread || 0) && !watching) {
+          if (settings.notifications !== false && fresh.length && unread >= (seen.unread || 0) && !watching) {
             if (fresh.length === 1) notify(fresh[0].from || 'Fledge', fresh[0].subject || 'New message', 'fledge');
             else notify('Fledge', fresh.length + ' new messages', 'fledge');
           }
@@ -444,7 +488,7 @@ async function pollNotifications() {
       }
     } catch {}
   }
-  if (enabledKeys().includes('dusk')) {
+  if (settings.remindEvents !== false && enabledKeys().includes('dusk')) {
     try {
       const d = await api('/api/dusk/all', { token: t });
       if (d.status === 200 && d.j) {
@@ -452,7 +496,7 @@ async function pollNotifications() {
         for (const e of (d.j.events || [])) {
           if (!e.start || !occursOn(e, day)) continue;
           const p = String(e.start).split(':'), at = (+p[0]) * 60 + (+p[1] || 0), left = at - mins, key = (e.id || e.title) + '|' + day;
-          if (left >= 0 && left <= 5 && !seen.events.has(key)) { seen.events.add(key); notify(e.title || 'Dusk', left === 0 ? 'Starting now' : 'Starts in ' + left + ' min', 'dusk'); }
+          if (left >= 0 && left <= Math.max(0, Math.min(60, +settings.remindLead || 0)) && !seen.events.has(key)) { seen.events.add(key); notify(e.title || 'Dusk', left === 0 ? 'Starting now' : 'Starts in ' + left + ' min', 'dusk'); }
         }
         if (seen.events.size > 400) seen.events.clear();
       }
@@ -462,23 +506,68 @@ async function pollNotifications() {
 
 let updater = null;
 try { updater = require('electron-updater').autoUpdater; } catch { updater = null; }
+const REPO = 'lareon-admin-off/lareon-desktop';
+const isNewer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
+// Mac: the app is not signed, so the normal updater cannot swap it. Lareon downloads the new copy itself and replaces the old one.
+let macBusy = false;
+async function macLatest() {
+  const r = await net.fetch('https://api.github.com/repos/' + REPO + '/releases/latest', { headers: { Accept: 'application/vnd.github+json' } });
+  if (!r.ok) return null;
+  const j = await r.json(); const v = String(j.tag_name || '').replace(/^v\.?/, '');
+  return /^\d+\.\d+\.\d+$/.test(v) ? v : null;
+}
+async function macInstall(version) {
+  if (macBusy) return; macBusy = true;
+  try {
+    const os = require('os'), cp = require('child_process');
+    const work = fs.mkdtempSync(path.join(os.tmpdir(), 'lareon-up-'));
+    const zip = path.join(work, 'Lareon.zip');
+    const r = await net.fetch('https://github.com/' + REPO + '/releases/download/v' + version + '/Lareon.zip');
+    if (!r.ok) throw new Error('download');
+    fs.writeFileSync(zip, Buffer.from(await r.arrayBuffer()));
+    const out = path.join(work, 'new'); fs.mkdirSync(out);
+    cp.execFileSync('/usr/bin/ditto', ['-x', '-k', zip, out]);
+    const fresh = path.join(out, 'Lareon.app'); if (!fs.existsSync(fresh)) throw new Error('unpack');
+    const cur = path.resolve(process.execPath, '../../..');
+    const sh = path.join(work, 'swap.sh');
+    fs.writeFileSync(sh, '#!/bin/bash\nwhile kill -0 ' + process.pid + ' 2>/dev/null; do sleep 0.4; done\nAPP="$1"; NEW="$2"\nrm -rf "$APP.old"\nif mv "$APP" "$APP.old" && /usr/bin/ditto "$NEW" "$APP"; then /usr/bin/xattr -cr "$APP"; rm -rf "$APP.old"; else rm -rf "$APP"; mv "$APP.old" "$APP"; fi\nopen "$APP"\n', { mode: 0o755 });
+    cp.spawn('/bin/bash', [sh, cur, fresh], { detached: true, stdio: 'ignore' }).unref();
+    app.quit();
+  } catch {
+    macBusy = false;
+    dialog.showMessageBox(win || undefined, { type: 'warning', message: 'Lareon could not install the update', detail: 'Download the newest version from lareon.org/download and drag it into Applications.', buttons: ['Open download page', 'Close'], defaultId: 0, cancelId: 1 }).then((r) => { if (r.response === 0) shell.openExternal('https://lareon.org/download'); });
+  }
+}
+async function macCheck(manual) {
+  try {
+    const v = await macLatest();
+    if (v && isNewer(v, app.getVersion())) {
+      const r = await dialog.showMessageBox(win || undefined, { type: 'info', message: 'Lareon ' + v + ' is available', detail: 'Lareon will download it, replace the old version and open again. This takes a moment.', buttons: ['Update now', 'Later'], defaultId: 0, cancelId: 1 });
+      if (r.response === 0) macInstall(v);
+    } else if (manual) dialog.showMessageBox({ message: 'Lareon is up to date.', detail: 'Version ' + app.getVersion() });
+  } catch { if (manual) dialog.showMessageBox({ message: 'Could not check for updates.', detail: 'Check your connection and try again.' }); }
+}
 function checkUpdates(manual) {
-  if (!updater || !app.isPackaged) { if (manual) dialog.showMessageBox({ message: 'Updates are checked in the installed app.' }); return; }
+  if (!app.isPackaged) { if (manual) dialog.showMessageBox({ message: 'Updates are checked in the installed app.' }); return; }
+  if (isMac) return macCheck(manual);
+  if (!updater) return;
   updater.checkForUpdates().then((r) => {
     if (manual && r && r.updateInfo && r.updateInfo.version === app.getVersion()) dialog.showMessageBox({ message: 'Lareon is up to date.', detail: 'Version ' + app.getVersion() });
   }).catch(() => { if (manual) dialog.showMessageBox({ message: 'Could not check for updates.', detail: 'Check your connection and try again.' }); });
 }
 function startUpdater() {
-  if (!updater || !app.isPackaged) return;
-  updater.autoDownload = true;
+  if (!app.isPackaged) return;
+  if (isMac) { setTimeout(() => { if (settings.autoUpdate !== false) macCheck(false); }, 8000); setInterval(() => { if (settings.autoUpdate !== false) macCheck(false); }, 6 * 60 * 60 * 1000); return; }
+  if (!updater) return;
+  updater.autoDownload = settings.autoUpdate !== false;
   updater.autoInstallOnAppQuit = true;
   updater.on('update-downloaded', (info) => {
     dialog.showMessageBox(win || undefined, { type: 'info', message: 'Lareon ' + info.version + ' is ready', detail: 'Restart to finish updating. If you wait, it installs next time you quit.', buttons: ['Restart now', 'Later'], defaultId: 0, cancelId: 1 })
       .then((r) => { if (r.response === 0) updater.quitAndInstall(); });
   });
   updater.on('error', () => {});
-  setTimeout(() => updater.checkForUpdates().catch(() => {}), 8000);
-  setInterval(() => updater.checkForUpdates().catch(() => {}), 6 * 60 * 60 * 1000);
+  const auto = () => { if (settings.autoUpdate !== false) updater.checkForUpdates().catch(() => {}); };
+  setTimeout(auto, 8000); setInterval(auto, 6 * 60 * 60 * 1000);
 }
 
 app.whenReady().then(() => {

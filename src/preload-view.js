@@ -5,6 +5,7 @@ try {
   const r = ipcRenderer.sendSync('view:token');
   if (r && r.t) { if (localStorage.getItem('lt') !== r.t) { localStorage.setItem('lt', r.t); localStorage.setItem('lu', r.u); } }
 } catch (e) {}
+try { if (location.protocol === 'file:') contextBridge.exposeInMainWorld('themePref', ipcRenderer.sendSync('theme:get')); } catch (e) {}
 try {
   if (location.protocol === 'file:') contextBridge.exposeInMainWorld('lv', {
     home: () => ipcRenderer.send('show', 'home'),
