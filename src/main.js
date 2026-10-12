@@ -17,7 +17,7 @@ const external = (u) => { if (/^https?:\/\//.test(u) || u === 'mailto:help@lareo
 if (!app.requestSingleInstanceLock()) app.quit();
 
 // ---- settings (chosen in the setup wizard) ----
-const DEFAULTS = { setupDone: false, apps: { dusk: true, fledge: true, aster: true }, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, lastSeen: '', taskQueue: [], launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
+const DEFAULTS = { setupDone: false, apps: { dusk: true, fledge: true, aster: true }, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 let settings = { ...DEFAULTS };
 function loadSettings() {
@@ -359,13 +359,16 @@ function makeTray() {
     if (img.isEmpty()) return;
     tray = new Tray(img.resize({ width: isMac ? 18 : 16 }));
     tray.setToolTip('Lareon');
-    tray.setContextMenu(Menu.buildFromTemplate([
+    const menu = Menu.buildFromTemplate([
       { label: 'Open Lareon', click: showMain },
+      { label: 'Today at a glance', click: togglePeek },
+      { label: 'Ask Aster', click: openAsk },
       { label: 'Quick add a task', click: openQuick },
       { type: 'separator' },
       { label: 'Quit Lareon', click: () => { quitting = true; app.quit(); } }
-    ]));
-    tray.on('click', showMain);
+    ]);
+    if (process.platform === 'linux') tray.setContextMenu(menu);
+    else { tray.on('click', togglePeek); tray.on('right-click', () => tray.popUpContextMenu(menu)); }
   } catch {}
 }
 function makeQuick() {
@@ -386,8 +389,96 @@ function openQuick() {
 function applyQuick() {
   try { globalShortcut.unregister('CommandOrControl+Shift+Space'); } catch {}
   if (settings.quickAdd !== false) { try { globalShortcut.register('CommandOrControl+Shift+Space', openQuick); } catch {} }
+  try { globalShortcut.unregister('CommandOrControl+Shift+A'); } catch {}
+  if (settings.askKey !== false) { try { globalShortcut.register('CommandOrControl+Shift+A', openAsk); } catch {} }
 }
 ipcMain.on('quick:close', () => { if (quick) quick.hide(); });
+
+// ---- Aster from anywhere, tray peek, search, morning briefing ----
+async function askAster(message, history) {
+  if (!sess) return { error: 'signin' };
+  try {
+    const r = await net.fetch(API + '/api/aster/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: 'Bearer ' + sess.token }, body: JSON.stringify({ message: String(message).slice(0, 4000), save: false, history: history || [] }) });
+    let j = null; try { j = await r.json(); } catch {}
+    if (r.status === 401) { endSession('Your session ended. Sign in again.'); return { error: 'signin' }; }
+    if (r.ok && j && j.reply) return { ok: true, text: String(j.reply), chat: j.chat_id || '' };
+    return { error: (j && j.error) || 'Aster could not answer just now.' };
+  } catch { return { code: 'net' }; }
+}
+ipcMain.handle('aster:ask', (_e, msg, history) => askAster(msg, history));
+
+let ask = null, peek = null;
+function floatWin(file, w, h, extra) {
+  const wnd = new BrowserWindow({
+    width: w, height: h, show: false, frame: false, resizable: false, alwaysOnTop: true, skipTaskbar: true, fullscreenable: false,
+    backgroundColor: BG(), webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false }, ...(extra || {})
+  });
+  wnd.loadFile(path.join(__dirname, file));
+  wnd.on('blur', () => { if (!wnd.isDestroyed() && wnd.isVisible()) wnd.hide(); });
+  return wnd;
+}
+function openAsk() {
+  if (!settings.setupDone) return;
+  if (!ask || ask.isDestroyed()) ask = floatWin('ask.html', 620, 120);
+  if (ask.isVisible()) { ask.hide(); return; }
+  ask.setSize(620, 120); ask.center(); ask.show(); ask.focus(); ask.webContents.send('ask:show');
+}
+ipcMain.on('ask:resize', (_e, h) => { if (ask && !ask.isDestroyed()) { const b = ask.getBounds(); ask.setBounds({ x: b.x, y: b.y, width: b.width, height: Math.max(120, Math.min(560, Math.round(h))) }); } });
+ipcMain.on('ask:close', () => { if (ask && !ask.isDestroyed()) ask.hide(); });
+ipcMain.on('ask:continue', () => { if (ask && !ask.isDestroyed()) ask.hide(); showMain(); show('aster'); });
+function togglePeek() {
+  if (!settings.setupDone) return;
+  if (!peek || peek.isDestroyed()) peek = floatWin('peek.html', 340, 440);
+  if (peek.isVisible()) { peek.hide(); return; }
+  const { screen } = require('electron');
+  let x, y;
+  try {
+    const tb = tray && tray.getBounds();
+    const disp = screen.getDisplayMatching(tb && tb.width ? tb : screen.getPrimaryDisplay().bounds).workArea;
+    if (tb && tb.width) { x = Math.round(tb.x + tb.width / 2 - 170); y = tb.y > disp.y + disp.height / 2 ? Math.round(tb.y - 440 - 6) : Math.round(tb.y + tb.height + 6); }
+    else { x = disp.x + disp.width - 350; y = disp.y + 10; }
+    x = Math.max(disp.x + 6, Math.min(x, disp.x + disp.width - 346)); y = Math.max(disp.y + 6, Math.min(y, disp.y + disp.height - 446));
+  } catch { x = 40; y = 40; }
+  peek.setPosition(x, y); peek.show(); peek.focus(); peek.webContents.send('peek:show');
+}
+ipcMain.on('peek:close', () => { if (peek && !peek.isDestroyed()) peek.hide(); });
+ipcMain.on('peek:open', (_e, k) => { if (peek && !peek.isDestroyed()) peek.hide(); showMain(); show(k || 'home'); });
+
+let searchCache = { at: 0, mail: [], tasks: [], events: [] };
+ipcMain.handle('search:all', async (_e, q) => {
+  if (!sess) return { mail: [], tasks: [], events: [] };
+  q = String(q || '').trim().toLowerCase(); if (q.length < 2) return { mail: [], tasks: [], events: [] };
+  if (Date.now() - searchCache.at > 60000) {
+    const next = { at: Date.now(), mail: searchCache.mail, tasks: searchCache.tasks, events: searchCache.events };
+    try { const a = await api('/api/messages', { token: sess.token }); if (a.status === 200 && Array.isArray(a.j)) next.mail = a.j.map((x) => ({ id: x.id, from: fromName(x.from_address), subject: x.subject || '', text: String(x.body || '').slice(0, 600), at: x.created_at })); } catch {}
+    try { const d = await api('/api/dusk/all', { token: sess.token }); if (d.status === 200 && d.j) { next.tasks = (d.j.tasks || []).map((x) => ({ id: x.id, title: x.title || '', done: !!x.done, due: x.due || '' })); next.events = (d.j.events || []).map((x) => ({ id: x.id, title: x.title || '', date: x.date || x.start_date || '', start: x.start || '' })); } } catch {}
+    searchCache = next;
+  }
+  const has = (s) => String(s || '').toLowerCase().includes(q);
+  return {
+    mail: searchCache.mail.filter((x) => has(x.subject) || has(x.from) || has(x.text)).slice(0, 6).map(({ text, ...r }) => r),
+    tasks: searchCache.tasks.filter((x) => has(x.title)).slice(0, 5),
+    events: searchCache.events.filter((x) => has(x.title)).slice(0, 5)
+  };
+});
+
+ipcMain.handle('brief:get', async (_e, force) => {
+  if (!sess || settings.brief === false) return null;
+  const day = isoDay(new Date());
+  if (!force && settings.briefCache && settings.briefCache.day === day && settings.briefCache.user === (sess.user && sess.user.username)) return { text: settings.briefCache.text, at: settings.briefCache.at };
+  try {
+    const a = await api('/api/messages', { token: sess.token });
+    const d = await api('/api/dusk/all', { token: sess.token });
+    if (a.status !== 200 || d.status !== 200) return { error: true };
+    const unread = (Array.isArray(a.j) ? a.j : []).filter((x) => !x.read).slice(0, 12).map((x) => '- ' + fromName(x.from_address) + ': ' + (x.subject || '(no subject)'));
+    const ev = (d.j.events || []).filter((e) => occursOn(e, day)).sort((x, y) => String(x.start || '').localeCompare(String(y.start || ''))).map((e) => '- ' + (e.start || 'all day') + ' ' + (e.title || ''));
+    const tk = (d.j.tasks || []).filter((t) => !t.done && (!t.due || t.due <= day)).slice(0, 10).map((t) => '- ' + t.title + (t.due && t.due < day ? ' (overdue)' : ''));
+    const prompt = 'Write a short morning briefing for me, 4 to 6 lines, plain text, no headings, friendly. Say what is on my calendar today, what tasks need attention, and which unread emails look worth opening first. Do not invent anything. If a section is empty, skip it.\n\nToday: ' + day + '\nEvents:\n' + (ev.join('\n') || '(none)') + '\nTasks:\n' + (tk.join('\n') || '(none)') + '\nUnread email:\n' + (unread.join('\n') || '(none)');
+    const r = await askAster(prompt, []);
+    if (r && r.ok) { settings.briefCache = { day, user: sess.user && sess.user.username, text: r.text, at: Date.now() }; writeSettings(); return { text: r.text, at: settings.briefCache.at }; }
+    return { error: true };
+  } catch { return { error: true }; }
+});
 function whatsNew(force) {
   const v = app.getVersion();
   if (force) return send('whatsnew', v);
@@ -449,12 +540,12 @@ function createWindow() {
 }
 
 ipcMain.on('theme:get', (e) => { e.returnValue = ['light', 'dark'].includes(settings.theme) ? settings.theme : ''; });
-const publicSettings = () => ({ theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
+const publicSettings = () => ({ theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
 ipcMain.handle('settings:get', () => publicSettings());
 ipcMain.handle('settings:set', (_e, p) => {
   p = p || {};
   const bool = (k) => { if (typeof p[k] === 'boolean') settings[k] = p[k]; };
-  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound', 'background', 'quickAdd'].forEach(bool);
+  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound', 'background', 'quickAdd', 'askKey', 'brief', 'focusMute'].forEach(bool);
   if (typeof p.launchAtLogin === 'boolean') { settings.launchAtLogin = p.launchAtLogin; applyLogin(); }
   if (['system', 'light', 'dark'].includes(p.theme)) { settings.theme = p.theme; nativeTheme.themeSource = p.theme; paintChrome(); }
   if (['en', 'es', 'fr', 'de', 'pt', 'it', 'ru', 'tr', 'sv', 'ja', 'ko', 'zh', 'hi', 'ar', 'fa', 'sw', 'ary'].includes(p.lang)) settings.lang = p.lang;
@@ -468,7 +559,7 @@ ipcMain.handle('settings:set', (_e, p) => {
     if (!p.apps[k] && views[k]) { try { win.contentView.removeChildView(views[k]); views[k].webContents.close(); } catch {} delete views[k]; if (current === k) showHome(); }
     else if (p.apps[k] && sess && !views[k]) views[k] = makeView(k);
   }
-  writeSettings(); if (p.quickAdd !== undefined) applyQuick();
+  writeSettings(); if (p.quickAdd !== undefined || p.askKey !== undefined) applyQuick();
   if (appsChanged) { buildMenu(); send('apps-changed'); }
   if (p.badge !== undefined) setBadge(lastUnread);
   return publicSettings();
@@ -512,15 +603,24 @@ function buildMenu() {
 
 // ---- desktop notifications: new mail and event reminders, checked while Lareon is running ----
 const seen = { mailTop: null, unread: null, events: new Set() };
-function notify(title, body, key) {
+function notify(title, body, key, snoozable) {
   try {
     if (!Notification.isSupported() || Date.now() < (settings.snoozeUntil || 0)) return;
-    const n = new Notification({ title, body, silent: settings.notifSound === false });
+    const o = { title, body, silent: settings.notifSound === false };
+    if (snoozable && isMac) o.actions = [{ type: 'button', text: 'Snooze 10 min' }];
+    const n = new Notification(o);
     n.on('click', () => { showMain(); if (key) show(key); });
+    n.on('action', () => { setTimeout(() => notify(title, body, key, false), 10 * 60 * 1000); });
     n.show();
   } catch {}
 }
-let lastUnread = 0;
+let lastUnread = 0, focusUntil = 0, heldMail = 0;
+const focusing = () => settings.focusMute !== false && Date.now() < focusUntil;
+ipcMain.on('focus:state', (_e, until) => {
+  if (until && until > Date.now()) { focusUntil = until; return; }
+  const n = heldMail; focusUntil = 0; heldMail = 0;
+  if (n > 0) notify('Fledge', n === 1 ? '1 new message came in while you were focused.' : n + ' new messages came in while you were focused.', 'fledge');
+});
 function setBadge(n) {
   lastUnread = n;
   try { app.setBadgeCount(settings.badge === false ? 0 : n); } catch {}
@@ -542,7 +642,8 @@ async function pollNotifications() {
           const fresh = rec.filter((m) => m.at > seen.mailTop);
           const watching = win && win.isFocused() && current === 'fledge';
           if (settings.notifications !== false && fresh.length && unread >= (seen.unread || 0) && !watching) {
-            if (fresh.length === 1) notify(fresh[0].from || 'Fledge', fresh[0].subject || 'New message', 'fledge');
+            if (focusing()) heldMail += fresh.length;
+            else if (fresh.length === 1) notify(fresh[0].from || 'Fledge', fresh[0].subject || 'New message', 'fledge');
             else notify('Fledge', fresh.length + ' new messages', 'fledge');
           }
           seen.mailTop = Math.max(seen.mailTop, top); seen.unread = unread;
@@ -558,7 +659,7 @@ async function pollNotifications() {
         for (const e of (d.j.events || [])) {
           if (!e.start || !occursOn(e, day)) continue;
           const p = String(e.start).split(':'), at = (+p[0]) * 60 + (+p[1] || 0), left = at - mins, key = (e.id || e.title) + '|' + day;
-          if (left >= 0 && left <= Math.max(0, Math.min(60, +settings.remindLead || 0)) && !seen.events.has(key)) { seen.events.add(key); notify(e.title || 'Dusk', left === 0 ? 'Starting now' : 'Starts in ' + left + ' min', 'dusk'); }
+          if (left >= 0 && left <= Math.max(0, Math.min(60, +settings.remindLead || 0)) && !seen.events.has(key)) { seen.events.add(key); notify(e.title || 'Dusk', left === 0 ? 'Starting now' : 'Starts in ' + left + ' min', 'dusk', true); }
         }
         if (seen.events.size > 400) seen.events.clear();
       }

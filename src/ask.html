@@ -1,0 +1,36 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lareon</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+<style>
+html,body{height:100%;overflow:hidden}body{background:var(--solid);display:flex;flex-direction:column;padding:0 18px;-webkit-app-region:drag}
+.q{display:flex;align-items:center;gap:12px;min-height:84px;-webkit-app-region:no-drag}
+.q img{width:30px;height:30px;flex:none}
+input{flex:1;min-width:0;font:inherit;font-size:19px;color:var(--fg);background:none;border:0;outline:0;padding:10px 0;-webkit-user-select:text;user-select:text}
+input::placeholder{color:var(--fg3)}input:focus{box-shadow:none;border:0;outline:0}
+#a{flex:1;overflow:auto;padding:14px 2px 6px;border-top:1px solid var(--line);white-space:pre-wrap;line-height:1.55;font-size:15px;-webkit-user-select:text;user-select:text;-webkit-app-region:no-drag}
+#a[hidden]{display:none}#a.dim{color:var(--fg3)}
+.f{display:flex;justify-content:flex-end;padding:8px 0 12px;-webkit-app-region:no-drag}.f[hidden]{display:none}
+</style></head><body>
+<div class="q"><img src="../build/art/aster-logo.svg" alt=""><input id="i" maxlength="1000" autocomplete="off" data-ip="ask.ph"></div>
+<div id="a" hidden></div>
+<div class="f" id="f" hidden><button class="btn pri" id="go" data-i="ask.open" style="border:0;border-radius:9px;padding:7px 14px;font-size:13px;color:#fff;background:var(--grad)"></button></div>
+<script src="i18n-more.js"></script><script src="i18n.js"></script>
+<script>
+var $=function(i){return document.getElementById(i)},t=function(k,v){return i18n.t(k,v)},busy=false;
+lareon.info().then(function(r){i18n.set(r.lang||i18n.guess(r.locale),true)});
+function fit(){lareon.askResize($('a').hidden?120:Math.min(560,84+$('a').scrollHeight+70))}
+function reset(){$('i').value='';$('a').hidden=true;$('f').hidden=true;busy=false;lareon.askResize(120);$('i').focus()}
+lareon.onShowAsk(reset);
+$('go').onclick=function(){lareon.askContinue()};
+document.addEventListener('keydown',function(e){
+ if(e.key==='Escape'){lareon.askClose();return}
+ if(e.key!=='Enter'||busy)return;var v=$('i').value.trim();if(!v)return;busy=true;
+ $('a').hidden=false;$('a').className='dim';$('a').textContent=t('ask.thinking');fit();
+ lareon.askAster(v,[]).then(function(r){
+  busy=false;
+  if(r&&r.ok){$('a').className='';$('a').textContent=r.text;$('f').hidden=false}
+  else{$('a').className='dim';$('a').textContent=r&&r.code==='net'?t('err.net'):r&&r.error==='signin'?t('sess'):(r&&r.error)||t('net.fail');$('f').hidden=true}
+  fit();
+ });
+});
+setTimeout(function(){$('i').focus()},50);
+</script></body></html>

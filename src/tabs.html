@@ -127,6 +127,10 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
 .wn h2{font-size:26px;letter-spacing:-.03em;font-weight:600}.wn .vv{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);margin:4px 0 18px}
 .wn li{list-style:none;padding:11px 0;border-top:1px solid var(--line)}.wn li b{display:block;font-weight:600}.wn li span{color:var(--fg2);font-size:14px}
 .wn .btn{margin-top:18px;width:100%;padding:11px}
+.bd{margin-left:7px;font:500 11px var(--mono);background:var(--orange);color:#fff;border-radius:999px;padding:1px 6px}
+.mrow{position:relative;cursor:pointer}.mtb{position:absolute;right:6px;bottom:6px;opacity:0;font-size:12px;border:1px solid var(--line2);background:var(--solid);color:var(--fg);border-radius:999px;padding:2px 10px;transition:opacity .2s}.mrow:hover .mtb,.mtb:focus{opacity:1}
+.c-brief{grid-column:span 12}.c-brief p{white-space:pre-wrap;line-height:1.6;color:var(--fg)}.c-brief .empty{padding:0}
+#pl .pg{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);padding:8px 12px 2px;cursor:default}
 </style></head><body>
 <div class="bar">
  <svg class="brand" viewBox="0 0 150 150" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#c84bff"/></linearGradient></defs><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#g)"/></svg>
@@ -160,6 +164,7 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
     <div class="big" id="unread">&mdash;</div>
     <div class="mail" id="mail" style="margin-top:12px"><div class="sk"></div><div class="sk"></div></div>
    </section>
+   <section class="card c-brief rise" id="briefc" style="--i:3" hidden><h2><span data-i="brief.t"></span> <button class="link" id="briefr" data-i="brief.refresh"></button></h2><div id="briefb"><div class="sk"></div><div class="sk"></div></div></section>
    <section class="card c-focus rise" style="--i:3"><h2 data-i="focus.t"></h2><div class="fo"><div class="big" id="fclock">25:00</div><div class="seg" id="fseg"></div><button class="btn pri" id="fgo" data-i="focus.start"></button><p id="fhint" data-i="focus.idle"></p></div><div class="fbar"><i id="fbar"></i></div></section>
    <section class="card c-apps rise" style="--i:3"><h2 data-i="apps"></h2><div class="apps" id="grid"></div></section>
    <section class="card c-acct rise" style="--i:4"><div class="acct-row">
@@ -191,6 +196,13 @@ function tabs() {
   var n = $('n'); [].slice.call(n.querySelectorAll('.tab')).forEach(function (e) { e.remove(); });
   function add(k, label) { var b = document.createElement('button'); b.className = 'tab'; b.id = 't-' + k; b.setAttribute('role', 'tab'); b.textContent = label; b.onclick = function () { lareon.show(k); }; n.appendChild(b); }
   add('home', t('home')); Object.keys(APPS).forEach(function (k) { add(k, APPS[k].name); });
+  badges();
+}
+function badges() {
+  [].forEach.call(document.querySelectorAll('.bd'), function (e) { e.remove(); });
+  if (!data) return;
+  function put(k, n) { var b = $('t-' + k); if (b && n > 0) { var s = document.createElement('span'); s.className = 'bd'; s.textContent = n > 99 ? '99+' : n; b.appendChild(s); } }
+  put('fledge', data.summary ? data.summary.unread || 0 : 0); put('dusk', (data.tasks || []).length + (data.events || []).length);
   moveInd();
 }
 function moveInd() {
@@ -261,11 +273,23 @@ function paint() {
     $('unread').innerHTML = s.unread + '<small>' + esc(t(s.unread === 1 ? 'unread1' : 'unreadn')) + '</small>';
     var m = $('mail'); m.innerHTML = '';
     if (!(s.recent || []).length) m.innerHTML = '<div class="empty">' + esc(t('inbox.none')) + '</div>';
-    (s.recent || []).forEach(function (x, i) { var b = document.createElement('button'); b.className = 'mrow'; b.style.animationDelay = (i * 50) + 'ms'; b.innerHTML = '<b>' + esc(sender(x.from_address)) + '</b><time>' + esc(ago(x.created_at)) + '</time><span>' + esc(x.subject || t('nosubj')) + '</span>'; b.onclick = function () { lareon.show('fledge'); }; m.appendChild(b); });
+    (s.recent || []).forEach(function (x, i) { var b = document.createElement('div'); b.className = 'mrow'; b.setAttribute('role', 'button'); b.tabIndex = 0; b.style.animationDelay = (i * 50) + 'ms'; b.innerHTML = '<b>' + esc(sender(x.from_address)) + '</b><time>' + esc(ago(x.created_at)) + '</time><span>' + esc(x.subject || t('nosubj')) + '</span><button class="mtb">＋ ' + esc(t('tasks')) + '</button>'; b.onclick = function () { lareon.show('fledge'); }; b.querySelector('.mtb').onclick = function (e) { e.stopPropagation(); lareon.addTask((x.subject || t('nosubj')).slice(0, 190)).then(function (ok) { toast(ok === 'queued' ? t('tk.queued') : ok ? t('qa.added') : t('tk.fail'), !ok); if (ok === true) load(); }); }; m.appendChild(b); });
     var used = s.used || 0, txt = used >= 1073741824 ? (used / 1073741824).toFixed(1) + ' GB' : (used / 1048576).toFixed(used < 10485760 ? 1 : 0) + ' MB';
     $('store').textContent = t('store', { s: txt }); $('bar').style.width = Math.max(2, s.percent || 0) + '%';
   }
+  badges();
 }
+var briefDone = false;
+function loadBrief(force) {
+  var c = $('briefc'), b = $('briefb');
+  lareon.brief(force).then(function (r) {
+    if (!r) { c.hidden = true; return; }
+    c.hidden = false;
+    if (r.error) { b.innerHTML = '<div class="empty">' + esc(t('brief.fail')) + '</div>'; return; }
+    b.innerHTML = '<p>' + esc(r.text) + '</p>';
+  }).catch(function () { c.hidden = true; });
+}
+$('briefr').onclick = function () { $('briefb').innerHTML = '<div class="sk"></div><div class="sk"></div>'; loadBrief(true); };
 function load(manual) {
   if (!user) return;
   function fail() {
@@ -277,6 +301,7 @@ function load(manual) {
     if (!d) return;
     if (!d.ok) return fail();
     data = d; stamp = Date.now(); stash(d); showErr(false); paint(); if (manual) toast('✓');
+    if (!briefDone) { briefDone = true; loadBrief(false); }
   }).catch(fail);
 }
 $('addf').onsubmit = function (e) {
@@ -329,6 +354,7 @@ function renderSet() {
     row(t('set.mail'), t('set.mail.d'), sw(S.notifications, function (v) { put({ notifications: v }); })),
     row(t('set.ev'), t('set.ev.d'), sw(S.remindEvents, function (v) { put({ remindEvents: v }).then(renderSet); })),
     S.remindEvents ? row(t('set.lead'), '', pick([0, 1, 5, 10, 15, 30].map(function (n) { return [n, n ? t('lead.n', { n: n }) : t('lead.0')]; }), S.remindLead, function (v) { put({ remindLead: +v }); })) : null,
+    row(t('set.fmute'), t('set.fmute.d'), sw(S.focusMute, function (v) { put({ focusMute: v }); })),
     row(t('set.sound'), '', sw(S.notifSound, function (v) { put({ notifSound: v }); if (v) lareon.notify('Lareon', t('set.notif')); })),
     row(t('set.pause'), paused ? t('set.paused', { t: new Date(S.snoozeUntil).toLocaleString(i18n.lang, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) }) : '', pick([['off', t('pause.off')], ['1h', t('pause.1h')], ['tom', t('pause.tom')]], paused ? (S.snoozeUntil - Date.now() < 7200000 ? '1h' : 'tom') : 'off', function (v) {
       var at = 0; if (v === '1h') at = Date.now() + 3600000; else if (v === 'tom') { var d = new Date(); d.setDate(d.getDate() + 1); d.setHours(8, 0, 0, 0); at = d.getTime(); }
@@ -341,7 +367,9 @@ function renderSet() {
     row(t('set.start'), '', pick(startOpts, S.startApp, function (v) { put({ startApp: v }); })),
     row(t('set.badge'), '', sw(S.badge, function (v) { put({ badge: v }); })),
     S.platform !== 'darwin' ? row(t('set.bg'), t('set.bg.d'), sw(S.background, function (v) { put({ background: v }); })) : null,
-    row(t('set.qk'), t('set.qk.d', { k: mod === 'Cmd' ? '⌘⇧Space' : 'Ctrl+Shift+Space' }), sw(S.quickAdd, function (v) { put({ quickAdd: v }); }))
+    row(t('set.qk'), t('set.qk.d', { k: mod === 'Cmd' ? '⌘⇧Space' : 'Ctrl+Shift+Space' }), sw(S.quickAdd, function (v) { put({ quickAdd: v }); })),
+    row(t('set.ask'), t('set.ask.d', { k: mod === 'Cmd' ? '⌘⇧A' : 'Ctrl+Shift+A' }), sw(S.askKey, function (v) { put({ askKey: v }); })),
+    row(t('set.brief'), t('set.brief.d'), sw(S.brief, function (v) { put({ brief: v }).then(function () { briefDone = false; if (!v) $('briefc').hidden = true; else loadBrief(false); }); }))
   ].filter(Boolean)));
   var names = { dusk: 'Dusk', fledge: 'Fledge', aster: 'Aster' };
   b.appendChild(group(t('set.apps'), Object.keys(names).map(function (k) { return row(names[k], k === 'dusk' ? t('d.dusk') : k === 'fledge' ? t('d.fledge') : t('d.aster'), sw(S.apps[k] !== false, function (v) { put({ apps: (function () { var o = {}; o[k] = v; return o; })() }).then(function () { return Promise.all([lareon.apps()]); }).then(function (r) { APPS = r[0]; tabs(); grid(); renderSet(); }); })); })));
@@ -369,6 +397,14 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$
 
 // ---- what's new ----
 var WN = {
+  '1.0.9': [
+    ['Ask Aster from anywhere', 'Press Ctrl+Shift+A (⌘⇧A on Mac) to ask Aster a question without opening the app.'],
+    ['Your day, from Aster', 'Home now opens with a short morning briefing of your mail, events and tasks. You can turn it off in Settings.'],
+    ['Search everything', 'Jump to… (Ctrl or ⌘ + K) now finds mail, tasks and events as you type.'],
+    ['Today at a glance', 'Click the tray or menu bar icon for unread mail, events and tasks.'],
+    ['Mail to task', 'Hover an email on Home and choose + Tasks to add it to Dusk.'],
+    ['Quieter focus', 'Mail alerts wait while a Focus session runs, then you get a summary. Counts now show on the Fledge and Dusk tabs.']
+  ],
   '1.0.7': [
     ['Clearer Mac updates', 'If an update can’t install, Lareon now tells you why, and finds the right download by itself.']
   ],
@@ -399,15 +435,15 @@ function fpaint() {
   [].forEach.call($('fseg').children, function (b) { b.setAttribute('aria-checked', +b.getAttribute('data-m') === fmin ? 'true' : 'false'); b.disabled = !!fend; });
   document.title = fend ? $('fclock').textContent + ' · Lareon' : 'Lareon';
 }
-function fstop(done) { fend = 0; clearInterval(ftick); try { localStorage.removeItem(FK); } catch (e) {} fpaint(); if (done) { lareon.notify(t('focus.done'), t('focus.donebody')); toast(t('focus.done')); } }
+function fstop(done) { fend = 0; lareon.focusState(0); clearInterval(ftick); try { localStorage.removeItem(FK); } catch (e) {} fpaint(); if (done) { lareon.notify(t('focus.done'), t('focus.donebody')); toast(t('focus.done')); } }
 function frun() {
   clearInterval(ftick);
   ftick = setInterval(function () { if (fend && Date.now() >= fend) fstop(true); else fpaint(); }, 1000); fpaint();
 }
-function fstart(m) { if (m) fmin = m; fend = Date.now() + fmin * 60000; try { localStorage.setItem(FK, JSON.stringify({ end: fend, min: fmin })); } catch (e) {} frun(); }
+function fstart(m) { if (m) fmin = m; fend = Date.now() + fmin * 60000; lareon.focusState(fend); try { localStorage.setItem(FK, JSON.stringify({ end: fend, min: fmin })); } catch (e) {} frun(); }
 function fseg() { var d = $('fseg'); d.innerHTML = ''; [15, 25, 50].forEach(function (m) { var b = mk('button', '', esc(t('focus.min', { n: m }))); b.setAttribute('data-m', m); b.setAttribute('role', 'radio'); b.onclick = function () { fmin = m; fpaint(); }; d.appendChild(b); }); fpaint(); }
 $('fgo').onclick = function () { fend ? fstop(false) : fstart(); };
-fseg(); if (fend) frun();
+fseg(); if (fend) { frun(); lareon.focusState(fend); }
 
 // jump to anything (Cmd/Ctrl + K)
 var items = [], sel = 0;
@@ -418,15 +454,31 @@ function palItems() {
   a.push({ n: t('lang'), f: function () { i18n.menu($('lg')); } });
   return a;
 }
+var found = [];
 function palRender() {
-  var q = $('pi').value.toLowerCase(); items = palItems().filter(function (x) { return x.n.toLowerCase().indexOf(q) >= 0; }); sel = Math.min(sel, Math.max(0, items.length - 1));
-  $('pl').innerHTML = items.map(function (x, i) { return '<li data-i="' + i + '" aria-selected="' + (i === sel) + '">' + esc(x.n) + '</li>'; }).join('') || '<li>' + esc(t('jump.none')) + '</li>';
+  var q = $('pi').value.toLowerCase(); items = palItems().filter(function (x) { return x.n.toLowerCase().indexOf(q) >= 0; }).concat(q.length > 1 ? found : []); sel = Math.min(sel, Math.max(0, items.length - 1));
+  var lastG = '';
+  $('pl').innerHTML = items.map(function (x, i) { var g = ''; if (x.g && x.g !== lastG) { lastG = x.g; g = '<li class="pg">' + esc(t(x.g)) + '</li>'; } return g + '<li data-i="' + i + '" aria-selected="' + (i === sel) + '">' + esc(x.n) + (x.s ? ' <span style="color:var(--fg3);font-size:13px">' + esc(x.s) + '</span>' : '') + '</li>'; }).join('') || '<li>' + esc(t('jump.none')) + '</li>';
   [].forEach.call($('pl').querySelectorAll('li[data-i]'), function (li) { li.onclick = function () { run(+li.getAttribute('data-i')); }; });
 }
 function run(i) { var x = items[i]; if (!x) return; palClose(); if (x.f) x.f(); else lareon.show(x.k); }
 function palOpen() { if (!$('pal').hidden) return; $('pal').hidden = false; $('pi').value = ''; sel = 0; palRender(); setTimeout(function () { $('pi').focus(); }, 20); }
 function palClose() { $('pal').hidden = true; }
-$('pi').oninput = function () { sel = 0; palRender(); };
+var sTimer = 0;
+$('pi').oninput = function () {
+  sel = 0; found = []; palRender(); clearTimeout(sTimer);
+  var q = $('pi').value.trim(); if (q.length < 2 || !user) return;
+  sTimer = setTimeout(function () {
+    lareon.searchAll(q).then(function (r) {
+      if ($('pi').value.trim() !== q) return;
+      found = [];
+      r.mail.forEach(function (x) { found.push({ g: 'srch.mail', n: x.subject || t('nosubj'), s: x.from, k: 'fledge' }); });
+      r.tasks.forEach(function (x) { found.push({ g: 'srch.task', n: x.title, s: x.due || '', k: 'dusk' }); });
+      r.events.forEach(function (x) { found.push({ g: 'srch.event', n: x.title, s: x.date || '', k: 'dusk' }); });
+      palRender();
+    }).catch(function () {});
+  }, 220);
+};
 $('pal').onclick = function (e) { if (e.target === $('pal')) palClose(); };
 $('kb').onclick = palOpen;
 document.addEventListener('keydown', function (e) {
@@ -443,7 +495,7 @@ lareon.onShown(function (k) { cur = k; closeSet(); render(); if (k === 'home' &&
 lareon.onLoading(function (v) { loading[v.key] = v.on; render(); });
 lareon.onPalette(palOpen);
 lareon.onNote(function (m) { note(m); });
-lareon.onSession(function (u) { user = u; data = null; showErr(false); if (!u) { try { localStorage.removeItem(SKEY); } catch (e) {} } if (u) { note(''); render(); load(); } else render(); });
+lareon.onSession(function (u) { user = u; data = null; briefDone = false; showErr(false); if (!u) { try { localStorage.removeItem(SKEY); } catch (e) {} } if (u) { note(''); render(); load(); } else render(); });
 setInterval(function () { if (cur === 'home' && user) load(); }, 90000);
 
 function relabel() { i18n.apply(); setFlag(); [].forEach.call(document.querySelectorAll('[data-ia]'), function (e) { var v = t(e.getAttribute('data-ia')); e.setAttribute('aria-label', v); e.title = v; }); fseg(); renderSet(); if (!$('lerr').hidden) showErr(true); tabs(); grid(); setAcct(); if (user) { greet(); paint(); } if ($('pal') && !$('pal').hidden) palRender(); }

@@ -39,7 +39,18 @@ contextBridge.exposeInMainWorld('lareon', {
   onShowQuick: (cb) => ipcRenderer.on('quick:show', () => cb()),
   quickClose: () => ipcRenderer.send('quick:close'),
   onWhatsNew: (cb) => ipcRenderer.on('whatsnew', (_e, v) => cb(v)),
-  seenWhatsNew: () => ipcRenderer.send('wn:seen')
+  seenWhatsNew: () => ipcRenderer.send('wn:seen'),
+  focusState: (until) => ipcRenderer.send('focus:state', until || 0),
+  searchAll: (q) => ipcRenderer.invoke('search:all', q),
+  brief: (force) => ipcRenderer.invoke('brief:get', !!force),
+  askAster: (m, h) => ipcRenderer.invoke('aster:ask', m, h),
+  onShowAsk: (cb) => ipcRenderer.on('ask:show', () => cb()),
+  askResize: (h) => ipcRenderer.send('ask:resize', h),
+  askClose: () => ipcRenderer.send('ask:close'),
+  askContinue: () => ipcRenderer.send('ask:continue'),
+  onShowPeek: (cb) => ipcRenderer.on('peek:show', () => cb()),
+  peekClose: () => ipcRenderer.send('peek:close'),
+  peekOpen: (k) => ipcRenderer.send('peek:open', k)
 });
 contextBridge.exposeInMainWorld('setup', {
   state: () => ipcRenderer.invoke('setup:state'),

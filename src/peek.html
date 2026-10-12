@@ -1,0 +1,40 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lareon</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+<style>
+html,body{height:100%;overflow:hidden}body{background:var(--solid);padding:14px 14px 10px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--line2)}
+.hd{display:flex;align-items:center;justify-content:space-between}.hd b{font-size:15px;font-weight:600}
+.sec{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);margin:6px 0 4px}
+.row{display:flex;gap:10px;align-items:center;padding:6px 8px;border-radius:8px;background:var(--panel2);margin-bottom:5px;font-size:14px}
+.row em{font:500 12px var(--mono);font-style:normal;color:var(--fg3);min-width:48px}.row span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.big{font-size:30px;font-weight:600;letter-spacing:-.03em}.big small{font-size:13px;font-weight:400;color:var(--fg2);margin-left:6px;letter-spacing:0}
+#c{flex:1;overflow:auto}.empty{color:var(--fg3);font-size:14px;padding:4px 2px}
+.btn{border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:8px;font-size:13px;color:var(--fg);width:100%}.btn:hover{background:var(--hover)}
+a,button{cursor:pointer}.link{background:none;border:0;color:var(--orange);font-size:13px;padding:0}
+</style></head><body>
+<div class="hd"><b>Lareon</b><button class="link" id="mail" data-i="open.fledge"></button></div>
+<div id="c"><div class="empty">…</div></div>
+<button class="btn" id="open" data-i="peek.open"></button>
+<script src="i18n-more.js"></script><script src="i18n.js"></script>
+<script>
+var $=function(i){return document.getElementById(i)},t=function(k,v){return i18n.t(k,v)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function fmtT(v){if(!v)return t('allday');var p=v.split(':');return new Date(2000,0,1,+p[0],+p[1]||0).toLocaleTimeString(i18n.lang,{hour:'numeric',minute:'2-digit'})}
+function load(){
+ lareon.session().then(function(u){
+  if(!u){$('c').innerHTML='<div class="empty">'+esc(t('signin'))+'</div>';return}
+  lareon.homeData().then(function(d){
+   if(!d||!d.ok){$('c').innerHTML='<div class="empty">'+esc(t('net.fail'))+'</div>';return}
+   var s=d.summary||{unread:0},h='<div class="big">'+(s.unread||0)+'<small>'+esc(t((s.unread===1)?'unread1':'unreadn'))+'</small></div>';
+   h+='<div class="sec">'+esc(t('events'))+'</div>';
+   h+=d.events.length?d.events.slice(0,4).map(function(e){return'<div class="row"><em>'+esc(fmtT(e.start))+'</em><span>'+esc(e.title)+'</span></div>'}).join(''):'<div class="empty">'+esc(t('ev.none'))+'</div>';
+   h+='<div class="sec">'+esc(t('tasks'))+'</div>';
+   h+=d.tasks.length?d.tasks.slice(0,5).map(function(k){return'<div class="row"><span>'+esc(k.title)+'</span></div>'}).join(''):'<div class="empty">'+esc(t('tk.none'))+'</div>';
+   $('c').innerHTML=h;
+  }).catch(function(){$('c').innerHTML='<div class="empty">'+esc(t('net.fail'))+'</div>'});
+ });
+}
+lareon.info().then(function(r){i18n.set(r.lang||i18n.guess(r.locale),true);load()});
+lareon.onShowPeek(load);
+$('open').onclick=function(){lareon.peekOpen('home')};$('mail').onclick=function(){lareon.peekOpen('fledge')};
+document.addEventListener('keydown',function(e){if(e.key==='Escape')lareon.peekClose()});
+</script></body></html>
