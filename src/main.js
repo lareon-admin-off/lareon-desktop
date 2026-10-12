@@ -571,11 +571,14 @@ try { updater = require('electron-updater').autoUpdater; } catch { updater = nul
 const REPO = 'lareon-admin-off/lareon-desktop';
 const isNewer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
 // Mac: the app is not signed, so the normal updater cannot swap it. Lareon downloads the new copy itself and replaces the old one.
-let macBusy = false;
+let macBusy = false, macZip = null;
 async function macLatest() {
   const r = await net.fetch('https://api.github.com/repos/' + REPO + '/releases/latest', { headers: { Accept: 'application/vnd.github+json' } });
   if (!r.ok) return null;
   const j = await r.json(); const v = String(j.tag_name || '').replace(/^v\.?/, '');
+  const zips = (j.assets || []).filter((a) => /\.zip$/i.test(a.name) && !/blockmap/i.test(a.name));
+  const z = zips.find((a) => /^lareon\.zip$/i.test(a.name)) || zips.find((a) => /mac|darwin|arm64/i.test(a.name)) || zips[0];
+  macZip = z ? z.browser_download_url : null;
   return /^\d+\.\d+\.\d+$/.test(v) ? v : null;
 }
 async function macInstall(version) {
@@ -584,20 +587,22 @@ async function macInstall(version) {
     const os = require('os'), cp = require('child_process');
     const work = fs.mkdtempSync(path.join(os.tmpdir(), 'lareon-up-'));
     const zip = path.join(work, 'Lareon.zip');
-    const r = await net.fetch('https://github.com/' + REPO + '/releases/download/v' + version + '/Lareon.zip');
-    if (!r.ok) throw new Error('download');
+    const r = await net.fetch(macZip || ('https://github.com/' + REPO + '/releases/download/v' + version + '/Lareon.zip'), { redirect: 'follow' });
+    if (!r.ok) throw new Error('download failed (' + r.status + ')');
     fs.writeFileSync(zip, Buffer.from(await r.arrayBuffer()));
     const out = path.join(work, 'new'); fs.mkdirSync(out);
     cp.execFileSync('/usr/bin/ditto', ['-x', '-k', zip, out]);
-    const fresh = path.join(out, 'Lareon.app'); if (!fs.existsSync(fresh)) throw new Error('unpack');
+    const fresh = path.join(out, 'Lareon.app'); if (!fs.existsSync(fresh)) throw new Error('the zip did not contain Lareon.app');
     const cur = path.resolve(process.execPath, '../../..');
     const sh = path.join(work, 'swap.sh');
     fs.writeFileSync(sh, '#!/bin/bash\nwhile kill -0 ' + process.pid + ' 2>/dev/null; do sleep 0.4; done\nAPP="$1"; NEW="$2"\nrm -rf "$APP.old"\nif mv "$APP" "$APP.old" && /usr/bin/ditto "$NEW" "$APP"; then /usr/bin/xattr -cr "$APP"; rm -rf "$APP.old"; else rm -rf "$APP"; mv "$APP.old" "$APP"; fi\nopen "$APP"\n', { mode: 0o755 });
     cp.spawn('/bin/bash', [sh, cur, fresh], { detached: true, stdio: 'ignore' }).unref();
     app.quit();
-  } catch {
+  } catch (err) {
     macBusy = false;
-    dialog.showMessageBox(win || undefined, { type: 'warning', message: 'Lareon could not install the update', detail: 'Download the newest version from lareon.org/download and drag it into Applications.', buttons: ['Open download page', 'Close'], defaultId: 0, cancelId: 1 }).then((r) => { if (r.response === 0) shell.openExternal('https://lareon.org/download'); });
+    const why = String((err && err.message) || err || '').slice(0, 160);
+    try { fs.appendFileSync(path.join(app.getPath('userData'), 'update.log'), new Date().toISOString() + ' ' + why + '\n'); } catch {}
+    dialog.showMessageBox(win || undefined, { type: 'warning', message: 'Lareon could not install the update', detail: 'Reason: ' + why + '\n\nDownload the newest version from lareon.org/download and drag it into Applications.', buttons: ['Open download page', 'Close'], defaultId: 0, cancelId: 1 }).then((r) => { if (r.response === 0) shell.openExternal('https://lareon.org/download'); });
   }
 }
 async function macCheck(manual) {
