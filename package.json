@@ -1,6 +1,6 @@
 {
   "name": "lareon-desktop",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "Lareon for desktop: Dusk, Fledge and Aster in one app",
   "main": "src/main.js",
   "author": "Lareon <help@lareon.org>",
