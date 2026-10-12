@@ -191,7 +191,8 @@ ipcMain.handle('auth:login', async (_e, c) => {
     if (j && (j.code === 'region' || j.code === 'maint')) return { code: j.code };
     if (j && j.token) return finishLogin(j.token, j.user);
     if (j && j.requires2FA) { pending2fa = username; return { need2fa: true, contact: j.contact || '', app: !!j.app }; }
-    if (status === 403 && j && j.error === 'banned') return { error: 'This account is not available. Write to help@lareon.org.' };
+    if (status === 403 && j && j.error === 'banned') return { banned: { reason: j.reason === '__under13' ? '' : String(j.reason || ''), kind: j.reason === '__under13' ? 'u' : (j.export_token && j.delete_at ? 't' : 's'), token: j.export_token ? String(j.export_token) : '', deleteAt: j.delete_at || '' } };
+    
     if (status === 429) return { error: 'Too many attempts. Wait a few minutes and try again.' };
     return { error: (j && j.error) || 'Could not sign in. Try again.' };
   } catch { return { code: 'net' }; }
@@ -323,6 +324,7 @@ async function signOut() {
   send('session', null);
   showHome();
 }
+ipcMain.on('open-ban-export', (_e, tok) => { if (typeof tok === 'string' && /^[\w.-]{8,200}$/.test(tok)) shell.openExternal('https://lareon.org/api/banned/export?token=' + encodeURIComponent(tok)); });
 ipcMain.on('open-external', (_e, u) => { if (typeof u === 'string' && (u === 'https://lareon.org' || u.startsWith('https://lareon.org/') || ALLOWED(hostOf(u)) || u === 'mailto:help@lareon.org')) shell.openExternal(u); });
 ipcMain.on('auth:signout', () => signOut());
 ipcMain.on('app:check-updates', () => checkUpdates(true));
@@ -405,7 +407,7 @@ async function askAster(message, history) {
     return { error: (j && j.error) || 'Aster could not answer just now.' };
   } catch { return { code: 'net' }; }
 }
-ipcMain.handle('aster:ask', (_e, msg, history) => askAster(msg, history));
+ipcMain.handle('aster:ask', (_e, msg, history) => askAster(String(msg) + '\n\n(Reply briefly in Markdown. Write any math in LaTeX between $ ... $ or $$ ... $$.)', history));
 
 let ask = null, peek = null;
 function floatWin(file, w, h, extra) {
@@ -465,7 +467,7 @@ ipcMain.handle('search:all', async (_e, q) => {
 ipcMain.handle('brief:get', async (_e, force) => {
   if (!sess || settings.brief === false) return null;
   const day = isoDay(new Date());
-  if (!force && settings.briefCache && settings.briefCache.day === day && settings.briefCache.user === (sess.user && sess.user.username)) return { text: settings.briefCache.text, at: settings.briefCache.at };
+  if (!force && settings.briefCache && settings.briefCache.v === 2 && settings.briefCache.day === day && settings.briefCache.user === (sess.user && sess.user.username)) return { text: settings.briefCache.text, at: settings.briefCache.at };
   try {
     const a = await api('/api/messages', { token: sess.token });
     const d = await api('/api/dusk/all', { token: sess.token });
@@ -473,9 +475,9 @@ ipcMain.handle('brief:get', async (_e, force) => {
     const unread = (Array.isArray(a.j) ? a.j : []).filter((x) => !x.read).slice(0, 12).map((x) => '- ' + fromName(x.from_address) + ': ' + (x.subject || '(no subject)'));
     const ev = (d.j.events || []).filter((e) => occursOn(e, day)).sort((x, y) => String(x.start || '').localeCompare(String(y.start || ''))).map((e) => '- ' + (e.start || 'all day') + ' ' + (e.title || ''));
     const tk = (d.j.tasks || []).filter((t) => !t.done && (!t.due || t.due <= day)).slice(0, 10).map((t) => '- ' + t.title + (t.due && t.due < day ? ' (overdue)' : ''));
-    const prompt = 'Write a short morning briefing for me, 4 to 6 lines, plain text, no headings, friendly. Say what is on my calendar today, what tasks need attention, and which unread emails look worth opening first. Do not invent anything. If a section is empty, skip it.\n\nToday: ' + day + '\nEvents:\n' + (ev.join('\n') || '(none)') + '\nTasks:\n' + (tk.join('\n') || '(none)') + '\nUnread email:\n' + (unread.join('\n') || '(none)');
+    const prompt = 'Write my morning briefing in Markdown. Start with one friendly sentence summing up the day. Then use these sections, each as a heading line followed by short bullet points, and skip any section that is empty: "## Calendar" (events with their times), "## Tasks" (what needs attention), "## Worth opening" (unread emails to read first, with the sender). Keep every bullet under 12 words. Do not invent anything.\n\nToday: ' + day + '\nEvents:\n' + (ev.join('\n') || '(none)') + '\nTasks:\n' + (tk.join('\n') || '(none)') + '\nUnread email:\n' + (unread.join('\n') || '(none)');
     const r = await askAster(prompt, []);
-    if (r && r.ok) { settings.briefCache = { day, user: sess.user && sess.user.username, text: r.text, at: Date.now() }; writeSettings(); return { text: r.text, at: settings.briefCache.at }; }
+    if (r && r.ok) { settings.briefCache = { v: 2, day, user: sess.user && sess.user.username, text: r.text, at: Date.now() }; writeSettings(); return { text: r.text, at: settings.briefCache.at }; }
     return { error: true };
   } catch { return { error: true }; }
 });

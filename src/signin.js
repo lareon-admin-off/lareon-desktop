@@ -29,6 +29,8 @@
     '.si .chk{display:flex;gap:10px;align-items:flex-start;justify-content:center;font-size:13px;color:var(--fg2);margin:8px 0 4px;cursor:pointer;text-align:left}.si .chk input{width:16px;height:16px;flex:none;margin-top:2px;padding:0;accent-color:var(--orange)}' +
     '.si .tos{height:150px;overflow:auto;text-align:left;background:var(--field);border:1px solid var(--line);border-radius:14px;padding:12px 16px;font-size:12.5px;line-height:1.6;color:var(--fg2);-webkit-user-select:text;user-select:text;margin-bottom:12px}.si .tos p{margin-bottom:9px}.si .tos h3{font-size:13px;color:var(--fg);margin:10px 0 4px}' +
     '.si .steps{display:flex;gap:6px;margin:0 0 18px}.si .steps i{height:3px;flex:1;border-radius:2px;background:var(--line2);transition:background .3s}.si .steps i.on{background:var(--grad)}' +
+    '.si .banb{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--bc);background:color-mix(in srgb,var(--bc) 14%,transparent);border:1px solid color-mix(in srgb,var(--bc) 40%,transparent);border-radius:999px;padding:5px 14px;margin-bottom:16px}.si .banb:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--bc)}' +
+    '.si .banbox{border:1px solid var(--line);border-radius:14px;background:var(--fieldw);text-align:left;margin:0 0 14px;overflow:hidden}.si .banbox>div{padding:13px 18px}.si .banbox>div+div{border-top:1px solid var(--line)}.si .banbox small{display:block;font-size:12px;color:var(--fg3);margin-bottom:3px}.si .banbox span{font-size:14.5px;color:var(--fg);-webkit-user-select:text;user-select:text;overflow-wrap:anywhere}' +
     '.si .shake{animation:siShake .35s}@keyframes siShake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}' +
     '@media(prefers-reduced-motion:reduce){.si *{animation:none!important;transition:none!important}}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
@@ -58,6 +60,11 @@
       '<div class="msg" role="alert"></div>' +
       '<div class="links"><button class="lnk" type="button" data-go="reset" data-i="si.forgot"></button><span><span data-i="si.new"></span> <button class="lnk" type="button" data-go="su1" data-i="si.create"></button></span></div>' +
       '<div class="apps"><span>Fledge</span><span>Ember</span><span>Larsonian ID</span></div><div class="legal">Lareon &middot; Nation of Larsonia</div></form>' +
+      // banned
+      '<div class="st" data-p="ban">' + LOGO('sg' + n + 'g') + '<div class="banb" data-banb></div><h2 data-bant></h2><div class="tag" data-banp></div>' +
+      '<div class="banbox" data-banbox><div data-banr hidden><small data-i="ban.reason"></small><span data-banrt></span></div><div data-band hidden><small data-i="ban.date"></small><span data-bandt></span></div></div>' +
+      '<button class="pill" type="button" data-bandl hidden><span data-i="ban.dl"></span></button>' +
+      '<div class="links"><button class="lnk" type="button" data-banhelp data-i="ban.appeal"></button><button class="lnk" type="button" data-go="in" data-back data-i="btn.back"></button></div></div>' +
       // two-step code
       '<form class="st" data-p="code" novalidate>' + LOGO('sg' + n + 'b') + '<h2 data-i="cd.title"></h2><div class="tag" data-say></div>' +
       '<div class="stack">' + fld('cd.label', '<input class="code" name="c" maxlength="12" autocomplete="one-time-code" autocapitalize="off" spellcheck="false" placeholder="000000">') + '</div>' +
@@ -106,6 +113,21 @@
     [].forEach.call(root.querySelectorAll('.eye'), function (b) { b.onclick = function () { var i = b.parentNode.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; }; });
     function username(v) { return String(v || '').trim().toLowerCase().replace(/@lareon\.org$/, ''); }
 
+    function showBan(b) {
+      var P2 = P.ban, k = b.kind === 't' ? 't' : b.kind === 'u' ? 'u' : 's';
+      P2.style.setProperty('--bc', k === 't' ? '#ff3b57' : k === 'u' ? '#ff7c1f' : '#ffa11f');
+      P2.querySelector('[data-banb]').textContent = T('ban.b.' + k);
+      P2.querySelector('[data-bant]').textContent = T('ban.t.' + k);
+      P2.querySelector('[data-banp]').textContent = T('ban.p.' + k);
+      var r = P2.querySelector('[data-banr]'), d = P2.querySelector('[data-band]'), dl = P2.querySelector('[data-bandl]');
+      r.hidden = !b.reason; P2.querySelector('[data-banrt]').textContent = b.reason || '';
+      var dt = b.deleteAt ? new Date(b.deleteAt) : null, ok = dt && !isNaN(dt);
+      d.hidden = !ok; if (ok) P2.querySelector('[data-bandt]').textContent = dt.toLocaleDateString(window.i18n.lang, { year: 'numeric', month: 'long', day: 'numeric' });
+      P2.querySelector('[data-banbox]').style.display = (r.hidden && d.hidden) ? 'none' : '';
+      dl.hidden = !b.token; dl.onclick = function () { lareon.banExport(b.token); };
+      P2.querySelector('[data-banhelp]').onclick = function () { lareon.openExternal('mailto:help@lareon.org'); };
+      go('ban');
+    }
     // sign in
     P.in.onsubmit = function (e) {
       e.preventDefault(); var f = P.in; fail(f, ''); busy(f, true);
@@ -113,6 +135,7 @@
       lareon.login(creds).then(function (r) {
         busy(f, false);
         if (r && r.ok) { f.p.value = ''; return done(r); }
+        if (r && r.banned) { f.p.value = ''; return showBan(r.banned); }
         if (r && r.need2fa) {
           S.username = username(f.u.value); f.p.value = '';
           P.code.querySelector('[data-say]').innerHTML = r.app ? T('cd.app', { m: r.contact ? T('cd.appmail', { c: '<b>' + esc(r.contact) + '</b>' }) : '' }) : T('cd.mail', { c: '<b>' + esc(r.contact || '') + '</b>' });

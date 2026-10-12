@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('lareon', {
   summary: () => ipcRenderer.invoke('account:summary'),
   menu: (pos) => ipcRenderer.send('menu:account', pos),
   openExternal: (u) => ipcRenderer.send('open-external', u),
+  banExport: (t) => ipcRenderer.send('open-ban-export', t),
   info: () => ipcRenderer.invoke('app:info'),
   setLang: (l) => ipcRenderer.send('app:lang', l),
   onLang: (cb) => ipcRenderer.on('lang', (_e, l) => cb(l)),
