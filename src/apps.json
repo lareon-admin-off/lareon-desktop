@@ -8,5 +8,6 @@
   "ward": { "name": "Ward", "url": "https://ward.lareon.org/app", "ua": "WardApp", "art": "ward-logo.svg" },
   "sheen": { "name": "Sheen", "url": "https://sheen.lareon.org/app", "ua": "SheenApp", "art": "sheen-logo.svg" },
   "lark": { "name": "Lark", "url": "https://lark.lareon.org/app", "ua": "LarkApp", "art": "lark-logo.svg" },
+  "ridge": { "name": "Ridge", "url": "https://ridge.lareon.org/app", "ua": "RidgeApp", "art": "ridge-logo.svg" },
   "grove": { "name": "Grove", "url": "https://grove.lareon.org/app", "ua": "GroveApp", "art": "grove-logo.svg", "off": true }
 }

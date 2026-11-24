@@ -1443,12 +1443,13 @@ function startUpdater() {
 
 app.whenReady().then(() => {
   loadSettings(); loadSess(); nativeTheme.themeSource = settings.theme || 'system'; applyLogin();
-  // Clipboard and full screen are fine for Lareon pages; the mic and camera only for Rustle (calls and voice messages); location and the rest are refused.
+  // Clipboard and full screen are fine for Lareon pages; the mic and camera only for Rustle (calls and voice messages); location only for Ridge (maps); the rest is refused.
   try { session.fromPartition('persist:lareon').on('will-download', (_e, item, wc) => trackDownload(item, wc)); } catch {}
   session.fromPartition('persist:lareon').setPermissionRequestHandler((wc, perm, cb) => {
     const h = hostOf(wc.getURL());
     if (perm === 'media') return cb(h === 'rustle.lareon.org' && settings.apps.rustle !== false);
     if (perm === 'pointerLock') return cb(h === 'lark.lareon.org');
+    if (perm === 'geolocation') return cb(h === 'ridge.lareon.org' && settings.apps.ridge !== false);
     const ok = ALLOWED(h) && ['notifications', 'clipboard-sanitized-write', 'clipboard-read', 'fullscreen'].includes(perm);
     cb(ok && perm !== 'notifications');
   });
