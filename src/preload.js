@@ -1,9 +1,24 @@
 const { contextBridge, ipcRenderer } = require('electron');
 try { contextBridge.exposeInMainWorld('themePref', ipcRenderer.sendSync('theme:get')); } catch {}
+try { contextBridge.exposeInMainWorld('wallPref', ipcRenderer.sendSync('wall:get')); } catch {}
 // Only Lareon's own pages (Home and setup) get this bridge. The product sites inside the app do not.
 contextBridge.exposeInMainWorld('lareon', {
   apps: () => ipcRenderer.invoke('apps'),
   appsAll: () => ipcRenderer.invoke('apps:all'),
+  appsOrder: () => ipcRenderer.invoke('apps:order'),
+  nav: (w) => ipcRenderer.send('nav', w),
+  onNav: (cb) => ipcRenderer.on('nav', (_e, v) => cb(v)),
+  splitOpen: (k) => ipcRenderer.send('split:open', k),
+  splitClose: (keep) => ipcRenderer.send('split:close', keep || ''),
+  splitSwap: () => ipcRenderer.send('split:swap'),
+  splitToggle: () => ipcRenderer.send('split:toggle'),
+  splitRatio: (r) => ipcRenderer.send('split:ratio', r),
+  splitDrag: (on) => ipcRenderer.send('split:drag', !!on),
+  onSplit: (cb) => ipcRenderer.on('split', (_e, v) => cb(v)),
+  onSplitDrag: (cb) => ipcRenderer.on('split:drag', (_e, v) => cb(v)),
+  railMenu: (k, pos) => ipcRenderer.send('rail:menu', k, pos),
+  onRail: (cb) => ipcRenderer.on('rail', (_e, v) => cb(v)),
+  onWall: (cb) => ipcRenderer.on('wall', (_e, v) => cb(v)),
   openUrl: (u) => ipcRenderer.send('open:url', u),
   onGlance: (cb) => ipcRenderer.on('glance', (_e, g) => cb(g)),
   show: (k) => ipcRenderer.send('show', k),

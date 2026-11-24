@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, globalShortcut, nativeImage, WebContentsView, shell, Menu, session, ipcMain, Notification, nativeTheme, safeStorage, net, dialog } = require('electron');
+const { app, BrowserWindow, Tray, globalShortcut, nativeImage, WebContentsView, shell, Menu, session, ipcMain, Notification, nativeTheme, safeStorage, net, dialog, screen } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const apps = require('./apps.json');
@@ -21,7 +21,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 
 // ---- settings (chosen in the setup wizard) ----
 const DEFAULT_APPS = Object.fromEntries(Object.entries(apps).map(([k, a]) => [k, !a.off]));
-const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
+const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, railWide: false, order: [], homeCards: { today: true, mail: true, brief: true, focus: true, apps: true }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 let settings = { ...DEFAULTS };
 function loadSettings() {
@@ -30,7 +30,9 @@ function loadSettings() {
   for (const k of Object.keys(settings.apps)) if (!apps[k]) delete settings.apps[k];
 }
 const writeSettings = () => { try { fs.writeFileSync(settingsFile(), JSON.stringify(settings), { mode: 0o600 }); } catch {} };
-const enabledKeys = () => Object.keys(apps).filter((k) => settings.apps[k] !== false);
+// every app in the order you dragged them into in the sidebar
+const orderedKeys = () => { const o = (Array.isArray(settings.order) ? settings.order : []).filter((k) => apps[k]); for (const k of Object.keys(apps)) if (!o.includes(k)) o.push(k); return o; };
+const enabledKeys = () => orderedKeys().filter((k) => settings.apps[k] !== false);
 // the apps opened in the background at start (others load on first click, so ten apps don't all run at once)
 const warmKeys = () => { const w = enabledKeys().filter((k) => apps[k].core); const last = settings.lastApp; if (last && apps[last] && enabledKeys().includes(last) && !w.includes(last)) w.push(last); return w; };
 function applyLogin() { try { app.setLoginItemSettings({ openAtLogin: !!settings.launchAtLogin }); } catch {} }
@@ -73,7 +75,7 @@ function paintChrome() {
 }
 nativeTheme.on('updated', paintChrome);
 
-let win, current = null, inSetup = false, pending2fa = null, pendingTicket = '';
+let win, current = null, focused = null, mru = [], inSetup = false, pending2fa = null, pendingTicket = '';
 const views = {};
 const stateFile = () => path.join(app.getPath('userData'), 'window.json');
 const loadState = () => { try { return JSON.parse(fs.readFileSync(stateFile(), 'utf8')); } catch { return {}; } };
@@ -83,10 +85,25 @@ function saveState() {
 }
 const send = (ch, v) => { if (win && !win.isDestroyed()) win.webContents.send(ch, v); };
 
+// ---- the window: title bar on top, the apps sidebar on the left, one app (or two side by side) in the rest ----
+const railW = () => (settings.railWide ? 208 : 68);
+const GAP = 8;
+let split = null; // { a, b, ratio }: two apps side by side
+const splitHas = (k) => !!(split && (split.a === k || split.b === k));
+const partner = (k) => (split ? (split.a === k ? split.b : split.b === k ? split.a : null) : null);
 function layout() {
   if (!win || win.isDestroyed() || inSetup) return;
-  const [w, h] = win.getContentSize();
-  for (const v of Object.values(views)) v.setBounds({ x: 0, y: BAR, width: w, height: Math.max(0, h - BAR) });
+  const [w, h] = win.getContentSize(), x0 = railW(), H = Math.max(0, h - BAR), W = Math.max(0, w - x0);
+  if (split && splitHas(current) && views[split.a] && views[split.b]) {
+    const lw = Math.round((W - GAP) * split.ratio);
+    views[split.a].setBounds({ x: x0, y: BAR, width: lw, height: H });
+    views[split.b].setBounds({ x: x0 + lw + GAP, y: BAR, width: Math.max(0, W - lw - GAP), height: H });
+    for (const [k, v] of Object.entries(views)) if (k !== split.a && k !== split.b) v.setBounds({ x: x0, y: BAR, width: W, height: H });
+    send('split', { a: split.a, b: split.b, ratio: split.ratio, x: lw, on: true });
+  } else {
+    for (const v of Object.values(views)) v.setBounds({ x: x0, y: BAR, width: W, height: H });
+    send('split', split ? { a: split.a, b: split.b, ratio: split.ratio, on: false } : null);
+  }
 }
 
 // ---- the product sites (Dusk, Fledge, Aster), each in its own view ----
@@ -151,7 +168,7 @@ function makeView(key, startUrl) {
     if (key === 'account' || key === 'help' ? hostOf(u) !== 'lareon.org' : (!ALLOWED(hostOf(u)) || hostOf(u) === 'lareon.org' || (!keyOfUrl(u) && hostOf(u) !== hostOf(wc.getURL())))) { e.preventDefault(); external(u); }
   });
   v._ready = false;
-  const ready = () => { if (v._ready) return; v._ready = true; send('loading', { key, on: false }); if (current === key) reveal(key); };
+  const ready = () => { if (v._ready) return; v._ready = true; send('loading', { key, on: false }); if (current === key) reveal(key); else if (current && partner(current) === key && views[current] && views[current]._ready) reveal(current); };
   wc.on('did-start-loading', () => { if (!v._ready) send('loading', { key, on: true }); });
   wc.on('did-fail-load', ready);
   setTimeout(ready, 9000);
@@ -165,6 +182,9 @@ function makeView(key, startUrl) {
   // the token is placed in the page before its scripts run (preload-view.js), so there is nothing to reload
   let synced = true;
   wc.on('did-finish-load', () => ready());
+  wc.on('focus', () => { focused = key; navState(); });
+  wc.on('did-navigate', navState); wc.on('did-navigate-in-page', navState);
+  wc.on('input-event', (_e, i) => { if (drag && i.type === 'mouseUp') endDrag(); });
   if (key === 'account') { const t = setInterval(() => { if (wc.isDestroyed()) return clearInterval(t); if (!sess) return; wc.executeJavaScript('localStorage.getItem("lt")').then((x) => { if (!x && sess) bounced('account'); }).catch(() => {}); }, 4000); }
   wc.loadURL(startUrl || A.url);
   v.setBackgroundColor(BG());
@@ -184,14 +204,17 @@ function showHome(note) {
 function reveal(key) {
   if (current !== key || !views[key]) return;
   layout();
-  for (const [k, v] of Object.entries(views)) v.setVisible(k === key);
-  views[key].webContents.focus();
+  const other = partner(key), both = other && views[other];
+  for (const [k, v] of Object.entries(views)) v.setVisible(k === key || (both && k === other));
+  views[key].webContents.focus(); focused = key; navState();
 }
 function show(key) {
   if (!win) return;
   if (key === 'home' || !appOf(key)) return showHome();
   if (!sess && key !== 'help') return showHome('Sign in to open ' + appOf(key).name + '.');
   if (!views[key]) views[key] = makeView(key);
+  const other = partner(key); if (other && !views[other] && enabledKeys().includes(other)) views[other] = makeView(other);
+  if (apps[key]) { mru = [key, ...mru.filter((k) => k !== key)].slice(0, 12); }
   current = key;
   if (key !== 'help' && key !== 'account') { settings.lastApp = key; writeSettings(); }
   win.setTitle('Lareon');
@@ -587,7 +610,7 @@ function createWindow() {
 }
 
 ipcMain.on('theme:get', (e) => { e.returnValue = ['light', 'dark'].includes(settings.theme) ? settings.theme : ''; });
-const publicSettings = () => ({ catalog: apps, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
+const publicSettings = () => ({ catalog: apps, order: enabledKeys(), wall: settings.wall || 'peaks', wallTime: !!settings.wallTime, railWide: !!settings.railWide, homeCards: { ...DEFAULTS.homeCards, ...(settings.homeCards || {}) }, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
 ipcMain.handle('settings:get', () => publicSettings());
 ipcMain.handle('settings:set', (_e, p) => {
   p = p || {};
@@ -600,11 +623,17 @@ ipcMain.handle('settings:set', (_e, p) => {
   if (typeof p.snoozeUntil === 'number') settings.snoozeUntil = Math.max(0, p.snoozeUntil);
   if (typeof p.startApp === 'string' && (p.startApp === 'home' || p.startApp === 'last' || enabledKeys().includes(p.startApp))) settings.startApp = p.startApp;
   let appsChanged = false;
-  if (p.apps) for (const k of Object.keys(apps)) if (typeof p.apps[k] === 'boolean' && settings.apps[k] !== p.apps[k]) {
-    if (!p.apps[k] && enabledKeys().length <= 1) continue; // keep at least one app on
-    settings.apps[k] = p.apps[k]; appsChanged = true;
-    if (!p.apps[k] && views[k]) { try { win.contentView.removeChildView(views[k]); views[k].webContents.close(); } catch {} delete views[k]; if (current === k) showHome(); }
+  if (p.apps && typeof p.apps === 'object') appsChanged = setApps(p.apps);
+  const WALLS = ['peaks', 'aurora', 'dunes', 'tide', 'bloom', 'cosmos', 'calm'];
+  if (WALLS.includes(p.wall) || typeof p.wallTime === 'boolean') {
+    if (WALLS.includes(p.wall)) settings.wall = p.wall;
+    if (typeof p.wallTime === 'boolean') settings.wallTime = p.wallTime;
+    const w = { wall: settings.wall, time: !!settings.wallTime };
+    for (const b of BrowserWindow.getAllWindows()) { try { b.webContents.send('wall', w); } catch {} }
   }
+  if (typeof p.railWide === 'boolean' && p.railWide !== settings.railWide) { settings.railWide = p.railWide; layout(); send('rail', p.railWide); }
+  if (Array.isArray(p.order)) { settings.order = p.order.filter((k) => typeof k === 'string' && apps[k]).slice(0, 40); appsChanged = true; }
+  if (p.homeCards && typeof p.homeCards === 'object') for (const k of ['today', 'mail', 'brief', 'focus', 'apps']) if (typeof p.homeCards[k] === 'boolean') settings.homeCards = { ...settings.homeCards, [k]: p.homeCards[k] };
   writeSettings(); if (p.quickAdd !== undefined || p.askKey !== undefined) applyQuick();
   if (appsChanged) { buildMenu(); send('apps-changed'); }
   if (p.badge !== undefined) setBadge(lastUnread);
@@ -614,6 +643,96 @@ ipcMain.on('notify:show', (_e, t, b) => { if (t) notify(String(t).slice(0, 80), 
 ipcMain.handle('net:online', () => net.isOnline());
 let wasOnline = true;
 setInterval(() => { try { const o = net.isOnline(); if (o !== wasOnline) { wasOnline = o; send('online', o); if (o) pollNotifications(); } } catch {} }, 4000);
+// ---- back, forward and reload for the app you're in (in split view: the side you last clicked) ----
+const navWc = () => { const k = focused && views[focused] && (focused === current || partner(current) === focused) ? focused : current; return k && views[k] ? views[k].webContents : null; };
+const hist = (wc) => wc.navigationHistory || wc;
+function navState() {
+  const wc = navWc(); if (!wc) return send('nav', { back: false, fwd: false, key: current });
+  try { send('nav', { back: hist(wc).canGoBack(), fwd: hist(wc).canGoForward(), key: focused || current }); } catch {}
+}
+function navGo(what) {
+  const wc = navWc(); if (!wc) return;
+  try { if (what === 'back' && hist(wc).canGoBack()) hist(wc).goBack(); else if (what === 'fwd' && hist(wc).canGoForward()) hist(wc).goForward(); else if (what === 'reload') wc.reload(); } catch {}
+}
+ipcMain.on('nav', (_e, what) => navGo(String(what)));
+
+// ---- split view: two apps side by side ----
+function openSplit(other) {
+  if (inSetup || !sess || !apps[other] || !enabledKeys().includes(other)) return;
+  const live = (k) => apps[k] && enabledKeys().includes(k) && k !== other;
+  let main = current && apps[current] && current !== other ? current : mru.find(live);
+  if (!main) main = enabledKeys().find((k) => k !== other);
+  if (!main || main === other) return;
+  split = { a: main, b: other, ratio: split && split.ratio ? split.ratio : 0.5 };
+  if (!views[other]) views[other] = makeView(other);
+  show(main); layout();
+}
+function closeSplit(keep) {
+  if (!split) return;
+  const stay = keep && splitHas(keep) ? keep : (focused && splitHas(focused) ? focused : split.a);
+  const gone = partner(stay);
+  split = null;
+  if (views[gone]) views[gone].setVisible(false);
+  if (current && apps[current]) show(stay); else layout();
+}
+function toggleSplit() {
+  if (split && splitHas(current)) return closeSplit();
+  const base = current && apps[current] ? current : mru.find((k) => enabledKeys().includes(k));
+  const other = mru.find((k) => k !== base && enabledKeys().includes(k)) || enabledKeys().find((k) => k !== base);
+  if (other) openSplit(other);
+}
+ipcMain.on('split:open', (_e, k) => openSplit(String(k)));
+ipcMain.on('split:toggle', () => { if (!inSetup) toggleSplit(); });
+ipcMain.on('split:close', (_e, keep) => closeSplit(keep ? String(keep) : null));
+ipcMain.on('split:swap', () => { if (split) { split = { a: split.b, b: split.a, ratio: 1 - split.ratio }; layout(); } });
+ipcMain.on('split:ratio', (_e, r) => { if (split && typeof r === 'number' && isFinite(r)) { split.ratio = Math.min(0.75, Math.max(0.25, r)); layout(); } });
+// dragging the line between the two apps: follow the pointer until the button is let go, even over the apps
+let drag = null;
+function endDrag() { if (drag) { clearInterval(drag); drag = null; send('split:drag', false); } }
+ipcMain.on('split:drag', (_e, on) => {
+  endDrag(); if (!on || !split || !win) return;
+  send('split:drag', true);
+  drag = setInterval(() => {
+    try {
+      const b = win.getContentBounds(), p = screen.getCursorScreenPoint(), W = b.width - railW() - GAP;
+      split.ratio = Math.min(0.75, Math.max(0.25, (p.x - b.x - railW() - GAP / 2) / W)); layout();
+    } catch { endDrag(); }
+  }, 16);
+  setTimeout(endDrag, 30000); // never get stuck following the pointer
+});
+
+// ---- the sidebar ----
+const cycle = (dir) => { if (inSetup) return; const ks = ['home', ...enabledKeys()]; const i = ks.indexOf(current || 'home'); show(ks[(i + dir + ks.length) % ks.length]); };
+ipcMain.on('rail:menu', (_e, k, pos) => {
+  if (!apps[k] || !win) return;
+  const ks = enabledKeys(), i = ks.indexOf(k), move = (d) => { const o = ks.slice(); o.splice(i, 1); o.splice(i + d, 0, k); settings.order = o; writeSettings(); buildMenu(); send('apps-changed'); };
+  const items = [
+    { label: 'Open ' + apps[k].name, click: () => show(k) },
+    { label: 'Open beside ' + (current && apps[current] && current !== k ? apps[current].name : 'the current app'), enabled: !!sess && !!(current && apps[current] && current !== k), click: () => openSplit(k) },
+    { label: 'Reload', enabled: !!views[k], click: () => views[k] && views[k].webContents.reload() },
+    { type: 'separator' },
+    { label: 'Move up', enabled: i > 0, click: () => move(-1) },
+    { label: 'Move down', enabled: i < ks.length - 1, click: () => move(1) },
+    { type: 'separator' },
+    { label: 'Hide from the sidebar', enabled: ks.length > 1, click: () => setApps({ [k]: false }) }
+  ];
+  Menu.buildFromTemplate(items).popup({ window: win, x: pos && pos.x, y: pos && pos.y });
+});
+function setApps(map) {
+  let changed = false;
+  for (const k of Object.keys(apps)) if (typeof map[k] === 'boolean' && settings.apps[k] !== map[k]) {
+    if (!map[k] && enabledKeys().length <= 1) continue; // keep at least one app on
+    settings.apps[k] = map[k]; changed = true;
+    if (!map[k]) {
+      if (splitHas(k)) { const other = partner(k); split = null; if (current === k) show(other); }
+      if (views[k]) { try { win.contentView.removeChildView(views[k]); views[k].webContents.close(); } catch {} delete views[k]; if (current === k) showHome(); }
+    }
+  }
+  if (changed) { writeSettings(); buildMenu(); send('apps-changed'); layout(); }
+  return changed;
+}
+ipcMain.on('wall:get', (e) => { e.returnValue = { wall: settings.wall || 'peaks', time: !!settings.wallTime }; });
+
 ipcMain.on('open:url', (_e, u) => {
   if (inSetup || typeof u !== 'string') return;
   try { u = new URL(u, API).href; } catch { return; }
@@ -622,6 +741,7 @@ ipcMain.on('open:url', (_e, u) => {
 });
 ipcMain.handle('apps:all', () => apps);
 ipcMain.handle('apps', () => { const o = {}; for (const k of enabledKeys()) o[k] = apps[k]; return o; });
+ipcMain.handle('apps:order', () => enabledKeys());
 ipcMain.on('show', (_e, k) => { if (!inSetup && (k === 'home' || k === 'account' || k === 'help' || enabledKeys().includes(k))) show(k); });
 app.on('second-instance', () => showMain());
 let quitting = false;
@@ -639,7 +759,12 @@ function buildMenu() {
     ...(isMac ? [{ label: 'Lareon', submenu: [{ role: 'about' }, { type: 'separator' }, { label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: openSettings }, { type: 'separator' }, { role: 'services' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' }] }] : []),
     { role: 'editMenu' },
     { label: 'Apps', submenu: [...(isMac ? [] : [{ label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: openSettings }, { type: 'separator' }]), { label: 'Jump to…', accelerator: 'CmdOrCtrl+K', click: palette }, { type: 'separator' }, { label: 'Home', accelerator: 'CmdOrCtrl+1', click: go('home') }, ...enabledKeys().map((k, i) => ({ label: apps[k].name, accelerator: i < 8 ? 'CmdOrCtrl+' + (i + 2) : undefined, click: go(k) }))] },
-    { label: 'View', submenu: [{ label: 'Reload', accelerator: 'CmdOrCtrl+R', click: () => cur() && cur().reload() }, { role: 'togglefullscreen' }, { type: 'separator' },
+    { label: 'View', submenu: [{ label: 'Reload', accelerator: 'CmdOrCtrl+R', click: () => navGo('reload') },
+      { label: 'Back', accelerator: 'CmdOrCtrl+[', click: () => navGo('back') }, { label: 'Forward', accelerator: 'CmdOrCtrl+]', click: () => navGo('fwd') }, { type: 'separator' },
+      { label: 'Next app', accelerator: 'Ctrl+Tab', click: () => cycle(1) }, { label: 'Previous app', accelerator: 'Ctrl+Shift+Tab', click: () => cycle(-1) },
+      { label: 'Split view', accelerator: 'CmdOrCtrl+\\', click: () => { if (!inSetup) toggleSplit(); } },
+      { label: 'Show app names in the sidebar', type: 'checkbox', checked: !!settings.railWide, click: (mi) => { settings.railWide = mi.checked; writeSettings(); layout(); send('rail', settings.railWide); } },
+      { type: 'separator' }, { role: 'togglefullscreen' }, { type: 'separator' },
       { label: 'Zoom in', accelerator: 'CmdOrCtrl+Plus', click: () => cur() && cur().setZoomLevel(cur().getZoomLevel() + 0.5) },
       { label: 'Zoom out', accelerator: 'CmdOrCtrl+-', click: () => cur() && cur().setZoomLevel(cur().getZoomLevel() - 0.5) },
       { label: 'Reset zoom', accelerator: 'CmdOrCtrl+0', click: () => cur() && cur().setZoomLevel(0) }] },
