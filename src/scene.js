@@ -170,12 +170,28 @@
     day: { sky: ['#8cc2e2', '#c6e0ec', '#eef3ea'], oglow: 'rgba(255,250,220,.6)', ox: '72%', oy: '10%', mist: 'rgba(255,255,255,.45)', t: ['#6a9a7a', '#4a7e5e', '#2e5e44'], star: 0 },
     dusk: { sky: ['#1a1a3a', '#7a3a5e', '#e8805a'], oglow: 'rgba(255,140,90,.5)', ox: '60%', oy: '44%', mist: 'rgba(255,170,140,.22)', t: ['#3a3048', '#262036', '#141020'], star: .35 },
     draw: function (c, id) {
-      var row = function (base, hmin, hmax, step, s0) { seed = s0; var d = 'M-60 ' + base; for (var x = -60; x < 1520; x += step * (0.7 + rnd() * 0.6)) { var h = hmin + rnd() * (hmax - hmin), w = step * 0.55; d += ' L' + x.toFixed(0) + ' ' + base + ' L' + (x + w * .5).toFixed(0) + ' ' + (base - h).toFixed(0) + ' L' + (x + w).toFixed(0) + ' ' + base; } return d + ' L1520 ' + base + ' V400 H-60Z'; };
-      var mist = '<div class="glow" style="height:48%;background:linear-gradient(180deg,transparent,' + c.mist + ' 60%,transparent)"></div>';
+      // pines: a short trunk and four or five uneven tiers of branches, never two alike
+      var pine = function (x, base, h) {
+        var w = h * (0.30 + rnd() * 0.08), tiers = 4 + Math.floor(rnd() * 2), top = base - h, d = 'M' + x.toFixed(1) + ' ' + top.toFixed(1), R = [], k, t, y, hw;
+        for (k = 1; k <= tiers; k++) {
+          t = k / tiers; y = top + h * (0.12 + 0.8 * t); hw = w / 2 * (0.25 + 0.75 * t) * (0.9 + rnd() * 0.2);
+          R.push([x + hw, y + h * 0.02], [x + hw * (0.42 + rnd() * 0.12), y - h * 0.05]);
+        }
+        R.pop(); R.push([x + w * 0.05, base - h * 0.06], [x + w * 0.05, base]);
+        for (k = 0; k < R.length; k++) d += ' L' + R[k][0].toFixed(1) + ' ' + R[k][1].toFixed(1);
+        for (k = R.length - 1; k >= 0; k--) d += ' L' + (2 * x - R[k][0] + (rnd() - .5) * 2).toFixed(1) + ' ' + (R[k][1] + (rnd() - .5) * 3).toFixed(1);
+        return d + 'Z';
+      };
+      var row = function (base, hmin, hmax, gap, s0) {
+        seed = s0; var d = 'M-60 ' + (base + 2) + ' L1520 ' + (base + 2) + ' V420 H-60Z';
+        for (var x = -40; x < 1500; x += gap * (0.45 + rnd() * 0.9)) d += pine(x, base + rnd() * 10, hmin + rnd() * (hmax - hmin));
+        return d;
+      };
+      var mist = '<div class="glow" style="height:40%;background:linear-gradient(180deg,transparent,' + c.mist + ' 60%,transparent)"></div>';
       return sky(c.sky) + stars(c.star) + orb(c) +
-        layer('46%', 5, 'd3', '0 0 1440 400', '<path d="' + row(300, 60, 130, 46, 3) + '" fill="' + c.t[0] + '"/>') + mist +
-        layer('34%', 11, 'd2', '0 0 1440 400', '<path d="' + row(320, 90, 180, 60, 5) + '" fill="' + c.t[1] + '"/>') +
-        layer('24%', 19, 'd1', '0 0 1440 400', '<path d="' + row(330, 140, 260, 84, 9) + '" fill="' + c.t[2] + '"/>');
+        layer('54%', 3, 'd3', '0 0 1440 420', '<path d="M-60 420V250C160 200 360 230 560 205S960 170 1160 210S1420 220 1500 200V420Z" fill="' + c.t[0] + '" opacity=".55"/><path d="' + row(300, 40, 80, 22, 3) + '" fill="' + c.t[0] + '" opacity=".8"/>') + mist +
+        layer('54%', 9, 'd2', '0 0 1440 420', '<path d="' + row(330, 70, 140, 34, 5) + '" fill="' + c.t[1] + '"/>') +
+        layer('54%', 17, 'd1', '0 0 1440 420', '<path d="' + row(350, 140, 260, 70, 9) + '" fill="' + c.t[2] + '"/>');
     }
   };
   // Glacier: sharp icy peaks
