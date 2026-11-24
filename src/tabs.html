@@ -232,6 +232,31 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
 .at>img{width:30px;height:30px;flex:none}.at .tx{min-width:0;flex:1}.at .tx b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;font-weight:500;line-height:1.35}
 .at .tx small{display:block;font-size:12.5px;color:var(--fg3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}.at .tx em{display:block;font:500 10.5px var(--mono);font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);margin-bottom:2px}.at .th{width:38px;height:38px;border-radius:9px;object-fit:cover;flex:none}
 .at .dt{width:8px;height:8px;border-radius:50%;background:var(--orange);flex:none}
+
+/* Home: Spotlight */
+.spot{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px 28px 56px}
+.sp-top{text-align:center}
+.sp-clock{font-size:clamp(84px,13vw,132px);font-weight:200;letter-spacing:-.06em;line-height:.92;color:var(--fg);font-variant-numeric:tabular-nums;text-shadow:0 12px 60px rgba(0,0,0,.28)}
+.sp-clock small{font-size:.22em;font-weight:400;letter-spacing:0;margin-left:10px;color:var(--fg2)}
+.sp-hi{font-size:19px;color:var(--fg2);margin-top:6px}
+.sp-ask{width:min(680px,100%);height:62px;border-radius:31px;display:flex;align-items:center;gap:14px;padding:0 9px 0 20px;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);box-shadow:0 24px 60px -34px rgba(0,0,0,.7);transition:border-color .2s,box-shadow .3s}
+.sp-ask:focus-within{border-color:var(--orange);box-shadow:0 0 0 4px color-mix(in srgb,var(--orange) 16%,transparent),0 24px 60px -34px rgba(0,0,0,.7)}
+.sp-ask img{width:26px;height:26px;flex:none}.sp-ask input{flex:1;min-width:0;font:inherit;font-size:17px;color:var(--fg);background:none;border:0;outline:0;-webkit-user-select:text;user-select:text}.sp-ask input::placeholder{color:var(--fg3)}
+.sp-ask button{border:0;border-radius:999px;background:var(--grad);color:#fff;font-weight:500;font-size:14px;padding:12px 20px;flex:none}
+.sp-res{width:min(680px,100%);margin-top:-12px;border-radius:20px;padding:8px;background:var(--solid);border:1px solid var(--line2);box-shadow:var(--shadow);max-height:46vh;overflow:auto;animation:rise .3s var(--ease) both}
+.sp-res .r{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;color:var(--fg);padding:9px 10px;border-radius:12px}.sp-res .r:hover,.sp-res .r.sel{background:var(--hover)}
+.sp-res .r img{width:22px;height:22px;flex:none}.sp-res .r b{font-weight:500;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sp-res .r small{color:var(--fg3);font-size:12.5px;white-space:nowrap}
+.sp-res .ans{padding:12px 14px;-webkit-user-select:text;user-select:text}.sp-res .ans.dim{color:var(--fg3)}.sp-res .ft{display:flex;justify-content:flex-end;gap:8px;padding:4px 8px 6px}
+.sp-dock{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;padding:12px 16px;border-radius:26px;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+.sp-dock button{position:relative;width:60px;height:60px;border-radius:17px;border:0;background:var(--panel2);display:grid;place-items:center;box-shadow:inset 0 0 0 1px var(--line);transition:transform .3s var(--ease),box-shadow .2s}
+.sp-dock button:hover{transform:translateY(-5px) scale(1.06);box-shadow:inset 0 0 0 1px var(--line2),0 14px 30px -14px rgba(0,0,0,.6)}
+.sp-dock img{width:34px;height:34px}.sp-dock i{position:absolute;top:-6px;right:-6px;min-width:21px;height:21px;border-radius:11px;background:var(--orange);color:#fff;font:600 11px var(--sans);font-style:normal;display:grid;place-items:center;padding:0 6px;box-shadow:0 0 0 2px var(--bg)}
+.sp-dock span{position:absolute;bottom:-26px;left:50%;transform:translateX(-50%) translateY(-4px);font-size:12px;color:var(--fg);background:var(--solid);border:1px solid var(--line2);border-radius:7px;padding:2px 8px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:2}
+.sp-dock button:hover span{opacity:1;transform:translateX(-50%)}
+.sp-now{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:min(940px,100%)}@media(max-width:820px){.sp-now{grid-template-columns:1fr}}
+.sp-now button{display:flex;gap:13px;align-items:center;text-align:left;border-radius:18px;padding:15px 16px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);color:var(--fg);min-width:0;transition:transform .25s var(--ease),border-color .2s}
+.sp-now button:hover{transform:translateY(-3px);border-color:var(--line2)}.sp-now img{width:30px;height:30px;flex:none}
+.sp-now .tx{min-width:0}.sp-now b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:500;font-size:15px;line-height:1.35}.sp-now small{display:block;color:var(--fg3);font-size:13px;margin-top:2px}
 </style></head><body>
 <div class="bar">
  <svg class="brand" viewBox="0 0 150 150" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#c84bff"/></linearGradient></defs><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#g)"/></svg>
@@ -268,14 +293,21 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
   <div class="note" id="note-out" role="status" hidden></div>
   <div id="signin" style="width:100%;display:flex;justify-content:center"></div>
  </div>
- <div class="wrap" id="in" hidden>
+ <div class="spot" id="in" hidden>
+  <div class="sp-top rise"><div class="sp-clock" id="sclock"></div><div class="sp-hi"><span id="sgreet"></span> · <span id="sdate"></span></div></div>
+  <div class="note" id="note-in" role="status" hidden></div>
+  <form class="sp-ask rise" id="sask" style="--i:1" autocomplete="off"><img src="../build/art/aster-logo.svg" alt=""><input id="sq" maxlength="1000" data-ip="sp.ph"><button type="submit" data-i="sp.ask"></button></form>
+  <div class="sp-res" id="sres" hidden></div>
+  <div class="sp-dock rise" id="sdock" style="--i:2"></div>
+  <div class="sp-now rise" id="snow" style="--i:3"></div>
+ <div hidden>
   <div class="hero rise">
   <div><p class="sub" id="date"></p><h1 id="greet"></h1></div>
   <div class="clock" id="clock" aria-hidden="true"></div>
  </div>
  <button class="srch rise" id="srch" style="--i:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg><span data-i="home.search"></span><kbd id="srchk"></kbd></button>
  <div class="qa rise" id="qa" style="--i:2"></div>
-  <div class="note" id="note-in" role="status" hidden></div>
+  <div class="note" id="note-old" role="status" hidden></div>
   <div class="note" id="lerr" hidden><div class="lerr"><span id="lerrt"></span><button class="btn" id="lretry" data-i="net.retry"></button></div></div>
   <div class="grid">
    <section class="card c-today rise" style="--i:3"><h2><span data-i="home.next"></span> <button class="link" id="open-dusk" data-i="open.dusk"></button></h2>
@@ -296,6 +328,7 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
    </div></section>
   </div>
   <div class="foot" id="ver" hidden></div>
+ </div>
  </div>
 </main>
 <section id="set" hidden><div class="wrap"><div class="hd"><h1 data-i="set.title"></h1><button class="btn pri" id="setx" data-i="set.close"></button></div><div id="setb"></div></div></section>
@@ -422,7 +455,7 @@ function quick() {
 }
 $('srch').onclick = function () { palOpen(); };
 function greet() {
-  tickClock(); quick();
+  tickClock(); quick(); spotPaint();
   var h = new Date().getHours(), p = t(h < 12 ? 'greet.m' : h < 18 ? 'greet.a' : 'greet.e');
   var first = user ? String(user.name || user.username || '').split(' ')[0] : '';
   $('greet').textContent = p + (first ? ', ' + first : '');
@@ -476,7 +509,7 @@ function paint() {
     var used = s.used || 0, txt = used >= 1073741824 ? (used / 1073741824).toFixed(1) + ' GB' : (used / 1048576).toFixed(used < 10485760 ? 1 : 0) + ' MB';
     $('store').textContent = t('store', { s: txt }); $('bar').style.width = Math.max(2, s.percent || 0) + '%';
   }
-  badges(); acrossTiles();
+  badges(); acrossTiles(); spotPaint();
 }
 function acrossTiles() {
   var c = $('acrossc'), box = $('acr'), A = (data && data.across) || {}, on = !(S && S.homeCards && S.homeCards.across === false);
@@ -500,6 +533,84 @@ function acrossTiles() {
     b.querySelector('em').textContent = APPS[x.k].name; b.querySelector('b').textContent = x.main; b.querySelector('small').textContent = x.sub === APPS[x.k].name ? '' : x.sub; if (!b.querySelector('small').textContent) b.querySelector('small').remove(); b.onclick = x.act; box.appendChild(b);
   });
 }
+// ---- Spotlight ----
+function spotClock() {
+  var d = new Date(), s2 = d.toLocaleTimeString(i18n.lang, { hour: 'numeric', minute: '2-digit' }), m = s2.match(/^(.*?)\s?([AaPp]\.?\s?[Mm]\.?|午前|午後|오전|오후)$/);
+  $('sclock').innerHTML = m ? esc(m[1]) + '<small>' + esc(m[2]) + '</small>' : esc(s2);
+  var h = d.getHours(), first = user ? String(user.name || user.username || '').split(' ')[0] : '';
+  $('sgreet').textContent = t(h < 12 ? 'greet.m' : h < 18 ? 'greet.a' : 'greet.e') + (first ? ', ' + first : '');
+  $('sdate').textContent = d.toLocaleDateString(i18n.lang, { weekday: 'long', month: 'long', day: 'numeric' });
+}
+setInterval(function () { if (cur === 'home' && user) spotClock(); }, 10000);
+function spotDock() {
+  var d = $('sdock'); d.innerHTML = '';
+  var n = { fledge: data && data.summary ? data.summary.unread || 0 : 0, dusk: data ? (data.tasks || []).length + (data.events || []).length : 0, rustle: data && data.glance ? data.glance.rustle || 0 : 0 };
+  Object.keys(APPS).forEach(function (k) {
+    var b = document.createElement('button'); b.innerHTML = '<img src="' + art(k) + '" alt="">' + (n[k] ? '<i>' + (n[k] > 99 ? '99+' : n[k]) + '</i>' : '') + '<span></span>';
+    b.querySelector('span').textContent = APPS[k].name; b.setAttribute('aria-label', APPS[k].name); b.onclick = function () { lareon.show(k); }; d.appendChild(b);
+  });
+}
+function spotNow() {
+  var box = $('snow'), cards = [], A = (data && data.across) || {};
+  function card(k, main, sub, act) { if (!APPS[k] || cards.length >= 3) return; cards.push({ k: k, main: main, sub: sub, act: act || function () { lareon.show(k); } }); }
+  if (data) {
+    var now = new Date(), mins = now.getHours() * 60 + now.getMinutes(), nx = (data.events || []).filter(function (e) { if (!e.start) return false; var p = e.start.split(':'); return (+p[0]) * 60 + (+p[1] || 0) >= mins - 10; })[0];
+    if (nx) card('dusk', nx.title, t('sp.next', { t: fmtT(nx.start) }));
+    else if ((data.tasks || []).length) card('dusk', data.tasks[0].title, t('sp.task'));
+    else card('dusk', t('sp.free'), t('sp.free.d'));
+    var m0 = data.summary && (data.summary.recent || [])[0];
+    if (m0) card('fledge', sender(m0.from_address) + ': ' + (m0.subject || t('nosubj')), t('sp.mail', { a: ago(m0.created_at) }));
+    else card('fledge', t('inbox.none'), 'Fledge');
+    if (A.verse && A.verse.id) card('verse', A.verse.title || t('ac.verse.untitled'), t('sp.resume'), function () { lareon.openUrl('https://verse.lareon.org/app#' + encodeURIComponent(A.verse.id)); });
+    else if (data.glance && data.glance.rustle) card('rustle', t('ac.rustle.n', { n: data.glance.rustle }), 'Rustle');
+    else if (A.lark && A.lark.game) card('lark', t('ac.lark.today', { g: A.lark.game }), A.lark.streak ? t('ac.lark.streak', { n: A.lark.streak }) : t('ac.lark.start'), function () { lareon.openUrl('https://lark.lareon.org/app'); });
+    else if (A.cove && A.cove.name) card('cove', A.cove.name, t('sp.cove'));
+  }
+  box.innerHTML = ''; box.hidden = !cards.length;
+  cards.forEach(function (c) { var b = document.createElement('button'); b.innerHTML = '<img src="' + art(c.k) + '" alt=""><span class="tx"><b></b><small></small></span>'; b.querySelector('b').textContent = c.main; b.querySelector('small').textContent = c.sub; b.onclick = c.act; box.appendChild(b); });
+}
+function spotPaint() { if (!user) return; spotClock(); spotDock(); spotNow(); }
+// one bar: type to search everything, press Enter (or Ask) to ask Aster
+var sSel = -1, sFound = [], sT = 0, sAsk = 0;
+function sResults() {
+  var r = $('sres'); if (!sFound.length) { r.hidden = true; return; }
+  r.hidden = false; r.innerHTML = sFound.map(function (x, i) { return '<button class="r' + (i === sSel ? ' sel' : '') + '" data-i="' + i + '"><img src="' + art(x.k) + '" alt=""><b>' + esc(x.n) + '</b><small>' + esc(x.s || '') + '</small></button>'; }).join('');
+  [].forEach.call(r.querySelectorAll('.r'), function (b) { b.onmousedown = function (e) { e.preventDefault(); sGo(sFound[+b.getAttribute('data-i')]); }; });
+}
+function sGo(x) { if (!x) return; $('sres').hidden = true; $('sq').value = ''; sFound = []; if (x.u) lareon.openUrl(x.u); else lareon.show(x.k); }
+$('sq').oninput = function () {
+  var q = $('sq').value.trim(); sSel = -1; clearTimeout(sT); sAsk++;
+  if (q.length < 2) { sFound = []; sResults(); return; }
+  sT = setTimeout(function () {
+    var apps = Object.keys(APPS).filter(function (k) { return APPS[k].name.toLowerCase().indexOf(q.toLowerCase()) === 0; }).map(function (k) { return { k: k, n: t('open.x', { a: APPS[k].name }) }; });
+    sFound = apps; sResults();
+    lareon.searchAll(q).then(function (r) {
+      if ($('sq').value.trim() !== q) return;
+      var f = apps.slice();
+      (r.docs || []).forEach(function (x) { f.push({ k: 'verse', n: x.title, s: x.sub, u: x.url }); });
+      (r.files || []).forEach(function (x) { f.push({ k: 'cove', n: x.title, s: x.sub, u: x.url }); });
+      (r.mail || []).forEach(function (x) { f.push({ k: 'fledge', n: x.subject || t('nosubj'), s: x.from }); });
+      (r.tasks || []).concat(r.events || []).forEach(function (x) { f.push({ k: 'dusk', n: x.title, s: x.date || x.due || '' }); });
+      sFound = f.slice(0, 8); sResults();
+    }).catch(function () {});
+  }, 200);
+};
+$('sq').onkeydown = function (e) {
+  if (e.key === 'ArrowDown' && sFound.length) { e.preventDefault(); sSel = Math.min(sFound.length - 1, sSel + 1); sResults(); }
+  else if (e.key === 'ArrowUp' && sFound.length) { e.preventDefault(); sSel = Math.max(-1, sSel - 1); sResults(); }
+  else if (e.key === 'Escape') { $('sq').value = ''; sFound = []; sResults(); }
+};
+$('sq').onblur = function () { setTimeout(function () { if (!$('sres').querySelector('.ans')) $('sres').hidden = true; }, 150); };
+$('sask').onsubmit = function (e) {
+  e.preventDefault(); if (sSel >= 0 && sFound[sSel]) return sGo(sFound[sSel]);
+  var q = $('sq').value.trim(); if (!q) return; var my = ++sAsk, r = $('sres');
+  r.hidden = false; r.innerHTML = '<div class="ans dim">' + esc(t('ask.thinking')) + '</div>';
+  lareon.askAster(q + '\n\n(Reply briefly in Markdown.)', []).then(function (x) {
+    if (my !== sAsk) return;
+    r.innerHTML = x && x.ok ? '<div class="ans md">' + window.mdRender(x.text) + '</div><div class="ft"><button class="btn" id="sax">' + esc(t('set.close')) + '</button><button class="btn pri" id="sac">' + esc(t('ask.open')) + '</button></div>' : '<div class="ans dim">' + esc(x && x.error === 'signin' ? t('sess') : (x && x.error) || t('net.fail')) + '</div>';
+    var c = $('sac'); if (c) c.onclick = function () { lareon.show('aster'); }; var xx = $('sax'); if (xx) xx.onclick = function () { r.hidden = true; $('sq').value = ''; };
+  });
+};
 var briefDone = false;
 function loadBrief(force) {
   var c = $('briefc'), b = $('briefb');
@@ -572,8 +683,6 @@ function renderSet() {
     row(t('set.rail'), t('set.rail.d'), sw(!!S.railWide, function (v) { railWide(v); put({ railWide: v }); }))
   ]));
   b.appendChild(group(t('set.wall'), [wallPicker(), phasePicker(), row(t('set.tint'), t('set.tint.d'), sw(S.wallTint !== false, function (v) { S.wallTint = v; setWall(); put({ wallTint: v }); }))]));
-  var hc = S.homeCards || {}, hcRow = function (k, label) { return row(label, '', sw(hc[k] !== false, function (v) { var o = {}; o[k] = v; S.homeCards[k] = v; put({ homeCards: o }); cards(); })); };
-  b.appendChild(group(t('set.homecards'), [hcRow('today', t('today')), hcRow('mail', t('inbox')), hcRow('brief', t('brief.t')), hcRow('across', t('home.across')), hcRow('focus', t('focus.t')), hcRow('apps', t('apps'))]));
   var paused = S.snoozeUntil && S.snoozeUntil > Date.now();
   b.appendChild(group(t('set.notif'), [
     row(t('set.mail'), t('set.mail.d'), sw(S.notifications, function (v) { put({ notifications: v }); })),
@@ -710,8 +819,7 @@ var WN = {
     ['Aster on any text', 'Copy text in any app and press Ctrl+Shift+E (⌘⇧E on Mac). Aster can explain, summarise, rewrite, fix, translate or reply, then you copy the result back.'],
     ['Quick actions', 'Right-click Lareon in the Dock or taskbar to write an email, start a document, add a task or ask Aster.'],
     ['Accurate flags', 'Every language now shows its real, detailed flag.'],
-    ['Across Lareon', 'Home shows one line from each app: new Rustle chats, your last Verse doc, your newest Cove file, today’s Lark game and more. Click one to jump in.'],
-    ['A new Home', 'A big clock, one search box for everything, one-click buttons to write an email, start a document, add a task or ask Aster, your day as a timeline, and your inbox with faces. Focus and Your apps can be turned back on in Settings.']
+    ['A brand-new Home', 'A big clock over your wallpaper, one bar to ask Aster or search everything, a dock of all your apps with their counts, and three cards for right now: your next event, your newest mail and the document you were working on.']
   ],
   '1.4.0': [
     ['Twelve wallpapers', 'New: Meadow, Forest, Glacier, Canyon and Waves. Pick any time of day for them, dawn, day, dusk or night, or let the clock decide.'],
