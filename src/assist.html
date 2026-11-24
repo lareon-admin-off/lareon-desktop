@@ -1,0 +1,55 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aster</title>
+<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="vendor/katex/katex.min.css"><link rel="stylesheet" href="md.css"><script src="theme.js"></script>
+<style>
+html,body{height:100%;overflow:hidden}body{background:radial-gradient(120% 80% at 0% 0%,rgba(255,170,90,.12),transparent 55%),var(--solid);display:flex;flex-direction:column;border:1px solid var(--line2);border-radius:16px;position:relative;padding:14px 16px 14px}
+body:before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--grad);border-radius:16px 16px 0 0}
+.hd{display:flex;align-items:center;gap:10px;margin-bottom:10px}.hd img{width:24px;height:24px}.hd b{font-size:15px;font-weight:600;flex:1}.hd .k{font:500 11px var(--mono);color:var(--fg3);border:1px solid var(--line2);border-radius:6px;padding:1px 6px}
+.src{font-size:13px;color:var(--fg2);background:var(--hover);border-radius:10px;padding:8px 11px;max-height:62px;overflow:hidden;position:relative;-webkit-user-select:text;user-select:text;box-shadow:inset 0 0 0 1px var(--line)}
+.src:after{content:"";position:absolute;left:0;right:0;bottom:0;height:18px;background:linear-gradient(transparent,var(--solid));opacity:.7}
+.ch{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.ch button{border:1px solid var(--line);background:var(--panel2);color:var(--fg);border-radius:999px;padding:5px 12px;font-size:13px;transition:border-color .2s,background .2s}
+.ch button:hover,.ch button.on{border-color:var(--orange)}.ch select{font:inherit;font-size:13px;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 8px;outline:0}
+#a{flex:1;overflow:auto;padding:12px 14px;border-radius:12px;background:var(--hover);box-shadow:inset 0 0 0 1px var(--line);-webkit-user-select:text;user-select:text}
+#a.dim{color:var(--fg3);display:flex;align-items:center;gap:10px}#a.dim.busy:before{content:"";width:14px;height:14px;border-radius:50%;border:2px solid var(--line2);border-top-color:var(--orange);animation:sp .8s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+.ft{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}.btn{border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:7px 13px;font-size:13px;color:var(--fg)}.btn.pri{border:0;background:var(--grad);color:#fff}.btn:disabled{opacity:.5}
+.empty{flex:1;display:grid;place-items:center;text-align:center;color:var(--fg2);font-size:14px;line-height:1.6;padding:20px}
+</style></head><body>
+<div class="hd"><img src="../build/art/aster-logo.svg" alt=""><b data-i="as.t"></b><span class="k">Esc</span></div>
+<div id="has">
+ <div class="src" id="src"></div>
+ <div class="ch" id="ch"></div>
+</div>
+<div id="a" class="md dim"></div>
+<div class="ft"><button class="btn" id="more" data-i="ask.open"></button><button class="btn pri" id="cp" data-i="as.copy" disabled></button></div>
+<script src="vendor/katex/katex.min.js"></script><script src="md.js"></script><script src="i18n-more.js"></script><script src="i18n-apps.js"></script><script src="i18n.js"></script>
+<script>
+var $ = function (i) { return document.getElementById(i); }, t = function (k, v) { return i18n.t(k, v); }, TEXT = '', OUT = '', run = 0;
+var ACTS = ['explain', 'summary', 'clear', 'short', 'fix', 'formal', 'reply'];
+function chips() {
+  var c = $('ch'); c.innerHTML = '';
+  ACTS.forEach(function (a) { var b = document.createElement('button'); b.textContent = t('as.' + a); b.onclick = function () { go(a, b); }; c.appendChild(b); });
+  var tr = document.createElement('button'); tr.textContent = t('as.translate'); var sel = document.createElement('select');
+  Object.keys(i18n.names).forEach(function (l) { var o = document.createElement('option'); o.value = i18n.names[l]; o.textContent = i18n.names[l]; if (l === i18n.lang) o.selected = true; sel.appendChild(o); });
+  tr.onclick = function () { go('translate', tr, sel.value); }; c.appendChild(tr); c.appendChild(sel);
+}
+function go(what, btn, lang) {
+  if (!TEXT) return; var my = ++run; OUT = '';
+  [].forEach.call(document.querySelectorAll('.ch button'), function (x) { x.classList.toggle('on', x === btn); });
+  $('a').className = 'md dim busy'; $('a').textContent = t('ask.thinking'); $('cp').disabled = true;
+  lareon.assistRun(what, TEXT, lang).then(function (r) {
+    if (my !== run) return;
+    if (r && r.ok) { OUT = r.text; $('a').className = 'md'; $('a').innerHTML = window.mdRender(r.text); $('cp').disabled = false; }
+    else { $('a').className = 'md dim'; $('a').textContent = r && r.error === 'signin' ? t('sess') : (r && r.error) || t('net.fail'); }
+  });
+}
+lareon.onAssistText(function (txt) {
+  TEXT = txt || ''; OUT = ''; run++; $('cp').disabled = true; $('cp').textContent = t('as.copy');
+  $('has').hidden = !TEXT; $('src').textContent = TEXT.slice(0, 400);
+  if (!TEXT) { $('a').className = 'empty'; $('a').textContent = t('as.none'); return; }
+  $('a').className = 'md dim'; $('a').textContent = t('as.pick'); chips();
+});
+$('cp').onclick = function () { lareon.assistCopy(OUT); $('cp').textContent = t('as.copied'); setTimeout(function () { lareon.assistClose(); }, 500); };
+$('more').onclick = function () { lareon.askContinue(); lareon.assistClose(); };
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') lareon.assistClose(); });
+lareon.info().then(function (r) { i18n.set(r.lang || i18n.guess(r.locale), true); if (TEXT) chips(); });
+</script></body></html>

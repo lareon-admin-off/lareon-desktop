@@ -529,6 +529,17 @@ function renderSet() {
   var cat = S.catalog || {};
   b.appendChild(mk('p', 'sub', esc(t('set.order.d')))); b.lastChild.style.cssText = 'margin:-4px 4px 8px;font-size:13px';
   b.appendChild(group(t('set.apps'), Object.keys(cat).map(function (k) { return row(cat[k].name, t('d.' + k), sw(S.apps[k] !== false, function (v) { put({ apps: (function () { var o = {}; o[k] = v; return o; })() }).then(function () { return Promise.all([lareon.apps()]); }).then(function (r) { APPS = r[0]; tabs(); grid(); renderSet(); }); })); })));
+  // Lareon and the rest of your computer
+  var mk2 = mod === 'Cmd' ? '⌘⇧' : 'Ctrl+Shift+';
+  b.appendChild(group(t('set.pc'), [
+    row(t('pc.mail'), S.mailDefault ? t('pc.mail.on') : t('pc.mail.d'), (function () {
+      var x = mk('button', 'btn' + (S.mailDefault ? '' : ' pri'), esc(t(S.mailDefault ? 'pc.mail.off' : 'pc.mail.use')));
+      x.onclick = function () { lareon.mailDefault(!S.mailDefault).then(function (r) { S.mailDefault = r.on; if (!S.mailDefault && r.platform === 'win32') toast(t('pc.mail.win'), true); renderSet(); }); };
+      return x; })()),
+    row(t('pc.ics'), t('pc.ics.d'), null),
+    row(t('pc.compose'), t('pc.compose.d', { k: mk2 + 'M' }), sw(S.composeKey !== false, function (v) { put({ composeKey: v }); })),
+    row(t('pc.assist'), t('pc.assist.d', { k: mk2 + 'E' }), sw(S.assistKey !== false, function (v) { put({ assistKey: v }); }))
+  ]));
   b.appendChild(group(t('set.updates'), [
     row(t('set.auto'), '', sw(S.autoUpdate, function (v) { put({ autoUpdate: v }); })),
     row(t('set.version', { v: S.version }), '', (function () { var x = mk('button', 'btn', esc(t('set.check'))); x.onclick = function () { lareon.checkUpdates(); }; return x; })())
@@ -606,6 +617,13 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$
 
 // ---- what's new ----
 var WN = {
+  '1.5.0': [
+    ['Lareon is your email app', 'Make Lareon open every email link on your computer. A small window lets you write and send right away, without opening Fledge.'],
+    ['Write from anywhere', 'Press Ctrl+Shift+M (⌘⇧M on Mac) in any app to write an email.'],
+    ['Calendar invites go to Dusk', 'Open an invite file (.ics) and Lareon shows its events. Add them to Dusk in one click.'],
+    ['Aster on any text', 'Copy text in any app and press Ctrl+Shift+E (⌘⇧E on Mac). Aster can explain, summarise, rewrite, fix, translate or reply, then you copy the result back.'],
+    ['Quick actions', 'Right-click Lareon in the Dock or taskbar to write an email, start a document, add a task or ask Aster.']
+  ],
   '1.4.0': [
     ['Twelve wallpapers', 'New: Meadow, Forest, Glacier, Canyon and Waves. Pick any time of day for them, dawn, day, dusk or night, or let the clock decide.'],
     ['Colours that match', 'Buttons, switches and links now take your wallpaper’s colours. You can turn this off in Settings.'],

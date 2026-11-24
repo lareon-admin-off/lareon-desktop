@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, globalShortcut, nativeImage, WebContentsView, shell, Menu, session, ipcMain, Notification, nativeTheme, safeStorage, net, dialog, screen, powerMonitor, systemPreferences } = require('electron');
+const { app, BrowserWindow, Tray, globalShortcut, nativeImage, WebContentsView, shell, Menu, session, ipcMain, Notification, nativeTheme, safeStorage, net, dialog, screen, powerMonitor, systemPreferences, clipboard } = require('electron');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -22,7 +22,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 
 // ---- settings (chosen in the setup wizard) ----
 const DEFAULT_APPS = Object.fromEntries(Object.entries(apps).map(([k, a]) => [k, !a.off]));
-const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, wallPhase: '', wallTint: true, railWide: false, notifyApps: { fledge: true, rustle: true, dusk: true }, quiet: { on: false, from: '22:00', to: '07:00' }, lock: { pin: '', idle: 0, sleep: true, touch: true }, order: [], homeCards: { today: true, mail: true, brief: true, focus: true, apps: true }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
+const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, wallPhase: '', wallTint: true, railWide: false, notifyApps: { fledge: true, rustle: true, dusk: true }, quiet: { on: false, from: '22:00', to: '07:00' }, composeKey: true, assistKey: true, lock: { pin: '', idle: 0, sleep: true, touch: true }, order: [], homeCards: { today: true, mail: true, brief: true, focus: true, apps: true }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 let settings = { ...DEFAULTS };
 function loadSettings() {
@@ -455,6 +455,10 @@ function applyQuick() {
   if (settings.quickAdd !== false) { try { globalShortcut.register('CommandOrControl+Shift+Space', openQuick); } catch {} }
   try { globalShortcut.unregister('CommandOrControl+Shift+A'); } catch {}
   if (settings.askKey !== false) { try { globalShortcut.register('CommandOrControl+Shift+A', openAsk); } catch {} }
+  try { globalShortcut.unregister('CommandOrControl+Shift+M'); } catch {}
+  if (settings.composeKey !== false) { try { globalShortcut.register('CommandOrControl+Shift+M', () => openCompose()); } catch {} }
+  try { globalShortcut.unregister('CommandOrControl+Shift+E'); } catch {}
+  if (settings.assistKey !== false) { try { globalShortcut.register('CommandOrControl+Shift+E', () => openAssist()); } catch {} }
 }
 ipcMain.on('quick:close', () => { if (quick) quick.hide(); });
 
@@ -615,12 +619,13 @@ function createWindow() {
 }
 
 ipcMain.on('theme:get', (e) => { e.returnValue = ['light', 'dark'].includes(settings.theme) ? settings.theme : ''; });
-const publicSettings = () => ({ catalog: apps, order: enabledKeys(), ...(() => { const w = wallNow(); return { wall: w.wall, wallPhase: w.phase, wallTint: w.tint }; })(), notifyApps: { ...DEFAULTS.notifyApps, ...(settings.notifyApps || {}) }, quiet: { ...DEFAULTS.quiet, ...(settings.quiet || {}) }, lock: { hasPin: !!(settings.lock && settings.lock.pin), idle: (settings.lock && settings.lock.idle) || 0, sleep: !settings.lock || settings.lock.sleep !== false, touch: !settings.lock || settings.lock.touch !== false, canTouch: canTouch() }, railWide: !!settings.railWide, homeCards: { ...DEFAULTS.homeCards, ...(settings.homeCards || {}) }, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
+const publicSettings = () => ({ composeKey: settings.composeKey !== false, assistKey: settings.assistKey !== false, mailDefault: isMailDefault(), catalog: apps, order: enabledKeys(), ...(() => { const w = wallNow(); return { wall: w.wall, wallPhase: w.phase, wallTint: w.tint }; })(), notifyApps: { ...DEFAULTS.notifyApps, ...(settings.notifyApps || {}) }, quiet: { ...DEFAULTS.quiet, ...(settings.quiet || {}) }, lock: { hasPin: !!(settings.lock && settings.lock.pin), idle: (settings.lock && settings.lock.idle) || 0, sleep: !settings.lock || settings.lock.sleep !== false, touch: !settings.lock || settings.lock.touch !== false, canTouch: canTouch() }, railWide: !!settings.railWide, homeCards: { ...DEFAULTS.homeCards, ...(settings.homeCards || {}) }, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
 ipcMain.handle('settings:get', () => publicSettings());
 ipcMain.handle('settings:set', (_e, p) => {
   p = p || {};
   const bool = (k) => { if (typeof p[k] === 'boolean') settings[k] = p[k]; };
-  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound', 'background', 'quickAdd', 'askKey', 'brief', 'focusMute'].forEach(bool);
+  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound', 'background', 'quickAdd', 'askKey', 'brief', 'focusMute', 'composeKey', 'assistKey'].forEach(bool);
+  if (typeof p.composeKey === 'boolean' || typeof p.assistKey === 'boolean') applyQuick();
   if (typeof p.launchAtLogin === 'boolean') { settings.launchAtLogin = p.launchAtLogin; applyLogin(); }
   if (['system', 'light', 'dark'].includes(p.theme)) { settings.theme = p.theme; nativeTheme.themeSource = p.theme; paintChrome(); }
   if (['en', 'es', 'fr', 'de', 'pt', 'it', 'ru', 'tr', 'sv', 'ja', 'ko', 'zh', 'hi', 'ar', 'fa', 'sw', 'ary'].includes(p.lang)) settings.lang = p.lang;
@@ -804,7 +809,7 @@ function pinOk(pin) { try { const [salt, h] = String(settings.lock.pin).split(':
 function lockNow() {
   if (!hasPin() || locked || !win || inSetup) return;
   locked = true; for (const v of Object.values(views)) v.setVisible(false);
-  for (const w of [actWin, peek, ask, quick]) { try { if (w && !w.isDestroyed()) w.hide(); } catch {} }
+  for (const w of [actWin, peek, ask, quick, compose, assist, invite]) { try { if (w && !w.isDestroyed()) w.hide(); } catch {} }
   send('lock', { on: true, touch: canTouch() && settings.lock.touch !== false });
 }
 function unlockDone() { locked = false; unlockTries = 0; send('lock', { on: false }); const k = current; if (k && k !== 'home' && appOf(k)) { current = null; show(k); } else showHome(); }
@@ -847,7 +852,7 @@ ipcMain.on('new:menu', (_e, pos) => {
     on('verse') && { label: 'Document', click: newDoc },
     on('dusk') && { label: 'Task', click: () => openQuick() },
     on('dusk') && { label: 'Event', click: go('dusk') },
-    on('fledge') && { label: 'Email', click: go('fledge') },
+    on('fledge') && { label: 'Email', click: () => openCompose() },
     on('rustle') && { label: 'Chat', click: go('rustle') },
     on('cove') && { label: 'Upload to Cove', click: go('cove') },
     on('ward') && { label: 'Password', click: go('ward') },
@@ -870,9 +875,129 @@ function openLink(u) {
   } catch { return false; }
 }
 try { app.setAsDefaultProtocolClient('lareon'); } catch {}
-app.on('open-url', (e, u) => { e.preventDefault(); if (app.isReady() && win) openLink(u); else app.whenReady().then(() => setTimeout(() => openLink(u), 1500)); });
-const argLink = (argv) => (argv || []).find((a) => /^lareon:\/\//i.test(a));
-app.whenReady().then(() => { const l = argLink(process.argv); if (l) setTimeout(() => openLink(l), 1500); });
+// everything the computer hands to Lareon: lareon:// and mailto: links, .ics invites, Dock and taskbar actions
+function handOff(x) {
+  x = String(x || '');
+  if (/^mailto:/i.test(x)) return openCompose(parseMailto(x)), true;
+  if (/^lareon:\/\//i.test(x)) return openLink(x);
+  if (/\.ics$/i.test(x)) return openInvite(x), true;
+  const m = x.match(/^--lareon=(compose|doc|task|ask|assist)$/); if (m) return ({ compose: () => openCompose(), doc: () => newDoc(), task: () => openQuick(), ask: () => openAsk(), assist: () => openAssist() })[m[1]](), true;
+  return false;
+}
+const later = (f) => { if (app.isReady() && win && !win.webContents.isLoading()) f(); else app.whenReady().then(() => setTimeout(f, 1500)); };
+app.on('open-url', (e, u) => { e.preventDefault(); later(() => handOff(u)); });
+app.on('open-file', (e, f) => { if (/\.ics$/i.test(f)) { e.preventDefault(); later(() => handOff(f)); } });
+
+const argLink = (argv) => (argv || []).slice(1).find((a) => /^(lareon:\/\/|mailto:|--lareon=)|\.ics$/i.test(a));
+app.whenReady().then(() => { const l = argLink(process.argv); if (l) setTimeout(() => handOff(l), 1500); });
+
+// ---- write an email from anywhere (and from every mailto: link) ----
+function parseMailto(u) {
+  try {
+    const x = new URL(u), q = x.searchParams, list = (v) => String(v || '').split(',').map((a) => decodeURIComponent(a).trim()).filter(Boolean);
+    const to = [...list(x.pathname), ...list(q.get('to')), ...list(q.get('cc'))];
+    return { to: to.join(', '), subject: q.get('subject') || '', body: q.get('body') || '' };
+  } catch { return {}; }
+}
+let compose = null;
+function openCompose(fill) {
+  if (!settings.setupDone || locked) return;
+  if (!sess) { showMain(); return showHome('Sign in to write an email.'); }
+  if (!compose || compose.isDestroyed()) {
+    compose = new BrowserWindow({ width: 560, height: 480, minWidth: 420, minHeight: 360, show: false, frame: false, resizable: true, fullscreenable: false, backgroundColor: BG(), webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false } });
+    compose.loadFile(path.join(__dirname, 'compose.html')); compose.on('closed', () => { compose = null; });
+  }
+  const send2 = () => { compose.webContents.send('compose:fill', fill || {}); compose.center(); compose.show(); compose.focus(); };
+  if (compose.webContents.isLoading()) compose.webContents.once('did-finish-load', send2); else send2();
+}
+ipcMain.handle('compose:send', async (_e, m) => {
+  if (!sess || locked) return { error: 'Sign in to send.' };
+  m = m || {}; const to = String(m.to || '').trim(); if (!to) return { error: 'Add who it’s to.' };
+  try {
+    const r = await api('/api/messages/send', { method: 'POST', token: sess.token, body: { to, subject: String(m.subject || '').slice(0, 300), body: String(m.body || '').slice(0, 100000) } });
+    if (r.status === 200 && !(r.j && r.j.error)) { logActivity({ app: 'fledge', title: 'Sent', body: (m.subject || '(no subject)') + ' → ' + to }); return { ok: true }; }
+    return { error: (r.j && r.j.error) || 'Couldn’t send. Try again.' };
+  } catch { return { error: 'You’re offline. Try again when you’re connected.' }; }
+});
+ipcMain.on('compose:close', () => { if (compose && !compose.isDestroyed()) compose.hide(); });
+ipcMain.on('compose:fledge', () => { if (compose && !compose.isDestroyed()) compose.hide(); showMain(); show('fledge'); });
+const isMailDefault = () => { try { return app.isDefaultProtocolClient('mailto'); } catch { return false; } };
+ipcMain.handle('mail:default', (_e, on) => {
+  try { if (on) app.setAsDefaultProtocolClient('mailto'); else app.removeAsDefaultProtocolClient('mailto'); } catch {}
+  return { on: isMailDefault(), platform: process.platform };
+});
+
+// ---- calendar invites (.ics): see the events, add them to Dusk ----
+function icsDate(v, params) {
+  v = String(v || '').trim(); const m = v.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/); if (!m) return null;
+  if (!m[4] || /VALUE=DATE(?!-)/i.test(params || '')) return { date: m[1] + '-' + m[2] + '-' + m[3], time: '' };
+  const d = m[7] ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5])) : new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  return { date: isoDay(d), time: pad(d.getHours()) + ':' + pad(d.getMinutes()) };
+}
+function parseIcs(text) {
+  const lines = String(text || '').replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').split(/\r?\n/), out = []; let ev = null;
+  const un = (v) => String(v || '').replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1').trim();
+  for (const l of lines) {
+    if (/^BEGIN:VEVENT/i.test(l)) ev = {}; else if (/^END:VEVENT/i.test(l)) { if (ev && ev.start) out.push(ev); ev = null; }
+    else if (ev) { const i = l.indexOf(':'); if (i < 0) continue; const key = l.slice(0, i), val = l.slice(i + 1), name = key.split(';')[0].toUpperCase(), params = key.slice(name.length);
+      if (name === 'SUMMARY') ev.title = un(val); else if (name === 'LOCATION') ev.where = un(val); else if (name === 'DTSTART') ev.start = icsDate(val, params); else if (name === 'DTEND') ev.end = icsDate(val, params); }
+  }
+  return out.slice(0, 50).map((e) => ({ title: (e.title || 'Event').slice(0, 120), where: (e.where || '').slice(0, 200), date: e.start.date, start: e.start.time, end: e.end && e.end.date === e.start.date ? e.end.time : '' }));
+}
+let invite = null, inviteEvents = [];
+function openInvite(file) {
+  if (!settings.setupDone) return;
+  let text = ''; try { const st = fs.statSync(file); if (st.size > 2 * 1024 * 1024) return; text = fs.readFileSync(file, 'utf8'); } catch { return; }
+  inviteEvents = parseIcs(text); if (!inviteEvents.length) return dialog.showMessageBox({ message: 'There are no events in this file.' });
+  if (locked) { showMain(); return; }
+  if (!invite || invite.isDestroyed()) { invite = floatWin('invite.html', 440, 500); invite.removeAllListeners('blur'); invite.on('closed', () => { invite = null; }); }
+  const go2 = () => { invite.webContents.send('invite:events', inviteEvents); invite.center(); invite.show(); invite.focus(); };
+  if (invite.webContents.isLoading()) invite.webContents.once('did-finish-load', go2); else go2();
+}
+ipcMain.handle('invite:add', async (_e, picks) => {
+  if (!sess || locked) return { error: 'Sign in to add events.' };
+  picks = Array.isArray(picks) ? picks : []; let n = 0;
+  for (const i of picks) { const e = inviteEvents[i]; if (!e) continue;
+    try { const r = await api('/api/dusk/events', { method: 'POST', token: sess.token, body: { title: e.title, date: e.date, start: e.start, end: e.end } }); if (r.status === 200) n++; } catch {} }
+  if (n) logActivity({ app: 'dusk', title: n === 1 ? 'Event added' : n + ' events added', body: inviteEvents[picks[0]] ? inviteEvents[picks[0]].title : '' });
+  return { added: n };
+});
+ipcMain.on('invite:close', (_e, open) => { if (invite && !invite.isDestroyed()) invite.hide(); if (open) { showMain(); show('dusk'); } });
+
+// ---- Aster on any text: copy something anywhere, press the shortcut ----
+let assist = null;
+function openAssist() {
+  if (!settings.setupDone || locked) return;
+  const text = String(clipboard.readText() || '').trim().slice(0, 8000);
+  if (!assist || assist.isDestroyed()) assist = floatWin('assist.html', 520, 440);
+  const p = screen.getCursorScreenPoint(), d = screen.getDisplayNearestPoint(p).workArea;
+  assist.setPosition(Math.round(Math.max(d.x + 8, Math.min(p.x - 260, d.x + d.width - 528))), Math.round(Math.max(d.y + 8, Math.min(p.y + 16, d.y + d.height - 448))));
+  const go2 = () => { assist.webContents.send('assist:text', text); assist.show(); assist.focus(); };
+  if (assist.webContents.isLoading()) assist.webContents.once('did-finish-load', go2); else go2();
+}
+const ASSIST = {
+  explain: 'Explain this simply and briefly.', summary: 'Summarise this in a few short bullet points.', clear: 'Rewrite this so it is clearer and easier to read. Keep the meaning and the language.',
+  short: 'Make this shorter. Keep the meaning and the language.', fix: 'Fix the spelling and grammar. Change nothing else. Keep the language.', reply: 'Write a short, friendly reply to this message.',
+  formal: 'Rewrite this in a polite, formal tone. Keep the language.'
+};
+ipcMain.handle('assist:run', (_e, what, text, lang) => {
+  text = String(text || '').slice(0, 8000); if (!text) return { error: 'empty' };
+  const how = what === 'translate' ? 'Translate this into ' + String(lang || 'English').slice(0, 40) + '. Reply with only the translation.' : ASSIST[what] || ASSIST.explain;
+  const bare = ['clear', 'short', 'fix', 'formal', 'translate', 'reply'].includes(what) ? ' Reply with only the new text, no introduction.' : ' Reply in Markdown.';
+  return askAster(how + bare + '\n\n---\n' + text + '\n---', []);
+});
+ipcMain.on('assist:copy', (_e, t) => { try { clipboard.writeText(String(t || '')); } catch {} });
+ipcMain.on('assist:close', () => { if (assist && !assist.isDestroyed()) assist.hide(); });
+
+// ---- the Dock (Mac) and taskbar (Windows) menus ----
+function dockMenu() {
+  const items = [['New email', 'compose'], ['New document', 'doc'], ['Add a task', 'task'], ['Ask Aster', 'ask'], ['Aster on copied text', 'assist']];
+  try {
+    if (isMac && app.dock) app.dock.setMenu(Menu.buildFromTemplate(items.map(([label, a]) => ({ label, click: () => handOff('--lareon=' + a) }))));
+    else if (process.platform === 'win32') app.setUserTasks(items.map(([title, a]) => ({ program: process.execPath, arguments: '--lareon=' + a, iconPath: process.execPath, iconIndex: 0, title, description: title })));
+  } catch {}
+}
+app.whenReady().then(dockMenu);
 
 ipcMain.on('wall:get', (e) => { e.returnValue = wallNow(); });
 
@@ -886,7 +1011,7 @@ ipcMain.handle('apps:all', () => apps);
 ipcMain.handle('apps', () => { const o = {}; for (const k of enabledKeys()) o[k] = apps[k]; return o; });
 ipcMain.handle('apps:order', () => enabledKeys());
 ipcMain.on('show', (_e, k) => { if (!inSetup && (k === 'home' || k === 'account' || k === 'help' || enabledKeys().includes(k))) show(k); });
-app.on('second-instance', (_e, argv) => { showMain(); const l = argLink(argv); if (l) openLink(l); });
+app.on('second-instance', (_e, argv) => { const l = argLink(argv); if (!l || /^lareon:/i.test(l)) showMain(); if (l) handOff(l); });
 let quitting = false;
 app.on('before-quit', () => { quitting = true; });
 function showMain() { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } else if (app.isReady()) createWindow(); }

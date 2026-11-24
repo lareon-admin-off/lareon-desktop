@@ -1,0 +1,44 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>New email</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+<style>
+html,body{height:100%;overflow:hidden}body{background:var(--solid);display:flex;flex-direction:column;border:1px solid var(--line2);border-radius:14px;position:relative}
+body:before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--grad);border-radius:14px 14px 0 0}
+.hd{display:flex;align-items:center;gap:10px;padding:14px 14px 8px 16px;-webkit-app-region:drag}.hd img{width:22px;height:22px}.hd b{flex:1;font-size:15px;font-weight:600}
+.hd button{-webkit-app-region:no-drag}.x{width:28px;height:28px;border-radius:8px;border:0;background:none;color:var(--fg2);display:grid;place-items:center}.x:hover{background:var(--hover);color:var(--fg)}
+.x svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
+.f{display:flex;align-items:center;gap:10px;margin:0 16px;border-bottom:1px solid var(--line)}.f label{font-size:13px;color:var(--fg3);min-width:56px}
+input,textarea{flex:1;font:inherit;font-size:14px;color:var(--fg);background:none;border:0;outline:0;padding:11px 0;-webkit-user-select:text;user-select:text}
+input:focus-visible,textarea:focus-visible{outline:none}
+textarea{resize:none;margin:0 16px;padding:12px 0;line-height:1.55;min-height:0}
+.ft{display:flex;align-items:center;gap:10px;padding:10px 14px 14px;border-top:1px solid var(--line)}
+.btn{border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:8px 14px;font-size:13px;color:var(--fg)}.btn:hover{border-color:var(--line2)}
+.btn.pri{border:0;background:var(--grad);color:#fff;padding:8px 18px;font-weight:500}.btn:disabled{opacity:.6}
+#msg{flex:1;font-size:13px;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#msg.bad{color:var(--red)}#msg.ok{color:var(--green)}
+.k{font:500 11px var(--mono);color:var(--fg3)}
+</style></head><body>
+<div class="hd"><img src="../build/art/fledge-logo.svg" alt=""><b data-i="cm.t"></b><button class="x" id="x" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<div class="f"><label for="to" data-i="cm.to"></label><input id="to" autocomplete="off" spellcheck="false"></div>
+<div class="f"><label for="sub" data-i="cm.sub"></label><input id="sub" maxlength="300"></div>
+<textarea id="body" style="flex:1"></textarea>
+<div class="ft"><span id="msg"><span class="k" id="kk"></span></span><button class="btn" id="fl" data-i="cm.fledge"></button><button class="btn pri" id="send" data-i="cm.send"></button></div>
+<script src="i18n-more.js"></script><script src="i18n-apps.js"></script><script src="i18n.js"></script>
+<script>
+var $ = function (i) { return document.getElementById(i); }, t = function (k, v) { return i18n.t(k, v); }, sending = false, mac = false;
+lareon.info().then(function (r) { mac = r.platform === 'darwin'; i18n.set(r.lang || i18n.guess(r.locale), true); $('kk').textContent = (mac ? '⌘' : 'Ctrl') + ' + Enter'; });
+function msg(m, cls) { $('msg').className = cls || ''; $('msg').textContent = m; }
+lareon.onComposeFill(function (f) {
+  if (sending) return; $('to').value = f.to || ''; $('sub').value = f.subject || ''; $('body').value = f.body || ''; msg(''); $('msg').innerHTML = '<span class="k">' + (mac ? '⌘' : 'Ctrl') + ' + Enter</span>';
+  setTimeout(function () { (f.to ? (f.subject ? $('body') : $('sub')) : $('to')).focus(); }, 40);
+});
+function send() {
+  if (sending) return; if (!$('to').value.trim()) { msg(t('cm.noto'), 'bad'); $('to').focus(); return; }
+  sending = true; $('send').disabled = true; msg(t('cm.sending'));
+  lareon.composeSend({ to: $('to').value, subject: $('sub').value, body: $('body').value }).then(function (r) {
+    sending = false; $('send').disabled = false;
+    if (r && r.ok) { msg(t('cm.sent'), 'ok'); setTimeout(function () { $('to').value = $('sub').value = $('body').value = ''; lareon.composeClose(); }, 700); }
+    else msg((r && r.error) || t('net.fail'), 'bad');
+  });
+}
+$('send').onclick = send; $('x').onclick = function () { lareon.composeClose(); }; $('fl').onclick = function () { lareon.composeFledge(); };
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') lareon.composeClose(); if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send(); } });
+</script></body></html>

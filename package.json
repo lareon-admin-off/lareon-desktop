@@ -1,6 +1,6 @@
 {
   "name": "lareon-desktop",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Lareon for desktop: every Lareon app in one window",
   "main": "src/main.js",
   "author": "Lareon <help@lareon.org>",
@@ -78,6 +78,27 @@
         "provider": "github",
         "owner": "lareon-admin-off",
         "repo": "lareon-desktop"
+      }
+    ],
+    "protocols": [
+      {
+        "name": "Lareon link",
+        "schemes": [
+          "lareon"
+        ]
+      },
+      {
+        "name": "Email",
+        "schemes": [
+          "mailto"
+        ]
+      }
+    ],
+    "fileAssociations": [
+      {
+        "ext": "ics",
+        "name": "Calendar invite",
+        "role": "Viewer"
       }
     ]
   },
