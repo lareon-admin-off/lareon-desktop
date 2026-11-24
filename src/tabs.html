@@ -115,7 +115,7 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
 .seg button[aria-checked=true]{background:var(--solid);color:var(--fg);box-shadow:0 1px 4px rgba(0,0,0,.18)}
 .sel{font:inherit;font-size:13px;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 10px;outline:0;max-width:200px}
 .sel:focus{border-color:var(--orange)}
-.ib svg.fl{width:22px;height:15px;stroke:none}.lgsel{display:flex;align-items:center;gap:9px}.sk2{font:500 12px var(--mono);color:var(--fg2)}
+.ib svg.fl{width:22px;height:16px;stroke:none}.lgsel{display:flex;align-items:center;gap:9px}.sk2{font:500 12px var(--mono);color:var(--fg2)}
 /* focus */
 .c-focus{grid-column:span 12}
 .fo{display:flex;align-items:center;gap:18px;flex-wrap:wrap}.fo .big{min-width:130px;font-variant-numeric:tabular-nums;font-family:var(--mono);font-weight:500;font-size:34px}
@@ -223,6 +223,15 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
 .mrow{grid-template-columns:auto 1fr auto;gap:0 12px;align-items:center;padding:10px 8px}
 .mrow .avt{grid-row:1/3;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:600;font-size:14px;color:#fff}
 .mrow b{font-size:14.5px}.mrow span{grid-column:2/4;font-size:13.5px}
+
+/* Across Lareon: one quiet line from each app */
+.c-across{grid-column:span 12;padding-bottom:14px}
+.acr{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}@media(max-width:900px){.acr{grid-template-columns:repeat(2,1fr)}}
+.at{display:flex;align-items:center;gap:12px;text-align:left;border:0;background:var(--panel2);border-radius:14px;padding:12px;color:var(--fg);min-width:0;transition:transform .25s var(--ease),background .2s;box-shadow:inset 0 0 0 1px var(--line)}
+.at:hover{transform:translateY(-2px);background:var(--hover);box-shadow:inset 0 0 0 1px var(--line2)}
+.at>img{width:30px;height:30px;flex:none}.at .tx{min-width:0;flex:1}.at .tx b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;font-weight:500;line-height:1.35}
+.at .tx small{display:block;font-size:12.5px;color:var(--fg3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}.at .tx em{display:block;font:500 10.5px var(--mono);font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);margin-bottom:2px}.at .th{width:38px;height:38px;border-radius:9px;object-fit:cover;flex:none}
+.at .dt{width:8px;height:8px;border-radius:50%;background:var(--orange);flex:none}
 </style></head><body>
 <div class="bar">
  <svg class="brand" viewBox="0 0 150 150" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#c84bff"/></linearGradient></defs><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#g)"/></svg>
@@ -277,6 +286,7 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
     <div class="big" id="unread">&mdash;</div>
     <div class="mail" id="mail" style="margin-top:12px"><div class="sk"></div><div class="sk"></div></div>
    </section>
+   <section class="card c-across rise" id="acrossc" style="--i:5" hidden><h2><span data-i="home.across"></span></h2><div class="acr" id="acr"></div></section>
    <section class="card c-brief rise" id="briefc" style="--i:5" hidden><h2><span class="bt"><img src="../build/art/aster-logo.svg" alt=""><span data-i="brief.t"></span></span> <button class="link" id="briefr" data-i="brief.refresh"></button></h2><div id="briefb"><div class="sk"></div><div class="sk"></div></div></section>
    <section class="card c-focus rise" style="--i:3"><h2 data-i="focus.t"></h2><div class="fo"><div class="big" id="fclock">25:00</div><div class="seg" id="fseg"></div><button class="btn pri" id="fgo" data-i="focus.start"></button><p id="fhint" data-i="focus.idle"></p></div><div class="fbar"><i id="fbar"></i></div></section>
    <section class="card c-apps rise" style="--i:3"><h2 data-i="apps"></h2><div class="apps" id="grid"></div></section>
@@ -466,7 +476,29 @@ function paint() {
     var used = s.used || 0, txt = used >= 1073741824 ? (used / 1073741824).toFixed(1) + ' GB' : (used / 1048576).toFixed(used < 10485760 ? 1 : 0) + ' MB';
     $('store').textContent = t('store', { s: txt }); $('bar').style.width = Math.max(2, s.percent || 0) + '%';
   }
-  badges();
+  badges(); acrossTiles();
+}
+function acrossTiles() {
+  var c = $('acrossc'), box = $('acr'), A = (data && data.across) || {}, on = !(S && S.homeCards && S.homeCards.across === false);
+  var tiles = [];
+  function tile(k, main, sub, act, extra) { if (!APPS[k]) return; tiles.push({ k: k, main: main, sub: sub, act: act || function () { lareon.show(k); }, extra: extra || '' }); }
+  var rn = data && data.glance ? data.glance.rustle || 0 : 0;
+  tile('rustle', rn ? t('ac.rustle.n', { n: rn }) : t('ac.rustle.0'), 'Rustle', null, rn ? '<i class="dt"></i>' : '');
+  if (A.verse) tile('verse', A.verse.title ? A.verse.title : A.verse.id ? t('ac.verse.untitled') : t('ac.verse.0'), A.verse.id ? t('ac.verse.last', { a: ago(A.verse.at) }) : 'Verse', A.verse.id ? function () { lareon.openUrl('https://verse.lareon.org/app#' + encodeURIComponent(A.verse.id)); } : null);
+  else tile('verse', t('ac.verse.0'), 'Verse');
+  if (A.cove) { var gb = function (b) { return b >= 1073741824 ? (b / 1073741824).toFixed(1) + ' GB' : Math.max(1, Math.round(b / 1048576)) + ' MB'; };
+    tile('cove', A.cove.name || t('ac.cove.0'), A.cove.quota ? t('ac.store', { u: gb(A.cove.used), q: gb(A.cove.quota) }) : 'Cove', null, A.cove.thumb && /^https:\/\/([a-z0-9-]+\.)*lareon\.org\//.test(A.cove.thumb) ? '<img class="th" src="' + esc(A.cove.thumb) + '" alt="" onerror="this.remove()">' : ''); }
+  else tile('cove', t('ac.cove.0'), 'Cove');
+  if (A.lark && A.lark.game) tile('lark', A.lark.played ? t('ac.lark.done') : t('ac.lark.today', { g: A.lark.game }), A.lark.streak ? t('ac.lark.streak', { n: A.lark.streak }) : t('ac.lark.start'), function () { lareon.openUrl('https://lark.lareon.org/app'); });
+  else tile('lark', t('ac.lark.0'), 'Lark');
+  tile('ward', t('ac.ward'), t('ac.ward.d'));
+  tile('sheen', t('ac.sheen'), t('ac.sheen.d'));
+  tile('grove', t('ac.grove'), t('ac.grove.d'));
+  c.hidden = !on || !tiles.length || !user;
+  box.innerHTML = ''; tiles.forEach(function (x) {
+    var b = document.createElement('button'); b.className = 'at'; b.innerHTML = '<img src="' + art(x.k) + '" alt=""><span class="tx"><em></em><b></b><small></small></span>' + x.extra;
+    b.querySelector('em').textContent = APPS[x.k].name; b.querySelector('b').textContent = x.main; b.querySelector('small').textContent = x.sub === APPS[x.k].name ? '' : x.sub; if (!b.querySelector('small').textContent) b.querySelector('small').remove(); b.onclick = x.act; box.appendChild(b);
+  });
 }
 var briefDone = false;
 function loadBrief(force) {
@@ -541,7 +573,7 @@ function renderSet() {
   ]));
   b.appendChild(group(t('set.wall'), [wallPicker(), phasePicker(), row(t('set.tint'), t('set.tint.d'), sw(S.wallTint !== false, function (v) { S.wallTint = v; setWall(); put({ wallTint: v }); }))]));
   var hc = S.homeCards || {}, hcRow = function (k, label) { return row(label, '', sw(hc[k] !== false, function (v) { var o = {}; o[k] = v; S.homeCards[k] = v; put({ homeCards: o }); cards(); })); };
-  b.appendChild(group(t('set.homecards'), [hcRow('today', t('today')), hcRow('mail', t('inbox')), hcRow('brief', t('brief.t')), hcRow('focus', t('focus.t')), hcRow('apps', t('apps'))]));
+  b.appendChild(group(t('set.homecards'), [hcRow('today', t('today')), hcRow('mail', t('inbox')), hcRow('brief', t('brief.t')), hcRow('across', t('home.across')), hcRow('focus', t('focus.t')), hcRow('apps', t('apps'))]));
   var paused = S.snoozeUntil && S.snoozeUntil > Date.now();
   b.appendChild(group(t('set.notif'), [
     row(t('set.mail'), t('set.mail.d'), sw(S.notifications, function (v) { put({ notifications: v }); })),
@@ -602,7 +634,7 @@ function renderSet() {
   b.appendChild(group(t('set.shortcuts'), [
     row(t('sc.jump'), '', mk('span', 'sk2', m + 'K')), row(t('sc.set'), '', mk('span', 'sk2', m + ',')), row(t('sc.apps'), '', mk('span', 'sk2', m + '1–' + m + Math.min(9, apps))), row(t('sc.next'), '', mk('span', 'sk2', 'Ctrl+Tab')), row(t('nav.back') + ' / ' + t('nav.fwd'), '', mk('span', 'sk2', m + '[  ' + m + ']')), row(t('split.t'), '', mk('span', 'sk2', m + '\\'))
   ]));
-  b.appendChild(group(t('set.about'), [row('Lareon', t('set.version', { v: S.version }) + ' · Larsonia', (function () { var d = mk('div', 'btns'); var w = mk('button', 'btn', esc(t('wn.link'))); w.onclick = function () { showWN(S.version); }; var x = mk('button', 'btn', esc(t('set.setup'))); x.onclick = function () { lareon.setupAgain(); }; d.appendChild(w); d.appendChild(x); return d; })())]));
+  b.appendChild(group(t('set.about'), [row('Lareon', t('set.version', { v: S.version }) + ' · Larsonia · Flags: Twemoji (CC-BY 4.0)', (function () { var d = mk('div', 'btns'); var w = mk('button', 'btn', esc(t('wn.link'))); w.onclick = function () { showWN(S.version); }; var x = mk('button', 'btn', esc(t('set.setup'))); x.onclick = function () { lareon.setupAgain(); }; d.appendChild(w); d.appendChild(x); return d; })())]));
   $('set').scrollTop = keep;
 }
 function setWall() { if (window.wallpapers && S) window.wallpapers.set({ wall: S.wall || 'peaks', phase: S.wallPhase || 'theme', tint: S.wallTint !== false }); refreshPreviews(); }
@@ -636,7 +668,7 @@ function cards() {
   var hc = (S && S.homeCards) || {}, on = function (k) { return hc[k] !== false; };
   document.querySelector('.c-today').classList.toggle('c-hidden', !on('today')); document.querySelector('.c-mail').classList.toggle('c-hidden', !on('mail'));
   document.querySelector('.c-today').classList.toggle('solo', !on('mail')); document.querySelector('.c-mail').classList.toggle('solo', !on('today'));
-  $('briefc').classList.toggle('c-hidden', !on('brief')); document.querySelector('.c-focus').classList.toggle('c-hidden', !on('focus')); document.querySelector('.c-apps').classList.toggle('c-hidden', !on('apps'));
+  $('briefc').classList.toggle('c-hidden', !on('brief')); if (data) acrossTiles(); document.querySelector('.c-focus').classList.toggle('c-hidden', !on('focus')); document.querySelector('.c-apps').classList.toggle('c-hidden', !on('apps'));
 }
 lareon.onWall(function (w) { if (S) { S.wall = w.wall; S.wallPhase = w.phase; S.wallTint = w.tint; } if (window.wallpapers) window.wallpapers.set(w); });
 // New, the activity bell, the lock screen
@@ -677,6 +709,8 @@ var WN = {
     ['Calendar invites go to Dusk', 'Open an invite file (.ics) and Lareon shows its events. Add them to Dusk in one click.'],
     ['Aster on any text', 'Copy text in any app and press Ctrl+Shift+E (⌘⇧E on Mac). Aster can explain, summarise, rewrite, fix, translate or reply, then you copy the result back.'],
     ['Quick actions', 'Right-click Lareon in the Dock or taskbar to write an email, start a document, add a task or ask Aster.'],
+    ['Accurate flags', 'Every language now shows its real, detailed flag.'],
+    ['Across Lareon', 'Home shows one line from each app: new Rustle chats, your last Verse doc, your newest Cove file, today’s Lark game and more. Click one to jump in.'],
     ['A new Home', 'A big clock, one search box for everything, one-click buttons to write an email, start a document, add a task or ask Aster, your day as a timeline, and your inbox with faces. Focus and Your apps can be turned back on in Settings.']
   ],
   '1.4.0': [

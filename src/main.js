@@ -22,7 +22,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 
 // ---- settings (chosen in the setup wizard) ----
 const DEFAULT_APPS = Object.fromEntries(Object.entries(apps).map(([k, a]) => [k, !a.off]));
-const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, wallPhase: '', wallTint: true, railWide: false, notifyApps: { fledge: true, rustle: true, dusk: true }, quiet: { on: false, from: '22:00', to: '07:00' }, composeKey: true, assistKey: true, lock: { pin: '', idle: 0, sleep: true, touch: true }, order: [], homeCards: { today: true, mail: true, brief: true, focus: false, apps: false }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
+const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, wallPhase: '', wallTint: true, railWide: false, notifyApps: { fledge: true, rustle: true, dusk: true }, quiet: { on: false, from: '22:00', to: '07:00' }, composeKey: true, assistKey: true, lock: { pin: '', idle: 0, sleep: true, touch: true }, order: [], homeCards: { today: true, mail: true, brief: true, across: true, focus: false, apps: false }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 let settings = { ...DEFAULTS };
 function loadSettings() {
@@ -358,8 +358,34 @@ ipcMain.handle('home:data', async () => {
   } catch { out.ok = false; }
   // counts for the tabs (Rustle is end to end encrypted, so only "chats with something new" is known)
   try { const g = await api('/api/lareon/glance?d=' + isoDay(new Date()), { token: sess.token }); if (g.status === 200 && g.j) out.glance = { rustle: +g.j.rustle || 0 }; } catch {}
+  out.across = await across();
   return out;
 });
+// a line from each of the other apps, for Home's "Across Lareon"
+const timed = (p, ms) => Promise.race([p, new Promise((r) => setTimeout(() => r(null), ms))]);
+let acrossCache = { at: 0, v: null };
+async function across() {
+  if (!sess) return null;
+  if (acrossCache.v && Date.now() - acrossCache.at < 120000) return acrossCache.v;
+  const on = (k) => enabledKeys().includes(k), t = sess.token, v = {};
+  await Promise.all([
+    on('verse') && timed(api('/api/verse/docs', { token: t }), 5000).then((r) => {
+      const d = r && r.status === 200 && r.j && (r.j.docs || []).find((x) => !x.trashed);
+      v.verse = d ? { id: d.id, title: d.title || '', at: d.updated_at || '' } : { none: true };
+    }).catch(() => {}),
+    on('cove') && timed(api('/api/cove/all', { token: t }), 6000).then((r) => {
+      if (!r || r.status !== 200 || !r.j) return;
+      const files = (r.j.items || []).filter((x) => x.kind === 'file' && !x.trashed).sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')));
+      const f = files[0];
+      v.cove = { used: +r.j.used || 0, quota: +r.j.quota || 0, name: f ? String(f.name || f.title || '') : '', id: f ? f.id : '', thumb: f && f.turl ? String(f.turl) : '' };
+    }).catch(() => {}),
+    on('lark') && timed(api('/api/lark/me', { token: t }), 5000).then((r) => {
+      if (!r || r.status !== 200 || !r.j) return; const g = (r.j.games || []).find((x) => x.key === r.j.today);
+      v.lark = { streak: +r.j.streak || 0, played: !!r.j.played_today, game: g ? g.name : '', key: r.j.today || '' };
+    }).catch(() => {})
+  ].filter(Boolean));
+  acrossCache = { at: Date.now(), v }; return v;
+}
 async function postTask(title, day) { const r = await api('/api/dusk/tasks', { method: 'POST', token: sess.token, body: { title, due: day } }); return r.status === 200; }
 async function flushQueue() {
   if (!sess || !settings.taskQueue || !settings.taskQueue.length) return;
@@ -658,7 +684,7 @@ ipcMain.handle('settings:set', (_e, p) => {
   }
   if (typeof p.railWide === 'boolean' && p.railWide !== settings.railWide) { settings.railWide = p.railWide; layout(); send('rail', p.railWide); }
   if (Array.isArray(p.order)) { settings.order = p.order.filter((k) => typeof k === 'string' && apps[k]).slice(0, 40); appsChanged = true; }
-  if (p.homeCards && typeof p.homeCards === 'object') for (const k of ['today', 'mail', 'brief', 'focus', 'apps']) if (typeof p.homeCards[k] === 'boolean') settings.homeCards = { ...settings.homeCards, [k]: p.homeCards[k] };
+  if (p.homeCards && typeof p.homeCards === 'object') for (const k of ['today', 'mail', 'brief', 'across', 'focus', 'apps']) if (typeof p.homeCards[k] === 'boolean') settings.homeCards = { ...settings.homeCards, [k]: p.homeCards[k] };
   writeSettings(); if (p.quickAdd !== undefined || p.askKey !== undefined) applyQuick();
   if (appsChanged) { buildMenu(); send('apps-changed'); }
   if (p.badge !== undefined) setBadge(lastUnread);

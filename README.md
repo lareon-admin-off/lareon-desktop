@@ -7,3 +7,6 @@ Open the Actions tab, choose Build Lareon installers, then Run workflow. When it
 
 ## Run it on your computer
 Needs Node 20 or newer: npm install, then python build/unpack_assets.py (needs Pillow), then npm start.
+
+## Credits
+Flag pictures: Twemoji by Twitter, licensed CC-BY 4.0 (https://github.com/twitter/twemoji).
