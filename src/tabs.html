@@ -27,15 +27,15 @@ nav,.kb,.acct{flex:none;white-space:nowrap}.bar.tight #an,.bar.tight .kb span{di
 /* page */
 #home{position:fixed;left:var(--rail);right:0;top:44px;bottom:0;overflow:auto;z-index:1}
 #home::-webkit-scrollbar{width:10px}#home::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px;border:2px solid transparent;background-clip:padding-box}
-.wrap{max-width:1020px;margin:0 auto;padding:34px 28px 56px}
+.wrap{max-width:960px;margin:0 auto;padding:48px 32px 64px}
 .rise{animation:rise .7s var(--ease) both;animation-delay:calc(var(--i,0)*70ms)}
 @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 .mono{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--fg3)}
-.hd{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.hd{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap}
 h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-weight:600}
 .sub{color:var(--fg2);margin-top:4px}
 .note{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.4);color:var(--fg);border-radius:10px;padding:10px 14px;margin:0 0 18px;font-size:14px}
-.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;min-width:0;backdrop-filter:blur(20px) saturate(1.3);-webkit-backdrop-filter:blur(20px) saturate(1.3);box-shadow:0 18px 50px -34px rgba(0,0,0,.6)}
 .card h2{font-size:15px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
 .c-today{grid-column:span 7}.c-mail{grid-column:span 5}.c-apps{grid-column:span 12}.c-acct{grid-column:span 12}
@@ -243,12 +243,12 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
    <section class="card c-brief rise" id="briefc" style="--i:3" hidden><h2><span data-i="brief.t"></span> <button class="link" id="briefr" data-i="brief.refresh"></button></h2><div id="briefb"><div class="sk"></div><div class="sk"></div></div></section>
    <section class="card c-focus rise" style="--i:3"><h2 data-i="focus.t"></h2><div class="fo"><div class="big" id="fclock">25:00</div><div class="seg" id="fseg"></div><button class="btn pri" id="fgo" data-i="focus.start"></button><p id="fhint" data-i="focus.idle"></p></div><div class="fbar"><i id="fbar"></i></div></section>
    <section class="card c-apps rise" style="--i:3"><h2 data-i="apps"></h2><div class="apps" id="grid"></div></section>
-   <section class="card c-acct rise" style="--i:4"><div class="acct-row">
+   <section class="card c-acct rise c-hidden" style="--i:4"><div class="acct-row">
      <div class="who"><div class="mono" data-i="signedas"></div><b id="who">&mdash;</b><small id="store"></small><div class="bar2"><i id="bar"></i></div></div>
      <div class="btns"><button class="btn pri" id="b-acct" data-i="acct"></button><button class="btn" id="b-upd" data-i="upd"></button><button class="btn" id="b-out" data-i="out"></button></div>
    </div></section>
   </div>
-  <div class="foot" id="ver"></div>
+  <div class="foot" id="ver" hidden></div>
  </div>
 </main>
 <section id="set" hidden><div class="wrap"><div class="hd"><h1 data-i="set.title"></h1><button class="btn pri" id="setx" data-i="set.close"></button></div><div id="setb"></div></div></section>
@@ -622,7 +622,8 @@ var WN = {
     ['Write from anywhere', 'Press Ctrl+Shift+M (⌘⇧M on Mac) in any app to write an email.'],
     ['Calendar invites go to Dusk', 'Open an invite file (.ics) and Lareon shows its events. Add them to Dusk in one click.'],
     ['Aster on any text', 'Copy text in any app and press Ctrl+Shift+E (⌘⇧E on Mac). Aster can explain, summarise, rewrite, fix, translate or reply, then you copy the result back.'],
-    ['Quick actions', 'Right-click Lareon in the Dock or taskbar to write an email, start a document, add a task or ask Aster.']
+    ['Quick actions', 'Right-click Lareon in the Dock or taskbar to write an email, start a document, add a task or ask Aster.'],
+    ['A calmer Home', 'Home now shows just your day, your inbox and Aster’s summary. Turn Focus or Your apps back on in Settings.']
   ],
   '1.4.0': [
     ['Twelve wallpapers', 'New: Meadow, Forest, Glacier, Canyon and Waves. Pick any time of day for them, dawn, day, dusk or night, or let the clock decide.'],
