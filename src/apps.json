@@ -1,17 +1,12 @@
 {
-  "dusk": {
-    "name": "Dusk",
-    "url": "https://dusk.lareon.org/app",
-    "ua": "DuskApp"
-  },
-  "fledge": {
-    "name": "Fledge",
-    "url": "https://mail.lareon.org/",
-    "ua": "FledgeApp"
-  },
-  "aster": {
-    "name": "Aster",
-    "url": "https://aster.lareon.org/",
-    "ua": "AsterApp"
-  }
+  "dusk": { "name": "Dusk", "url": "https://dusk.lareon.org/app", "ua": "DuskApp", "art": "dusk-icon.svg", "core": true },
+  "fledge": { "name": "Fledge", "url": "https://mail.lareon.org/", "ua": "FledgeApp", "art": "fledge-logo.svg", "core": true },
+  "aster": { "name": "Aster", "url": "https://aster.lareon.org/", "ua": "AsterApp", "art": "aster-logo.svg", "core": true },
+  "rustle": { "name": "Rustle", "url": "https://rustle.lareon.org/app", "ua": "RustleApp", "art": "rustle-logo.svg", "core": true },
+  "cove": { "name": "Cove", "url": "https://cove.lareon.org/app", "ua": "CoveApp", "art": "cove-logo.svg" },
+  "verse": { "name": "Verse", "url": "https://verse.lareon.org/app", "ua": "VerseApp", "art": "verse-logo.svg" },
+  "ward": { "name": "Ward", "url": "https://ward.lareon.org/app", "ua": "WardApp", "art": "ward-logo.svg" },
+  "sheen": { "name": "Sheen", "url": "https://sheen.lareon.org/app", "ua": "SheenApp", "art": "sheen-logo.svg" },
+  "lark": { "name": "Lark", "url": "https://lark.lareon.org/app", "ua": "LarkApp", "art": "lark-logo.svg" },
+  "grove": { "name": "Grove", "url": "https://grove.lareon.org/app", "ua": "GroveApp", "art": "grove-logo.svg", "off": true }
 }

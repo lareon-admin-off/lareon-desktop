@@ -4,6 +4,9 @@ const path = require('path');
 const apps = require('./apps.json');
 const EXTRA = { account: { name: 'Account', url: 'https://lareon.org/account', ua: 'LareonApp' }, help: { name: 'Help', url: 'https://lareon.org/help.html', ua: 'LareonApp' } };
 const appOf = (k) => apps[k] || EXTRA[k];
+// which tab a Lareon address belongs to (mail.lareon.org -> fledge, cove.lareon.org -> cove, ...)
+const HOSTS = {}; for (const [k, a] of Object.entries(apps)) { try { HOSTS[new URL(a.url).hostname] = k; } catch {} }
+const keyOfUrl = (u) => HOSTS[hostOf(u)] || null;
 
 app.setName('Lareon');
 try { app.setAppUserModelId('org.lareon.desktop'); } catch {}
@@ -17,15 +20,19 @@ const external = (u) => { if (/^https?:\/\//.test(u) || u === 'mailto:help@lareo
 if (!app.requestSingleInstanceLock()) app.quit();
 
 // ---- settings (chosen in the setup wizard) ----
-const DEFAULTS = { setupDone: false, apps: { dusk: true, fledge: true, aster: true }, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
+const DEFAULT_APPS = Object.fromEntries(Object.entries(apps).map(([k, a]) => [k, !a.off]));
+const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 let settings = { ...DEFAULTS };
 function loadSettings() {
   try { settings = { ...DEFAULTS, ...JSON.parse(fs.readFileSync(settingsFile(), 'utf8')) }; } catch { settings = { ...DEFAULTS }; }
   settings.apps = { ...DEFAULTS.apps, ...(settings.apps || {}) };
+  for (const k of Object.keys(settings.apps)) if (!apps[k]) delete settings.apps[k];
 }
 const writeSettings = () => { try { fs.writeFileSync(settingsFile(), JSON.stringify(settings), { mode: 0o600 }); } catch {} };
 const enabledKeys = () => Object.keys(apps).filter((k) => settings.apps[k] !== false);
+// the apps opened in the background at start (others load on first click, so ten apps don't all run at once)
+const warmKeys = () => { const w = enabledKeys().filter((k) => apps[k].core); const last = settings.lastApp; if (last && apps[last] && enabledKeys().includes(last) && !w.includes(last)) w.push(last); return w; };
 function applyLogin() { try { app.setLoginItemSettings({ openAtLogin: !!settings.launchAtLogin }); } catch {} }
 
 // ---- the signed-in Lareon account (kept encrypted when the computer supports it) ----
@@ -98,24 +105,50 @@ async function bounced(key) {
   const v = views[key]; if (v && Date.now() - lastFix > 8000) { lastFix = Date.now(); try { v.webContents.reload(); } catch {} }
 }
 function endSession(note) {
-  seen.mailTop = null; seen.unread = null;
+  seen.mailTop = null; seen.unread = null; seen.rustle = null;
   sess = null; saveSess(); dropViews();
   send('session', null);
   showHome(note);
 }
-function makeView(key) {
+// A link from one Lareon app to another (the apps menu, "Edit in Sheen", "Make a document", a call ringing in Rustle...)
+// opens in that app's own tab instead of inside the tab you were in.
+const isAccountUrl = (u) => { try { const x = new URL(u); return x.hostname === 'lareon.org' && /^\/account(\/|$|\.html)/.test(x.pathname); } catch { return false; } };
+function routed(from, u) {
+  if (!sess || !/^https:/.test(u)) return false;
+  const k = isAccountUrl(u) ? 'account' : keyOfUrl(u);
+  if (!k || k === from || (k !== 'account' && !enabledKeys().includes(k))) return false;
+  setImmediate(() => openIn(k, u));
+  return true;
+}
+const docOf = (u) => { try { const x = new URL(u); return x.origin + x.pathname + x.search; } catch { return ''; } };
+function openIn(k, u) {
+  if (!win || win.isDestroyed() || !appOf(k)) return;
+  if (!sess) return show(k);
+  if (!/^https:/.test(u || '') || (k === 'account' ? !isAccountUrl(u) : keyOfUrl(u) !== k)) u = appOf(k).url;
+  const v = views[k];
+  if (!v) { views[k] = makeView(k, u); return show(k); }
+  const wc = v.webContents, cur = wc.getURL();
+  if (u !== cur && !(u === appOf(k).url && docOf(cur) === docOf(u))) {
+    const same = docOf(cur) === docOf(u) && u.includes('#');
+    wc.loadURL(u).then(() => { if (same) wc.reload(); }).catch(() => {});
+  }
+  show(k);
+}
+function makeView(key, startUrl) {
   const A = appOf(key);
   const v = new WebContentsView({ webPreferences: { partition: 'persist:lareon', preload: path.join(__dirname, 'preload-view.js'), contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: true } });
   const wc = v.webContents;
   wc.setUserAgent(wc.getUserAgent().replace(/ Electron\/\S+/, '').replace(/ lareon-desktop\/\S+/, '') + ' ' + A.ua);
   wc.setWindowOpenHandler(({ url: u }) => {
     if (isBounce(u)) { bounced(key); return { action: 'deny' }; }
+    if (routed(key, u)) return { action: 'deny' };
     if (key !== 'account' && key !== 'help' && ALLOWED(hostOf(u)) && hostOf(u) !== 'lareon.org') return { action: 'allow' };
     external(u); return { action: 'deny' };
   });
   wc.on('will-navigate', (e, u) => {
     if (isBounce(u)) { e.preventDefault(); bounced(key); return; }
-    if (key === 'account' || key === 'help' ? hostOf(u) !== 'lareon.org' : (!ALLOWED(hostOf(u)) || hostOf(u) === 'lareon.org')) { e.preventDefault(); external(u); }
+    if (routed(key, u)) { e.preventDefault(); return; }
+    if (key === 'account' || key === 'help' ? hostOf(u) !== 'lareon.org' : (!ALLOWED(hostOf(u)) || hostOf(u) === 'lareon.org' || (!keyOfUrl(u) && hostOf(u) !== hostOf(wc.getURL())))) { e.preventDefault(); external(u); }
   });
   v._ready = false;
   const ready = () => { if (v._ready) return; v._ready = true; send('loading', { key, on: false }); if (current === key) reveal(key); };
@@ -133,7 +166,7 @@ function makeView(key) {
   let synced = true;
   wc.on('did-finish-load', () => ready());
   if (key === 'account') { const t = setInterval(() => { if (wc.isDestroyed()) return clearInterval(t); if (!sess) return; wc.executeJavaScript('localStorage.getItem("lt")').then((x) => { if (!x && sess) bounced('account'); }).catch(() => {}); }, 4000); }
-  wc.loadURL(A.url);
+  wc.loadURL(startUrl || A.url);
   v.setBackgroundColor(BG());
   v.setVisible(false);
   win.contentView.addChildView(v);
@@ -173,7 +206,7 @@ async function finishLogin(token, user) {
   sess = { token, user };
   saveSess();
   dropViews();
-  for (const k of enabledKeys()) views[k] = makeView(k); // load quietly so every app is ready and signed in
+  for (const k of warmKeys()) views[k] = makeView(k); // load the everyday apps quietly; the rest open when you first click them
   send('session', sessInfo());
   return { ok: true, user: sessInfo() };
 }
@@ -297,6 +330,8 @@ ipcMain.handle('home:data', async () => {
         .map((t) => ({ id: t.id, title: t.title, due: t.due || '', pri: !!t.pri }));
     } else out.ok = false;
   } catch { out.ok = false; }
+  // counts for the tabs (Rustle is end to end encrypted, so only "chats with something new" is known)
+  try { const g = await api('/api/lareon/glance?d=' + isoDay(new Date()), { token: sess.token }); if (g.status === 200 && g.j) out.glance = { rustle: +g.j.rustle || 0 }; } catch {}
   return out;
 });
 async function postTask(title, day) { const r = await api('/api/dusk/tasks', { method: 'POST', token: sess.token, body: { title, due: day } }); return r.status === 200; }
@@ -448,8 +483,8 @@ ipcMain.on('peek:open', (_e, k) => { if (peek && !peek.isDestroyed()) peek.hide(
 
 let searchCache = { at: 0, mail: [], tasks: [], events: [] };
 ipcMain.handle('search:all', async (_e, q) => {
-  if (!sess) return { mail: [], tasks: [], events: [] };
-  q = String(q || '').trim().toLowerCase(); if (q.length < 2) return { mail: [], tasks: [], events: [] };
+  if (!sess) return { mail: [], tasks: [], events: [], docs: [], files: [] };
+  q = String(q || '').trim().toLowerCase(); if (q.length < 2) return { mail: [], tasks: [], events: [], docs: [], files: [] };
   if (Date.now() - searchCache.at > 60000) {
     const next = { at: Date.now(), mail: searchCache.mail, tasks: searchCache.tasks, events: searchCache.events };
     try { const a = await api('/api/messages', { token: sess.token }); if (a.status === 200 && Array.isArray(a.j)) next.mail = a.j.map((x) => ({ id: x.id, from: fromName(x.from_address), subject: x.subject || '', text: String(x.body || '').slice(0, 600), at: x.created_at })); } catch {}
@@ -457,7 +492,16 @@ ipcMain.handle('search:all', async (_e, q) => {
     searchCache = next;
   }
   const has = (s) => String(s || '').toLowerCase().includes(q);
+  // Verse documents and Cove files come from Lareon's own search (the same one as the apps menu on the websites)
+  let docs = [], files = [];
+  try {
+    const r = await Promise.race([api('/api/lareon/search?q=' + encodeURIComponent(q), { token: sess.token }), new Promise((res) => setTimeout(() => res(null), 4000))]);
+    const R = (r && r.status === 200 && r.j && r.j.results) || {};
+    const pick = (l) => (Array.isArray(l) ? l : []).slice(0, 5).map((x) => ({ title: String(x.title || ''), sub: String(x.sub || ''), url: String(x.url || '') })).filter((x) => x.title && x.url);
+    docs = pick(R.docs); files = pick(R.files);
+  } catch {}
   return {
+    docs, files,
     mail: searchCache.mail.filter((x) => has(x.subject) || has(x.from) || has(x.text)).slice(0, 6).map(({ text, ...r }) => r),
     tasks: searchCache.tasks.filter((x) => has(x.title)).slice(0, 5),
     events: searchCache.events.filter((x) => has(x.title)).slice(0, 5)
@@ -502,7 +546,7 @@ function startTabs() {
   win.loadFile(path.join(__dirname, 'tabs.html'));
   win.webContents.once('did-finish-load', startPage);
 }
-ipcMain.handle('setup:state', () => ({ platform: process.platform, locale: app.getLocale(), settings: { ...settings, apps: { ...settings.apps }, sess: undefined, td: undefined }, user: sessInfo() }));
+ipcMain.handle('setup:state', () => ({ catalog: apps, platform: process.platform, locale: app.getLocale(), settings: { ...settings, apps: { ...settings.apps }, sess: undefined, td: undefined }, user: sessInfo() }));
 ipcMain.handle('setup:save', (_e, p) => {
   p = p || {};
   if (p.apps) { for (const k of Object.keys(apps)) if (typeof p.apps[k] === 'boolean') settings.apps[k] = p.apps[k]; }
@@ -542,7 +586,7 @@ function createWindow() {
 }
 
 ipcMain.on('theme:get', (e) => { e.returnValue = ['light', 'dark'].includes(settings.theme) ? settings.theme : ''; });
-const publicSettings = () => ({ theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
+const publicSettings = () => ({ catalog: apps, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
 ipcMain.handle('settings:get', () => publicSettings());
 ipcMain.handle('settings:set', (_e, p) => {
   p = p || {};
@@ -559,7 +603,6 @@ ipcMain.handle('settings:set', (_e, p) => {
     if (!p.apps[k] && enabledKeys().length <= 1) continue; // keep at least one app on
     settings.apps[k] = p.apps[k]; appsChanged = true;
     if (!p.apps[k] && views[k]) { try { win.contentView.removeChildView(views[k]); views[k].webContents.close(); } catch {} delete views[k]; if (current === k) showHome(); }
-    else if (p.apps[k] && sess && !views[k]) views[k] = makeView(k);
   }
   writeSettings(); if (p.quickAdd !== undefined || p.askKey !== undefined) applyQuick();
   if (appsChanged) { buildMenu(); send('apps-changed'); }
@@ -570,6 +613,13 @@ ipcMain.on('notify:show', (_e, t, b) => { if (t) notify(String(t).slice(0, 80), 
 ipcMain.handle('net:online', () => net.isOnline());
 let wasOnline = true;
 setInterval(() => { try { const o = net.isOnline(); if (o !== wasOnline) { wasOnline = o; send('online', o); if (o) pollNotifications(); } } catch {} }, 4000);
+ipcMain.on('open:url', (_e, u) => {
+  if (inSetup || typeof u !== 'string') return;
+  try { u = new URL(u, API).href; } catch { return; }
+  const k = isAccountUrl(u) ? 'account' : keyOfUrl(u);
+  if (k && (k === 'account' || enabledKeys().includes(k))) { showMain(); openIn(k, u); }
+});
+ipcMain.handle('apps:all', () => apps);
 ipcMain.handle('apps', () => { const o = {}; for (const k of enabledKeys()) o[k] = apps[k]; return o; });
 ipcMain.on('show', (_e, k) => { if (!inSetup && (k === 'home' || k === 'account' || k === 'help' || enabledKeys().includes(k))) show(k); });
 app.on('second-instance', () => showMain());
@@ -587,7 +637,7 @@ function buildMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     ...(isMac ? [{ label: 'Lareon', submenu: [{ role: 'about' }, { type: 'separator' }, { label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: openSettings }, { type: 'separator' }, { role: 'services' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' }] }] : []),
     { role: 'editMenu' },
-    { label: 'Apps', submenu: [...(isMac ? [] : [{ label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: openSettings }, { type: 'separator' }]), { label: 'Jump to…', accelerator: 'CmdOrCtrl+K', click: palette }, { type: 'separator' }, { label: 'Home', accelerator: 'CmdOrCtrl+1', click: go('home') }, ...enabledKeys().map((k, i) => ({ label: apps[k].name, accelerator: 'CmdOrCtrl+' + (i + 2), click: go(k) }))] },
+    { label: 'Apps', submenu: [...(isMac ? [] : [{ label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: openSettings }, { type: 'separator' }]), { label: 'Jump to…', accelerator: 'CmdOrCtrl+K', click: palette }, { type: 'separator' }, { label: 'Home', accelerator: 'CmdOrCtrl+1', click: go('home') }, ...enabledKeys().map((k, i) => ({ label: apps[k].name, accelerator: i < 8 ? 'CmdOrCtrl+' + (i + 2) : undefined, click: go(k) }))] },
     { label: 'View', submenu: [{ label: 'Reload', accelerator: 'CmdOrCtrl+R', click: () => cur() && cur().reload() }, { role: 'togglefullscreen' }, { type: 'separator' },
       { label: 'Zoom in', accelerator: 'CmdOrCtrl+Plus', click: () => cur() && cur().setZoomLevel(cur().getZoomLevel() + 0.5) },
       { label: 'Zoom out', accelerator: 'CmdOrCtrl+-', click: () => cur() && cur().setZoomLevel(cur().getZoomLevel() - 0.5) },
@@ -650,6 +700,17 @@ async function pollNotifications() {
           }
           seen.mailTop = Math.max(seen.mailTop, top); seen.unread = unread;
         }
+      }
+    } catch {}
+  }
+  // Rustle: chats are end to end encrypted, so Lareon only knows how many chats have something new
+  if (enabledKeys().includes('rustle')) {
+    try {
+      const g = await api('/api/lareon/glance?d=' + isoDay(new Date()), { token: t });
+      if (g.status === 200 && g.j) {
+        const n = +g.j.rustle || 0, watching = win && win.isFocused() && current === 'rustle';
+        if (seen.rustle != null && n > seen.rustle && !watching && settings.notifications !== false && !focusing()) notify('Rustle', n === 1 ? 'New messages in a chat' : 'New messages in ' + n + ' chats', 'rustle');
+        seen.rustle = n; send('glance', { rustle: n });
       }
     } catch {}
   }
@@ -742,15 +803,18 @@ function startUpdater() {
 
 app.whenReady().then(() => {
   loadSettings(); loadSess(); nativeTheme.themeSource = settings.theme || 'system'; applyLogin();
-  // Notifications and clipboard are fine for Lareon pages (notifications only if you left them on); camera, mic, location and the rest are refused.
+  // Clipboard and full screen are fine for Lareon pages; the mic and camera only for Rustle (calls and voice messages); location and the rest are refused.
   session.fromPartition('persist:lareon').setPermissionRequestHandler((wc, perm, cb) => {
-    const ok = ALLOWED(hostOf(wc.getURL())) && ['notifications', 'clipboard-sanitized-write', 'clipboard-read', 'fullscreen'].includes(perm);
+    const h = hostOf(wc.getURL());
+    if (perm === 'media') return cb(h === 'rustle.lareon.org' && settings.apps.rustle !== false);
+    if (perm === 'pointerLock') return cb(h === 'lark.lareon.org');
+    const ok = ALLOWED(h) && ['notifications', 'clipboard-sanitized-write', 'clipboard-read', 'fullscreen'].includes(perm);
     cb(ok && perm !== 'notifications');
   });
   buildMenu();
   createWindow();
   makeTray(); applyQuick();
-  if (sess && settings.setupDone) for (const k of enabledKeys()) views[k] = makeView(k); // ready in the background
+  if (sess && settings.setupDone) for (const k of warmKeys()) views[k] = makeView(k); // ready in the background
   startUpdater();
   setTimeout(pollNotifications, 12000); setInterval(pollNotifications, 60000);
   app.on('activate', () => { if (!BrowserWindow.getAllWindows().length) createWindow(); });

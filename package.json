@@ -1,7 +1,7 @@
 {
   "name": "lareon-desktop",
-  "version": "1.1.0",
-  "description": "Lareon for desktop: Dusk, Fledge and Aster in one app",
+  "version": "1.2.0",
+  "description": "Lareon for desktop: every Lareon app in one window",
   "main": "src/main.js",
   "author": "Lareon <help@lareon.org>",
   "license": "UNLICENSED",
@@ -63,7 +63,11 @@
       ],
       "category": "public.app-category.productivity",
       "icon": "build/icon.png",
-      "artifactName": "Lareon.${ext}"
+      "artifactName": "Lareon.${ext}",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Rustle uses the microphone for calls and voice messages.",
+        "NSCameraUsageDescription": "Rustle uses the camera for video calls."
+      }
     },
     "dmg": {
       "title": "Lareon",

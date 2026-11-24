@@ -14,6 +14,10 @@ nav{display:flex;gap:2px;align-items:center;position:relative}
 .ind{position:absolute;top:0;bottom:0;left:0;border-radius:8px;background:var(--panel2);box-shadow:inset 0 0 0 1px var(--line2);transition:transform .4s var(--ease),width .4s var(--ease),opacity .2s;pointer-events:none}
 .tab{position:relative;font-size:14px;color:var(--fg2);background:none;border:0;border-radius:8px;padding:6px 14px;transition:color .2s}
 .tab:hover{color:var(--fg)}.tab[aria-selected=true]{color:var(--fg)}
+.tab{display:flex;align-items:center;gap:7px;white-space:nowrap}.tab img{width:16px;height:16px;flex:none;transition:transform .35s var(--ease)}.tab:hover img{transform:scale(1.12)}
+nav.compact .tab{padding:6px 9px}nav.compact .tab .tl{display:none}nav.compact #t-home .tl,nav.compact .tab[aria-selected=true] .tl{display:inline}
+nav.compact .bd{position:absolute;top:0;right:0;margin:0;font-size:9.5px;padding:0 4px}
+nav,.kb,.acct{flex:none;white-space:nowrap}.bar.tight #an,.bar.tight .kb span{display:none}.bar.tight .acct{padding:3px}
 .sp{flex:1}
 .kb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--fg3);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px 10px;transition:border-color .2s,color .2s}
 .kb:hover{border-color:var(--line2);color:var(--fg2)}.kb kbd{font:500 11px var(--mono);color:var(--fg3)}
@@ -180,12 +184,13 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
 <div id="opening" hidden><div><img id="op-img" alt=""><span id="op-t"></span></div></div>
 <div id="pal" hidden><div class="box"><input id="pi" data-ip="jump.ph" autocomplete="off"><ul id="pl"></ul></div></div>
 
-<script src="vendor/katex/katex.min.js"></script><script src="md.js"></script><script src="i18n-more.js"></script>
+<script src="vendor/katex/katex.min.js"></script><script src="md.js"></script><script src="i18n-more.js"></script><script src="i18n-apps.js"></script>
 <script src="i18n.js"></script>
 <script src="scene.js"></script>
 <script src="signin.js"></script>
 <script>
-var APPS = {}, ART = { dusk: '../build/art/dusk-icon.svg', fledge: '../build/art/fledge-logo.svg', aster: '../build/art/aster-logo.svg' };
+var APPS = {}, CAT = {};
+function art(k) { var a = APPS[k] || CAT[k]; return a && a.art ? '../build/art/' + a.art : '../build/art/lareon-icon.svg'; }
 var $ = function (id) { return document.getElementById(id); };
 var t = function (k, v) { return i18n.t(k, v); };
 var user = null, cur = 'home', widget = null, loading = {}, mod = 'Ctrl', data = null, helloW = null;
@@ -194,18 +199,31 @@ mountScene();
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function tabs() {
   var n = $('n'); [].slice.call(n.querySelectorAll('.tab')).forEach(function (e) { e.remove(); });
-  function add(k, label) { var b = document.createElement('button'); b.className = 'tab'; b.id = 't-' + k; b.setAttribute('role', 'tab'); b.textContent = label; b.onclick = function () { lareon.show(k); }; n.appendChild(b); }
+  function add(k, label) {
+    var b = document.createElement('button'); b.className = 'tab'; b.id = 't-' + k; b.setAttribute('role', 'tab'); b.title = label;
+    b.innerHTML = (k === 'home' ? '' : '<img src="' + art(k) + '" alt="">') + '<span class="tl"></span>'; b.querySelector('.tl').textContent = label;
+    b.onclick = function () { lareon.show(k); }; n.appendChild(b);
+  }
   add('home', t('home')); Object.keys(APPS).forEach(function (k) { add(k, APPS[k].name); });
-  badges();
+  badges(); fit(); moveInd();
+}
+// with many apps the names don't all fit: then the tabs show just the logos (hover for the name)
+function fit() {
+  var bar = document.querySelector('.bar'), n = $('n'), over = function () { return bar.scrollWidth > bar.clientWidth + 1; };
+  n.classList.remove('compact'); bar.classList.remove('tight');
+  if (over()) n.classList.add('compact');
+  if (over()) bar.classList.add('tight');
 }
 function badges() {
   [].forEach.call(document.querySelectorAll('.bd'), function (e) { e.remove(); });
   if (!data) return;
   function put(k, n) { var b = $('t-' + k); if (b && n > 0) { var s = document.createElement('span'); s.className = 'bd'; s.textContent = n > 99 ? '99+' : n; b.appendChild(s); } }
-  put('fledge', data.summary ? data.summary.unread || 0 : 0); put('dusk', (data.tasks || []).length + (data.events || []).length);
-  moveInd();
+  put('fledge', data.summary ? data.summary.unread || 0 : 0); put('dusk', (data.tasks || []).length + (data.events || []).length); put('rustle', data.glance ? data.glance.rustle || 0 : 0);
+  fit(); moveInd();
 }
 function moveInd() {
+  [].forEach.call(document.querySelectorAll('.tab'), function (b) { b.setAttribute('aria-selected', b.id === 't-' + cur ? 'true' : 'false'); });
+  fit();
   var tb = $('t-' + cur), i = $('ind'); if (!tb) { i.style.opacity = 0; } else { i.style.opacity = 1; i.style.width = tb.offsetWidth + 'px'; i.style.transform = 'translateX(' + tb.offsetLeft + 'px)'; }
   [].forEach.call(document.querySelectorAll('.tab'), function (b) { b.setAttribute('aria-selected', b.id === 't-' + cur ? 'true' : 'false'); });
   $('acct').setAttribute('aria-selected', cur === 'account' ? 'true' : 'false');
@@ -215,13 +233,14 @@ function setAcct() {
   $('av').textContent = user ? ((user.name || user.username || '?').charAt(0).toUpperCase()) : '?';
   $('av').className = 'av' + (user ? '' : ' off');
   $('an').textContent = user ? (user.name || user.username) : t('signin');
+  fit(); moveInd();
 }
 function note(m) { ['note-out', 'note-in'].forEach(function (id) { var e = $(id); e.textContent = m || ''; e.hidden = !m; }); }
 function grid() {
   var g = $('grid'); g.innerHTML = '';
   Object.keys(APPS).forEach(function (k) {
     var b = document.createElement('button'); b.className = 'app';
-    b.innerHTML = '<img src="' + ART[k] + '" alt=""><span><b>' + esc(APPS[k].name) + '</b><small>' + esc(t('d.' + k)) + '</small></span>';
+    b.innerHTML = '<img src="' + art(k) + '" alt=""><span><b>' + esc(APPS[k].name) + '</b><small>' + esc(t('d.' + k)) + '</small></span>';
     b.onclick = function () { lareon.show(k); }; g.appendChild(b);
   });
 }
@@ -236,7 +255,7 @@ function render() {
   var opening = cur !== 'home' && loading[cur];
   $('home').hidden = cur !== 'home' && !opening;
   $('opening').hidden = !opening;
-  if (opening) { var nm = (APPS[cur] && APPS[cur].name) || (cur === 'help' ? 'Help' : t('acct')); $('op-img').src = ART[cur] || '../build/art/lareon-icon.svg'; $('op-t').textContent = t('opening', { a: nm }); }
+  if (opening) { var nm = (APPS[cur] && APPS[cur].name) || (cur === 'help' ? 'Help' : t('acct')); $('op-img').src = art(cur); $('op-t').textContent = t('opening', { a: nm }); }
   $('load').className = 'load' + (loading[cur] ? ' on' : '');
   $('out').hidden = !!user; $('in').hidden = !user;
   if (user && cur === 'home') { greet(); $('who').textContent = (user.username || '') + '@lareon.org'; }
@@ -371,15 +390,15 @@ function renderSet() {
     row(t('set.ask'), t('set.ask.d', { k: mod === 'Cmd' ? '⌘⇧A' : 'Ctrl+Shift+A' }), sw(S.askKey, function (v) { put({ askKey: v }); })),
     row(t('set.brief'), t('set.brief.d'), sw(S.brief, function (v) { put({ brief: v }).then(function () { briefDone = false; if (!v) $('briefc').hidden = true; else loadBrief(false); }); }))
   ].filter(Boolean)));
-  var names = { dusk: 'Dusk', fledge: 'Fledge', aster: 'Aster' };
-  b.appendChild(group(t('set.apps'), Object.keys(names).map(function (k) { return row(names[k], k === 'dusk' ? t('d.dusk') : k === 'fledge' ? t('d.fledge') : t('d.aster'), sw(S.apps[k] !== false, function (v) { put({ apps: (function () { var o = {}; o[k] = v; return o; })() }).then(function () { return Promise.all([lareon.apps()]); }).then(function (r) { APPS = r[0]; tabs(); grid(); renderSet(); }); })); })));
+  var cat = S.catalog || {};
+  b.appendChild(group(t('set.apps'), Object.keys(cat).map(function (k) { return row(cat[k].name, t('d.' + k), sw(S.apps[k] !== false, function (v) { put({ apps: (function () { var o = {}; o[k] = v; return o; })() }).then(function () { return Promise.all([lareon.apps()]); }).then(function (r) { APPS = r[0]; tabs(); grid(); renderSet(); }); })); })));
   b.appendChild(group(t('set.updates'), [
     row(t('set.auto'), '', sw(S.autoUpdate, function (v) { put({ autoUpdate: v }); })),
     row(t('set.version', { v: S.version }), '', (function () { var x = mk('button', 'btn', esc(t('set.check'))); x.onclick = function () { lareon.checkUpdates(); }; return x; })())
   ]));
   var m = mod === 'Cmd' ? '⌘' : 'Ctrl+', apps = Object.keys(APPS).length + 1;
   b.appendChild(group(t('set.shortcuts'), [
-    row(t('sc.jump'), '', mk('span', 'sk2', m + 'K')), row(t('sc.set'), '', mk('span', 'sk2', m + ',')), row(t('sc.apps'), '', mk('span', 'sk2', m + '1–' + m + apps))
+    row(t('sc.jump'), '', mk('span', 'sk2', m + 'K')), row(t('sc.set'), '', mk('span', 'sk2', m + ',')), row(t('sc.apps'), '', mk('span', 'sk2', m + '1–' + m + Math.min(9, apps)))
   ]));
   b.appendChild(group(t('set.about'), [row('Lareon', t('set.version', { v: S.version }) + ' · Larsonia', (function () { var d = mk('div', 'btns'); var w = mk('button', 'btn', esc(t('wn.link'))); w.onclick = function () { showWN(S.version); }; var x = mk('button', 'btn', esc(t('set.setup'))); x.onclick = function () { lareon.setupAgain(); }; d.appendChild(w); d.appendChild(x); return d; })())]));
   $('set').scrollTop = keep;
@@ -397,6 +416,13 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$
 
 // ---- what's new ----
 var WN = {
+  '1.2.0': [
+    ['All of Lareon, in one window', 'Rustle, Cove, Verse, Ward, Sheen and Lark now sit beside Dusk, Fledge and Aster. Grove is there too for Larsonian citizens; turn it on in Settings.'],
+    ['Apps that work together', 'Links between apps open in the right tab: “Edit in Sheen” from Cove, a document Aster makes in Verse, a call from Rustle, search results from the apps menu.'],
+    ['Search reaches further', 'Jump to… (Ctrl or ⌘ + K) now also finds your Verse documents and Cove files.'],
+    ['Rustle in the tray', 'Lareon tells you when a Rustle chat has something new, and the Rustle tab shows how many. Calls and voice messages can use your mic and camera.'],
+    ['Light on memory', 'Dusk, Fledge, Aster and Rustle open in the background; the others start the first time you click them.']
+  ],
   '1.1.0': [
     ['A better Ask Aster', 'A new look, with equations, lists, bold text and code shown properly.'],
     ['Clear account notices', 'If an account is suspended, terminated or closing, Lareon now explains why, shows the deletion date and lets you download your data.'],
@@ -466,7 +492,7 @@ function palRender() {
   $('pl').innerHTML = items.map(function (x, i) { var g = ''; if (x.g && x.g !== lastG) { lastG = x.g; g = '<li class="pg">' + esc(t(x.g)) + '</li>'; } return g + '<li data-i="' + i + '" aria-selected="' + (i === sel) + '">' + esc(x.n) + (x.s ? ' <span style="color:var(--fg3);font-size:13px">' + esc(x.s) + '</span>' : '') + '</li>'; }).join('') || '<li>' + esc(t('jump.none')) + '</li>';
   [].forEach.call($('pl').querySelectorAll('li[data-i]'), function (li) { li.onclick = function () { run(+li.getAttribute('data-i')); }; });
 }
-function run(i) { var x = items[i]; if (!x) return; palClose(); if (x.f) x.f(); else lareon.show(x.k); }
+function run(i) { var x = items[i]; if (!x) return; palClose(); if (x.f) x.f(); else if (x.u) lareon.openUrl(x.u); else lareon.show(x.k); }
 function palOpen() { if (!$('pal').hidden) return; $('pal').hidden = false; $('pi').value = ''; sel = 0; palRender(); setTimeout(function () { $('pi').focus(); }, 20); }
 function palClose() { $('pal').hidden = true; }
 var sTimer = 0;
@@ -477,6 +503,8 @@ $('pi').oninput = function () {
     lareon.searchAll(q).then(function (r) {
       if ($('pi').value.trim() !== q) return;
       found = [];
+      if (APPS.verse) (r.docs || []).forEach(function (x) { found.push({ g: 'srch.docs', n: x.title, s: x.sub, u: x.url }); });
+      if (APPS.cove) (r.files || []).forEach(function (x) { found.push({ g: 'srch.files', n: x.title, s: x.sub, u: x.url }); });
       r.mail.forEach(function (x) { found.push({ g: 'srch.mail', n: x.subject || t('nosubj'), s: x.from, k: 'fledge' }); });
       r.tasks.forEach(function (x) { found.push({ g: 'srch.task', n: x.title, s: x.due || '', k: 'dusk' }); });
       r.events.forEach(function (x) { found.push({ g: 'srch.event', n: x.title, s: x.date || '', k: 'dusk' }); });
@@ -494,7 +522,8 @@ document.addEventListener('keydown', function (e) {
   else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(0, sel - 1); palRender(); }
   else if (e.key === 'Enter') { e.preventDefault(); run(sel); }
 });
-window.addEventListener('resize', moveInd);
+window.addEventListener('resize', function () { fit(); moveInd(); });
+lareon.onGlance(function (g) { if (data) { data.glance = g; badges(); } });
 
 lareon.onShown(function (k) { cur = k; closeSet(); render(); if (k === 'home' && user) load(); });
 lareon.onLoading(function (v) { loading[v.key] = v.on; render(); });
@@ -508,13 +537,13 @@ i18n.onPick(function (l) { lareon.setLang(l); });
 i18n.onChange(function () { relabel(); });
 
 widget = mountSignin($('signin'), { onDone: function (u) { user = u; note(''); cur = 'home'; render(); load(); } });
-Promise.all([lareon.apps(), lareon.session(), lareon.info()]).then(function (r) {
-  APPS = r[0]; user = r[1];
+Promise.all([lareon.apps(), lareon.session(), lareon.info(), lareon.appsAll()]).then(function (r) {
+  APPS = r[0]; user = r[1]; CAT = r[3] || {};
   if (r[2].platform === 'darwin') { document.documentElement.className = 'mac'; mod = 'Cmd'; }
   $('kbk').textContent = mod === 'Cmd' ? '⌘K' : 'Ctrl K';
   $('ver').textContent = 'Lareon ' + r[2].version;
   i18n.set(r[2].lang || i18n.guess(r[2].locale), true);
   render(); if (user) load(); relabel();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveInd);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fit(); moveInd(); });
 });
 </script></body></html>

@@ -3,6 +3,9 @@ try { contextBridge.exposeInMainWorld('themePref', ipcRenderer.sendSync('theme:g
 // Only Lareon's own pages (Home and setup) get this bridge. The product sites inside the app do not.
 contextBridge.exposeInMainWorld('lareon', {
   apps: () => ipcRenderer.invoke('apps'),
+  appsAll: () => ipcRenderer.invoke('apps:all'),
+  openUrl: (u) => ipcRenderer.send('open:url', u),
+  onGlance: (cb) => ipcRenderer.on('glance', (_e, g) => cb(g)),
   show: (k) => ipcRenderer.send('show', k),
   onShown: (cb) => ipcRenderer.on('shown', (_e, k) => cb(k)),
   onNote: (cb) => ipcRenderer.on('note', (_e, m) => cb(m)),
