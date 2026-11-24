@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Recording</title></head><body>
+<script>
+var rec = null, chunks = [];
+lareon.onCapStart(function () {
+  navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false }).then(function (st) {
+    var type = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
+    rec = new MediaRecorder(st, { mimeType: type, videoBitsPerSecond: 6000000 });
+    rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop = function () { st.getTracks().forEach(function (t) { t.stop(); }); new Blob(chunks, { type: 'video/webm' }).arrayBuffer().then(function (b) { lareon.capRecorded(b); }); };
+    rec.start(1000);
+  }).catch(function () { lareon.capRecorded(null); });
+});
+lareon.onCapStop(function () { if (rec && rec.state !== 'inactive') rec.stop(); else lareon.capRecorded(null); });
+</script></body></html>

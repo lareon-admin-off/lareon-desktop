@@ -266,6 +266,18 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
 .dc{background:var(--panel2);border:1px solid var(--line);border-radius:18px;padding:16px 18px}.dc .ti{display:flex;align-items:center;gap:10px;margin-bottom:6px}.dc .ti img{width:28px;height:28px}.dc h3{font-size:16px;font-weight:600}
 .dc p{color:var(--fg2);font-size:14px;margin-bottom:8px}.dc ul{list-style:none;padding:0;display:grid;gap:5px}.dc li{font-size:13.5px;color:var(--fg);padding-left:16px;position:relative}.dc li:before{content:"";position:absolute;left:3px;top:8px;width:5px;height:5px;border-radius:50%;background:var(--orange)}
 .dc.wide{grid-column:1/-1}.dk{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:center;font-size:14px}.dk kbd{font:600 12px system-ui;background:var(--panel);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:2px 8px;justify-self:start}
+
+/* Spaces */
+.sdot{width:26px;height:26px;border-radius:9px;flex:none;display:grid;place-items:center;color:#fff;font:700 13px var(--sans);box-shadow:0 4px 14px -4px rgba(0,0,0,.5)}
+#r-space{margin-bottom:2px}
+.spl{display:grid;gap:10px;padding:12px 0}
+.spr{display:grid;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px}
+.spl,.spr{min-width:0}.spr.on{border-color:var(--orange)}.spr .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.spr .top .btn{padding:6px 12px}.spr input.nm{flex:1;min-width:0;font:inherit;font-size:15px;font-weight:500;color:var(--fg);background:none;border:0;outline:0;border-bottom:1px dashed transparent;-webkit-user-select:text;user-select:text}.spr input.nm:focus{border-bottom-color:var(--line2)}
+.cols{display:flex;gap:5px}.cols button{width:18px;height:18px;border-radius:50%;border:2px solid transparent;padding:0}.cols button[aria-checked=true]{border-color:var(--fg)}
+.days{display:flex;gap:4px;flex-wrap:wrap}.days button{min-width:34px;border:1px solid var(--line);background:var(--panel);border-radius:8px;font-size:12px;padding:4px 6px;color:var(--fg2)}.days button[aria-checked=true]{border-color:var(--orange);color:var(--fg);background:var(--solid)}
+.spr .sched{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--fg2)}
+.spr .apps2{font-size:12.5px;color:var(--fg3)}
+.sp-space{display:inline-flex;align-items:center;gap:6px;font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--fg2);margin-bottom:6px}.sp-space i{width:8px;height:8px;border-radius:50%}
 </style></head><body>
 <div class="bar">
  <svg class="brand" viewBox="0 0 150 150" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#c84bff"/></linearGradient></defs><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#g)"/></svg>
@@ -282,6 +294,7 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
  <button class="acct" id="acct" aria-haspopup="menu"><span class="av off" id="av">?</span><span id="an"></span></button>
 </div>
 <aside id="rail" aria-label="Apps">
+ <button class="ri" id="r-space"><span class="sdot" id="sdot"></span><span class="rn" id="sname"></span></button>
  <button class="ri" id="r-home"><svg class="ic" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg><span class="rn" data-i="home"></span></button>
  <div class="rsep"></div>
  <div id="rlist" role="tablist" aria-orientation="vertical"></div>
@@ -303,7 +316,7 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
   <div id="signin" style="width:100%;display:flex;justify-content:center"></div>
  </div>
  <div class="spot" id="in" hidden>
-  <div class="sp-top rise"><div class="sp-clock" id="sclock"></div><div class="sp-hi"><span id="sgreet"></span> · <span id="sdate"></span></div></div>
+  <div class="sp-top rise"><div class="sp-space" id="sspace" hidden><i></i><span></span></div><div class="sp-clock" id="sclock"></div><div class="sp-hi"><span id="sgreet"></span> · <span id="sdate"></span></div></div>
   <div class="note" id="note-in" role="status" hidden></div>
   <form class="sp-ask rise" id="sask" style="--i:1" autocomplete="off"><img src="../build/art/aster-logo.svg" alt=""><input id="sq" maxlength="1000" data-ip="sp.ph"><button type="submit" data-i="sp.ask"></button></form>
   <div class="sp-res" id="sres" hidden></div>
@@ -638,6 +651,41 @@ function discover() {
 }
 $('learn').onclick = discover; $('disx').onclick = function () { $('dis').hidden = true; };
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('dis').hidden) $('dis').hidden = true; });
+// ---- Spaces ----
+var SP = null;
+function spacePaint() {
+  if (!SP) return; var a = SP.spaces.find(function (x) { return x.id === SP.active; }) || SP.spaces[0]; if (!a) return;
+  $('sdot').style.background = a.color; $('sdot').textContent = a.name.charAt(0).toUpperCase(); $('sname').textContent = a.name; $('r-space').title = a.name;
+  var e = $('sspace'); e.hidden = SP.spaces.length < 2; e.querySelector('i').style.background = a.color; e.querySelector('span').textContent = a.name;
+}
+$('r-space').onclick = function () { var r = $('r-space').getBoundingClientRect(); lareon.spacesMenu({ x: Math.round(r.right + 6), y: Math.round(r.top) }); };
+lareon.onSpace(function (v) { SP = v; spacePaint(); lareon.apps().then(function (a) { APPS = a; tabs(); grid(); spotPaint(); }); if (!$('set').hidden) lareon.getSettings().then(function (x) { S = x; renderSet(); }); });
+lareon.onSpaceNew(function () { lareon.spacesAdd({ name: t('spc.new') }).then(function (v) { SP = v; openSetNow(); }); });
+var DAYS = [1, 2, 3, 4, 5, 6, 0];
+function spacesGroup() {
+  var g = mk('div', 'sg'); g.appendChild(mk('h3', '', esc(t('spc.t')))); g.appendChild(mk('p', 'sub', esc(t('spc.d')))); g.lastChild.style.cssText = 'margin:-4px 4px 8px;font-size:13px';
+  var c = mk('div', 'card'); c.style.padding = '4px 14px'; var L = mk('div', 'spl'); c.appendChild(L); g.appendChild(c);
+  var cols = ['#ff7c1f', '#a35cf5', '#2fb39a', '#4aa8ff', '#d94fc4', '#e8b33a'];
+  (S.spaces.spaces || []).forEach(function (x) {
+    var r = mk('div', 'spr' + (x.id === S.spaces.active ? ' on' : '')), top = mk('div', 'top');
+    var dot = mk('span', 'sdot', esc(x.name.charAt(0).toUpperCase())); dot.style.background = x.color; top.appendChild(dot);
+    var nm = mk('input', 'nm'); nm.value = x.name; nm.maxLength = 24; nm.onchange = function () { lareon.spacesUpdate(x.id, { name: nm.value }); }; top.appendChild(nm);
+    var cl = mk('div', 'cols'); cols.forEach(function (co) { var b = mk('button'); b.style.background = co; b.setAttribute('aria-checked', co === x.color ? 'true' : 'false'); b.onclick = function () { lareon.spacesUpdate(x.id, { color: co }); }; cl.appendChild(b); }); top.appendChild(cl);
+    if (x.id !== S.spaces.active) { var go = mk('button', 'btn', esc(t('spc.use'))); go.onclick = function () { lareon.spacesSwitch(x.id); }; top.appendChild(go); }
+    if (S.spaces.spaces.length > 1) { var del = mk('button', 'btn', esc(t('pin.remove'))); del.onclick = function () { lareon.spacesRemove(x.id).then(function () { lareon.getSettings().then(function (v) { S = v; renderSet(); }); }); }; top.appendChild(del); }
+    r.appendChild(top);
+    r.appendChild(mk('div', 'apps2', esc(t('spc.apps', { a: x.apps.map(function (k) { return (CAT[k] || {}).name || k; }).join(', ') || '—' }))));
+    var sc = mk('div', 'sched'); sc.appendChild(sw(!!(x.auto && x.auto.on), function (v) { lareon.spacesUpdate(x.id, { auto: { on: v } }); })); sc.appendChild(mk('span', '', esc(t('spc.auto'))));
+    if (x.auto && x.auto.on) {
+      var dd = mk('div', 'days'); DAYS.forEach(function (d) { var b = mk('button', '', esc(new Date(2023, 0, 1 + d).toLocaleDateString(i18n.lang, { weekday: 'short' }))); b.setAttribute('aria-checked', x.auto.days.indexOf(d) >= 0 ? 'true' : 'false'); b.onclick = function () { var ds = x.auto.days.slice(), i = ds.indexOf(d); if (i >= 0) ds.splice(i, 1); else ds.push(d); lareon.spacesUpdate(x.id, { auto: { days: ds } }); }; dd.appendChild(b); }); sc.appendChild(dd);
+      var hours = []; for (var hh = 0; hh < 24; hh++) for (var mm = 0; mm < 60; mm += 30) { var v2 = String(hh).padStart(2, '0') + ':' + (mm ? '30' : '00'); hours.push([v2, new Date(2000, 0, 1, hh, mm).toLocaleTimeString(i18n.lang, { hour: 'numeric', minute: '2-digit' })]); }
+      sc.appendChild(pick(hours, x.auto.from, function (v) { lareon.spacesUpdate(x.id, { auto: { from: v } }); })); sc.appendChild(mk('span', '', '–')); sc.appendChild(pick(hours, x.auto.to, function (v) { lareon.spacesUpdate(x.id, { auto: { to: v } }); }));
+    }
+    r.appendChild(sc); L.appendChild(r);
+  });
+  if ((S.spaces.spaces || []).length < 6) { var add = mk('button', 'btn pri', '+ ' + esc(t('spc.add'))); add.style.justifySelf = 'start'; add.onclick = function () { lareon.spacesAdd({ name: t('spc.new') }); }; L.appendChild(add); }
+  return g;
+}
 var briefDone = false;
 function loadBrief(force) {
   var c = $('briefc'), b = $('briefb');
@@ -704,6 +752,7 @@ function applyTheme(v) { if (window.setTheme) window.setTheme(v === 'system' ? '
 function renderSet() {
   if (!S || $('set').hidden) return;
   var b = $('setb'), keep = $('set').scrollTop; b.innerHTML = '';
+  if (S.spaces) b.appendChild(spacesGroup());
   b.appendChild(group(t('set.appearance'), [
     row(t('set.theme'), '', seg([['system', t('th.system')], ['light', t('th.light')], ['dark', t('th.dark')]], S.theme || 'system', function (v) { applyTheme(v); put({ theme: v }); })),
     row(t('set.lang'), '', (function () { var x = mk('button', 'btn lgsel', i18n.flag(i18n.lang) + '<span>' + esc(i18n.names[i18n.lang]) + '</span>'); x.onclick = function () { i18n.menu(x); }; return x; })()),
@@ -760,7 +809,8 @@ function renderSet() {
       return x; })()),
     row(t('pc.ics'), t('pc.ics.d'), null),
     row(t('pc.compose'), t('pc.compose.d', { k: mk2 + 'M' }), sw(S.composeKey !== false, function (v) { put({ composeKey: v }); })),
-    row(t('pc.assist'), t('pc.assist.d', { k: mk2 + 'E' }), sw(S.assistKey !== false, function (v) { put({ assistKey: v }); }))
+    row(t('pc.assist'), t('pc.assist.d', { k: mk2 + 'E' }), sw(S.assistKey !== false, function (v) { put({ assistKey: v }); })),
+    row(t('pc.capture'), t('pc.capture.d', { k: mk2 + 'X' }), sw(S.captureKey !== false, function (v) { put({ captureKey: v }); }))
   ]));
   b.appendChild(group(t('set.updates'), [
     row(t('set.auto'), '', sw(S.autoUpdate, function (v) { put({ autoUpdate: v }); })),
@@ -846,6 +896,8 @@ var WN = {
     ['Aster on any text', 'Copy text in any app and press Ctrl+Shift+E (⌘⇧E on Mac). Aster can explain, summarise, rewrite, fix, translate or reply, then you copy the result back.'],
     ['Quick actions', 'Right-click Lareon in the Dock or taskbar to write an email, start a document, add a task or ask Aster.'],
     ['Accurate flags', 'Every language now shows its real, detailed flag.'],
+    ['Spaces', 'Make separate setups like School, Work and Personal. Each keeps its own apps, wallpaper and alerts, and can switch on by itself on a schedule. Switch from the top of the sidebar.'],
+    ['Screenshots and recordings', 'Press Ctrl+Shift+X (⌘⇧X on Mac) to capture an area, a window or the whole screen, or record it. Then copy it, save it, put it in Cove, edit it in Sheen or email it.'],
     ['A hands-on setup', 'Setup now lets you pick your wallpaper, sidebar, alerts, start page, email links and an app lock. The tour moved to Home: click Get to know Lareon.'],
     ['A brand-new Home', 'A big clock over your wallpaper, one bar to ask Aster or search everything, a dock of all your apps with their counts, and three cards for right now: your next event, your newest mail and the document you were working on.']
   ],
@@ -936,6 +988,8 @@ function palItems() {
   if (user) { a.push({ n: t('acct'), k: 'account' }, { n: t('upd'), f: function () { lareon.checkUpdates(); } }, { n: t('out'), f: function () { lareon.signOut(); } }); }
   a.push({ n: t('set.title'), f: openSet }, { n: t('tm.toggle'), f: flipTheme }, { n: t('focus.t') + ' · ' + t('focus.min', { n: 25 }), f: function () { lareon.show('home'); if (!fend) fstart(25); } });
   a.push({ n: t('lang'), f: function () { i18n.menu($('lg')); } });
+  if (SP && SP.spaces.length > 1) SP.spaces.forEach(function (x) { if (x.id !== SP.active) a.push({ n: t('spc.switch', { s: x.name }), f: function () { lareon.spacesSwitch(x.id); } }); });
+  a.push({ n: t('cp.t'), f: function () { lareon.homeAction('capture'); } });
   return a;
 }
 var found = [];
@@ -991,7 +1045,7 @@ i18n.onChange(function () { relabel(); });
 
 widget = mountSignin($('signin'), { onDone: function (u) { user = u; note(''); cur = 'home'; render(); load(); } });
 Promise.all([lareon.apps(), lareon.session(), lareon.info(), lareon.appsAll(), lareon.getSettings()]).then(function (r) {
-  APPS = r[0]; user = r[1]; CAT = r[3] || {}; S = r[4]; railWide(S && S.railWide); cards();
+  APPS = r[0]; user = r[1]; CAT = r[3] || {}; S = r[4]; railWide(S && S.railWide); cards(); SP = S && S.spaces; spacePaint();
   if (r[2].platform === 'darwin') { document.documentElement.className = 'mac'; mod = 'Cmd'; }
   $('kbk').textContent = mod === 'Cmd' ? '⌘K' : 'Ctrl K';
   $('ver').textContent = 'Lareon ' + r[2].version;

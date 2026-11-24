@@ -66,7 +66,8 @@
       "artifactName": "Lareon.${ext}",
       "extendInfo": {
         "NSMicrophoneUsageDescription": "Rustle uses the microphone for calls and voice messages.",
-        "NSCameraUsageDescription": "Rustle uses the camera for video calls."
+        "NSCameraUsageDescription": "Rustle uses the camera for video calls.",
+        "NSScreenCaptureUsageDescription": "Lareon takes screenshots and screen recordings when you ask it to."
       }
     },
     "dmg": {

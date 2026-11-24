@@ -1,0 +1,23 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Capture</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;cursor:crosshair;user-select:none;background:#000}
+#img{position:fixed;inset:0;width:100%;height:100%;object-fit:fill}#dim{position:fixed;inset:0;background:rgba(0,0,0,.42)}
+#sel{position:fixed;display:none;border:1.5px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.42);background-repeat:no-repeat}
+#sz{position:fixed;display:none;font:600 12px system-ui,sans-serif;color:#fff;background:rgba(0,0,0,.7);border-radius:6px;padding:3px 7px;pointer-events:none}
+#hint{position:fixed;left:50%;top:24px;transform:translateX(-50%);font:500 14px system-ui,sans-serif;color:#fff;background:rgba(20,17,27,.8);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:8px 16px}
+</style></head><body><img id="img" alt=""><div id="dim"></div><div id="sel"></div><div id="sz"></div><div id="hint"></div>
+<script src="i18n-more.js"></script><script src="i18n-apps.js"></script><script src="i18n.js"></script>
+<script>
+var $ = function (i) { return document.getElementById(i); }, a = null, rect = null;
+lareon.info().then(function (r) { i18n.set(r.lang || i18n.guess(r.locale), true); $('hint').textContent = i18n.t('cp.drag'); });
+lareon.onCapFrozen(function (u) { $('img').src = u; });
+function paint(x, y) {
+  var l = Math.min(a.x, x), t = Math.min(a.y, y), w = Math.abs(x - a.x), h = Math.abs(y - a.y); rect = { x: l, y: t, w: w, h: h };
+  var s = $('sel'); s.style.display = 'block'; s.style.left = l + 'px'; s.style.top = t + 'px'; s.style.width = w + 'px'; s.style.height = h + 'px';
+  $('dim').style.display = 'none'; var z = $('sz'); z.style.display = 'block'; z.textContent = Math.round(w) + ' × ' + Math.round(h); z.style.left = (l + w + 8) + 'px'; z.style.top = (t + h + 8) + 'px';
+}
+addEventListener('mousedown', function (e) { a = { x: e.clientX, y: e.clientY }; $('hint').style.display = 'none'; });
+addEventListener('mousemove', function (e) { if (a) paint(e.clientX, e.clientY); });
+addEventListener('mouseup', function () { if (!a) return; a = null; lareon.capAreaDone(rect && rect.w > 3 && rect.h > 3 ? rect : null); });
+addEventListener('keydown', function (e) { if (e.key === 'Escape') lareon.capAreaDone(null); });
+</script></body></html>

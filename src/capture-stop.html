@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Recording</title><link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+<style>html,body{height:100%;overflow:hidden}body{display:flex;align-items:center;gap:10px;padding:0 6px 0 14px;background:var(--solid);border:1px solid var(--line2);border-radius:24px;-webkit-app-region:drag}
+i{width:10px;height:10px;border-radius:50%;background:#ff4466;animation:b 1.2s ease-in-out infinite}@keyframes b{50%{opacity:.3}}
+#t{font:600 14px var(--mono);flex:1;color:var(--fg)}button{-webkit-app-region:no-drag;border:0;border-radius:18px;background:#ff4466;color:#fff;font:600 13px var(--sans);padding:8px 14px}</style></head><body>
+<i></i><span id="t">0:00</span><button id="s"></button>
+<script src="i18n-more.js"></script><script src="i18n-apps.js"></script><script src="i18n.js"></script>
+<script>
+var st = Date.now(); lareon.info().then(function (r) { i18n.set(r.lang || i18n.guess(r.locale), true); document.getElementById('s').textContent = i18n.t('cp.stop'); });
+lareon.onCapRecording(function (t) { st = t; });
+setInterval(function () { var s = Math.floor((Date.now() - st) / 1000); document.getElementById('t').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }, 500);
+document.getElementById('s').onclick = function () { lareon.capStopRec(); };
+</script></body></html>

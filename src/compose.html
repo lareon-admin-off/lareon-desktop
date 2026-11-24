@@ -15,27 +15,31 @@ textarea{resize:none;margin:0 16px;padding:12px 0;line-height:1.55;min-height:0}
 .btn.pri{border:0;background:var(--grad);color:#fff;padding:8px 18px;font-weight:500}.btn:disabled{opacity:.6}
 #msg{flex:1;font-size:13px;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#msg.bad{color:var(--red)}#msg.ok{color:var(--green)}
 .k{font:500 11px var(--mono);color:var(--fg3)}
+.att{display:flex;flex-wrap:wrap;gap:6px;margin:8px 16px 0}.att:empty{display:none}.att span{display:flex;align-items:center;gap:6px;font-size:12.5px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 10px}.att button{border:0;background:none;color:var(--fg3);font-size:14px;padding:0 4px}
 </style></head><body>
 <div class="hd"><img src="../build/art/fledge-logo.svg" alt=""><b data-i="cm.t"></b><button class="x" id="x" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="f"><label for="to" data-i="cm.to"></label><input id="to" autocomplete="off" spellcheck="false"></div>
 <div class="f"><label for="sub" data-i="cm.sub"></label><input id="sub" maxlength="300"></div>
+<div id="att" class="att"></div>
 <textarea id="body" style="flex:1"></textarea>
 <div class="ft"><span id="msg"><span class="k" id="kk"></span></span><button class="btn" id="fl" data-i="cm.fledge"></button><button class="btn pri" id="send" data-i="cm.send"></button></div>
 <script src="i18n-more.js"></script><script src="i18n-apps.js"></script><script src="i18n.js"></script>
 <script>
-var $ = function (i) { return document.getElementById(i); }, t = function (k, v) { return i18n.t(k, v); }, sending = false, mac = false;
+var $ = function (i) { return document.getElementById(i); }, t = function (k, v) { return i18n.t(k, v); }, sending = false, mac = false, ATT = [];
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function att() { $('att').innerHTML = ATT.map(function (a, i) { return '<span>' + esc(a.name) + '<button data-i="' + i + '" aria-label="Remove">×</button></span>'; }).join(''); [].forEach.call($('att').querySelectorAll('button'), function (b) { b.onclick = function () { ATT.splice(+b.getAttribute('data-i'), 1); att(); }; }); }
 lareon.info().then(function (r) { mac = r.platform === 'darwin'; i18n.set(r.lang || i18n.guess(r.locale), true); $('kk').textContent = (mac ? '⌘' : 'Ctrl') + ' + Enter'; });
 function msg(m, cls) { $('msg').className = cls || ''; $('msg').textContent = m; }
 lareon.onComposeFill(function (f) {
-  if (sending) return; $('to').value = f.to || ''; $('sub').value = f.subject || ''; $('body').value = f.body || ''; msg(''); $('msg').innerHTML = '<span class="k">' + (mac ? '⌘' : 'Ctrl') + ' + Enter</span>';
+  if (sending) return; ATT = Array.isArray(f.attach) ? f.attach : []; att(); $('to').value = f.to || ''; $('sub').value = f.subject || ''; $('body').value = f.body || ''; msg(''); $('msg').innerHTML = '<span class="k">' + (mac ? '⌘' : 'Ctrl') + ' + Enter</span>';
   setTimeout(function () { (f.to ? (f.subject ? $('body') : $('sub')) : $('to')).focus(); }, 40);
 });
 function send() {
   if (sending) return; if (!$('to').value.trim()) { msg(t('cm.noto'), 'bad'); $('to').focus(); return; }
   sending = true; $('send').disabled = true; msg(t('cm.sending'));
-  lareon.composeSend({ to: $('to').value, subject: $('sub').value, body: $('body').value }).then(function (r) {
+  lareon.composeSend({ to: $('to').value, subject: $('sub').value, body: $('body').value, attach: ATT }).then(function (r) {
     sending = false; $('send').disabled = false;
-    if (r && r.ok) { msg(t('cm.sent'), 'ok'); setTimeout(function () { $('to').value = $('sub').value = $('body').value = ''; lareon.composeClose(); }, 700); }
+    if (r && r.ok) { msg(t('cm.sent'), 'ok'); setTimeout(function () { $('to').value = $('sub').value = $('body').value = ''; ATT = []; att(); lareon.composeClose(); }, 700); }
     else msg((r && r.error) || t('net.fail'), 'bad');
   });
 }

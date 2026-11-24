@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, globalShortcut, nativeImage, WebContentsView, shell, Menu, session, ipcMain, Notification, nativeTheme, safeStorage, net, dialog, screen, powerMonitor, systemPreferences, clipboard } = require('electron');
+const { app, BrowserWindow, Tray, globalShortcut, nativeImage, WebContentsView, shell, Menu, session, ipcMain, Notification, nativeTheme, safeStorage, net, dialog, screen, powerMonitor, systemPreferences, clipboard, desktopCapturer } = require('electron');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -22,7 +22,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 
 // ---- settings (chosen in the setup wizard) ----
 const DEFAULT_APPS = Object.fromEntries(Object.entries(apps).map(([k, a]) => [k, !a.off]));
-const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, wallPhase: '', wallTint: true, railWide: false, notifyApps: { fledge: true, rustle: true, dusk: true }, quiet: { on: false, from: '22:00', to: '07:00' }, composeKey: true, assistKey: true, lock: { pin: '', idle: 0, sleep: true, touch: true }, order: [], homeCards: { today: true, mail: true, brief: true, across: true, focus: false, apps: false }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
+const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, wallPhase: '', wallTint: true, railWide: false, notifyApps: { fledge: true, rustle: true, dusk: true }, quiet: { on: false, from: '22:00', to: '07:00' }, composeKey: true, assistKey: true, captureKey: true, spaces: null, space: '', lock: { pin: '', idle: 0, sleep: true, touch: true }, order: [], homeCards: { today: true, mail: true, brief: true, across: true, focus: false, apps: false }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 let settings = { ...DEFAULTS };
 function loadSettings() {
@@ -485,6 +485,8 @@ function applyQuick() {
   if (settings.composeKey !== false) { try { globalShortcut.register('CommandOrControl+Shift+M', () => openCompose()); } catch {} }
   try { globalShortcut.unregister('CommandOrControl+Shift+E'); } catch {}
   if (settings.assistKey !== false) { try { globalShortcut.register('CommandOrControl+Shift+E', () => openAssist()); } catch {} }
+  try { globalShortcut.unregister('CommandOrControl+Shift+X'); } catch {}
+  if (settings.captureKey !== false) { try { globalShortcut.register('CommandOrControl+Shift+X', () => openCapture()); } catch {} }
 }
 ipcMain.on('quick:close', () => { if (quick) quick.hide(); });
 
@@ -645,13 +647,13 @@ function createWindow() {
 }
 
 ipcMain.on('theme:get', (e) => { e.returnValue = ['light', 'dark'].includes(settings.theme) ? settings.theme : ''; });
-const publicSettings = () => ({ composeKey: settings.composeKey !== false, assistKey: settings.assistKey !== false, mailDefault: isMailDefault(), catalog: apps, order: enabledKeys(), ...(() => { const w = wallNow(); return { wall: w.wall, wallPhase: w.phase, wallTint: w.tint }; })(), notifyApps: { ...DEFAULTS.notifyApps, ...(settings.notifyApps || {}) }, quiet: { ...DEFAULTS.quiet, ...(settings.quiet || {}) }, lock: { hasPin: !!(settings.lock && settings.lock.pin), idle: (settings.lock && settings.lock.idle) || 0, sleep: !settings.lock || settings.lock.sleep !== false, touch: !settings.lock || settings.lock.touch !== false, canTouch: canTouch() }, railWide: !!settings.railWide, homeCards: { ...DEFAULTS.homeCards, ...(settings.homeCards || {}) }, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
+const publicSettings = () => ({ captureKey: settings.captureKey !== false, spaces: spacesOut(), composeKey: settings.composeKey !== false, assistKey: settings.assistKey !== false, mailDefault: isMailDefault(), catalog: apps, order: enabledKeys(), ...(() => { const w = wallNow(); return { wall: w.wall, wallPhase: w.phase, wallTint: w.tint }; })(), notifyApps: { ...DEFAULTS.notifyApps, ...(settings.notifyApps || {}) }, quiet: { ...DEFAULTS.quiet, ...(settings.quiet || {}) }, lock: { hasPin: !!(settings.lock && settings.lock.pin), idle: (settings.lock && settings.lock.idle) || 0, sleep: !settings.lock || settings.lock.sleep !== false, touch: !settings.lock || settings.lock.touch !== false, canTouch: canTouch() }, railWide: !!settings.railWide, homeCards: { ...DEFAULTS.homeCards, ...(settings.homeCards || {}) }, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
 ipcMain.handle('settings:get', () => publicSettings());
 ipcMain.handle('settings:set', (_e, p) => {
   p = p || {};
   const bool = (k) => { if (typeof p[k] === 'boolean') settings[k] = p[k]; };
-  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound', 'background', 'quickAdd', 'askKey', 'brief', 'focusMute', 'composeKey', 'assistKey'].forEach(bool);
-  if (typeof p.composeKey === 'boolean' || typeof p.assistKey === 'boolean') applyQuick();
+  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound', 'background', 'quickAdd', 'askKey', 'brief', 'focusMute', 'composeKey', 'assistKey', 'captureKey'].forEach(bool);
+  if (typeof p.composeKey === 'boolean' || typeof p.assistKey === 'boolean' || typeof p.captureKey === 'boolean') applyQuick();
   if (typeof p.launchAtLogin === 'boolean') { settings.launchAtLogin = p.launchAtLogin; applyLogin(); }
   if (['system', 'light', 'dark'].includes(p.theme)) { settings.theme = p.theme; nativeTheme.themeSource = p.theme; paintChrome(); }
   if (['en', 'es', 'fr', 'de', 'pt', 'it', 'ru', 'tr', 'sv', 'ja', 'ko', 'zh', 'hi', 'ar', 'fa', 'sw', 'ary'].includes(p.lang)) settings.lang = p.lang;
@@ -835,7 +837,8 @@ function pinOk(pin) { try { const [salt, h] = String(settings.lock.pin).split(':
 function lockNow() {
   if (!hasPin() || locked || !win || inSetup) return;
   locked = true; for (const v of Object.values(views)) v.setVisible(false);
-  for (const w of [actWin, peek, ask, quick, compose, assist, invite]) { try { if (w && !w.isDestroyed()) w.hide(); } catch {} }
+  if (capRec) stopRecording();
+  for (const w of [actWin, peek, ask, quick, compose, assist, invite, capBar, capRes]) { try { if (w && !w.isDestroyed()) w.hide(); } catch {} }
   send('lock', { on: true, touch: canTouch() && settings.lock.touch !== false });
 }
 function unlockDone() { locked = false; unlockTries = 0; send('lock', { on: false }); const k = current; if (k && k !== 'home' && appOf(k)) { current = null; show(k); } else showHome(); }
@@ -883,6 +886,7 @@ ipcMain.on('new:menu', (_e, pos) => {
     on('cove') && { label: 'Upload to Cove', click: go('cove') },
     on('ward') && { label: 'Password', click: go('ward') },
     on('sheen') && { label: 'Photo edit', click: go('sheen') },
+    { label: 'Screenshot or recording', click: () => openCapture() },
     { type: 'separator' },
     { label: 'Ask Aster…', click: () => openAsk() }
   ].filter(Boolean);
@@ -907,7 +911,7 @@ function handOff(x) {
   if (/^mailto:/i.test(x)) return openCompose(parseMailto(x)), true;
   if (/^lareon:\/\//i.test(x)) return openLink(x);
   if (/\.ics$/i.test(x)) return openInvite(x), true;
-  const m = x.match(/^--lareon=(compose|doc|task|ask|assist)$/); if (m) return ({ compose: () => openCompose(), doc: () => newDoc(), task: () => openQuick(), ask: () => openAsk(), assist: () => openAssist() })[m[1]](), true;
+  const m = x.match(/^--lareon=(compose|doc|task|ask|assist|capture)$/); if (m) return ({ compose: () => openCompose(), doc: () => newDoc(), task: () => openQuick(), ask: () => openAsk(), assist: () => openAssist(), capture: () => openCapture() })[m[1]](), true;
   return false;
 }
 const later = (f) => { if (app.isReady() && win && !win.webContents.isLoading()) f(); else app.whenReady().then(() => setTimeout(f, 1500)); };
@@ -940,7 +944,17 @@ ipcMain.handle('compose:send', async (_e, m) => {
   if (!sess || locked) return { error: 'Sign in to send.' };
   m = m || {}; const to = String(m.to || '').trim(); if (!to) return { error: 'Add who it’s to.' };
   try {
-    const r = await api('/api/messages/send', { method: 'POST', token: sess.token, body: { to, subject: String(m.subject || '').slice(0, 300), body: String(m.body || '').slice(0, 100000) } });
+    const att = (Array.isArray(m.attach) ? m.attach : []).filter((a) => a && typeof a.path === 'string' && a.path.startsWith(app.getPath('temp')) && fs.existsSync(a.path)).slice(0, 5);
+    let r;
+    if (att.length) {
+      const B = '----lareon' + crypto.randomBytes(8).toString('hex'), parts = [], field = (k, v) => parts.push(Buffer.from('--' + B + '\r\nContent-Disposition: form-data; name="' + k + '"\r\n\r\n' + v + '\r\n'));
+      field('to', to); field('subject', String(m.subject || '').slice(0, 300)); field('body', String(m.body || '').slice(0, 100000));
+      for (const a of att) { const name = path.basename(a.path).replace(/["\r\n]/g, '_'), type = /\.png$/i.test(name) ? 'image/png' : /\.webm$/i.test(name) ? 'video/webm' : 'application/octet-stream';
+        parts.push(Buffer.from('--' + B + '\r\nContent-Disposition: form-data; name="attachments"; filename="' + name + '"\r\nContent-Type: ' + type + '\r\n\r\n'), fs.readFileSync(a.path), Buffer.from('\r\n')); }
+      parts.push(Buffer.from('--' + B + '--\r\n'));
+      const res = await net.fetch(API + '/api/messages/send', { method: 'POST', headers: { Authorization: 'Bearer ' + sess.token, Accept: 'application/json', 'Content-Type': 'multipart/form-data; boundary=' + B }, body: Buffer.concat(parts) });
+      let j = null; try { j = await res.json(); } catch {} r = { status: res.status, j };
+    } else r = await api('/api/messages/send', { method: 'POST', token: sess.token, body: { to, subject: String(m.subject || '').slice(0, 300), body: String(m.body || '').slice(0, 100000) } });
     if (r.status === 200 && !(r.j && r.j.error)) { logActivity({ app: 'fledge', title: 'Sent', body: (m.subject || '(no subject)') + ' → ' + to }); return { ok: true }; }
     return { error: (r.j && r.j.error) || 'Couldn’t send. Try again.' };
   } catch { return { error: 'You’re offline. Try again when you’re connected.' }; }
@@ -1013,18 +1027,213 @@ ipcMain.handle('assist:run', (_e, what, text, lang) => {
   return askAster(how + bare + '\n\n---\n' + text + '\n---', []);
 });
 ipcMain.on('assist:copy', (_e, t) => { try { clipboard.writeText(String(t || '')); } catch {} });
-ipcMain.on('home:action', (_e, a) => { if (!inSetup && /^(compose|doc|task|ask|assist)$/.test(String(a))) handOff('--lareon=' + a); });
+ipcMain.on('home:action', (_e, a) => { if (!inSetup && /^(compose|doc|task|ask|assist|capture)$/.test(String(a))) handOff('--lareon=' + a); });
 ipcMain.on('assist:close', () => { if (assist && !assist.isDestroyed()) assist.hide(); });
 
 // ---- the Dock (Mac) and taskbar (Windows) menus ----
 function dockMenu() {
-  const items = [['New email', 'compose'], ['New document', 'doc'], ['Add a task', 'task'], ['Ask Aster', 'ask'], ['Aster on copied text', 'assist']];
+  const items = [['New email', 'compose'], ['New document', 'doc'], ['Add a task', 'task'], ['Ask Aster', 'ask'], ['Aster on copied text', 'assist'], ['Capture the screen', 'capture']];
   try {
     if (isMac && app.dock) app.dock.setMenu(Menu.buildFromTemplate(items.map(([label, a]) => ({ label, click: () => handOff('--lareon=' + a) }))));
     else if (process.platform === 'win32') app.setUserTasks(items.map(([title, a]) => ({ program: process.execPath, arguments: '--lareon=' + a, iconPath: process.execPath, iconIndex: 0, title, description: title })));
   } catch {}
 }
 app.whenReady().then(dockMenu);
+
+// ---- Spaces: separate setups (apps, wallpaper, alerts, start page) you switch between, by hand or on a schedule ----
+const SPACE_COLORS = ['#ff7c1f', '#a35cf5', '#2fb39a', '#4aa8ff', '#d94fc4', '#e8b33a'];
+const snapshot = () => ({ apps: { ...settings.apps }, wall: settings.wall || 'peaks', wallPhase: settings.wallPhase || '', wallTint: settings.wallTint !== false, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, notifyApps: { ...(settings.notifyApps || {}) }, startApp: settings.startApp || 'home' });
+function ensureSpaces() {
+  if (!Array.isArray(settings.spaces) || !settings.spaces.length) settings.spaces = [{ id: 'personal', name: 'Personal', color: SPACE_COLORS[0], auto: { on: false, days: [1, 2, 3, 4, 5], from: '08:00', to: '15:00' }, snap: snapshot() }];
+  if (!settings.spaces.find((x) => x.id === settings.space)) settings.space = settings.spaces[0].id;
+}
+const activeSpace = () => { ensureSpaces(); return settings.spaces.find((x) => x.id === settings.space); };
+const spacesOut = () => { ensureSpaces(); return { active: settings.space, spaces: settings.spaces.map(({ snap, ...x }) => ({ ...x, apps: Object.keys(snap.apps || {}).filter((k) => snap.apps[k] !== false && apps[k]) })) }; };
+function switchSpace(id, why) {
+  ensureSpaces(); const to = settings.spaces.find((x) => x.id === id); if (!to || id === settings.space) return false;
+  const from = activeSpace(); from.snap = snapshot();
+  settings.space = id; const s = to.snap || snapshot();
+  setApps({ ...Object.fromEntries(Object.keys(apps).map((k) => [k, false])), ...s.apps, ...(Object.values(s.apps || {}).some(Boolean) ? {} : { [Object.keys(apps)[0]]: true }) });
+  Object.assign(settings, { wall: s.wall, wallPhase: s.wallPhase, wallTint: s.wallTint, notifications: s.notifications, remindEvents: s.remindEvents, notifyApps: { ...settings.notifyApps, ...(s.notifyApps || {}) }, startApp: s.startApp || 'home' });
+  writeSettings();
+  const w = wallNow(); for (const b of BrowserWindow.getAllWindows()) { try { b.webContents.send('wall', w); } catch {} }
+  send('space', spacesOut()); buildMenu();
+  if (current && apps[current] && !enabledKeys().includes(current)) showHome();
+  if (why === 'auto') logActivity({ app: '', title: 'Switched to ' + to.name, body: 'Your ' + to.name + ' space started on schedule.' });
+  return true;
+}
+ipcMain.handle('spaces:get', () => spacesOut());
+ipcMain.on('spaces:switch', (_e, id) => { if (!inSetup && !locked) switchSpace(String(id)); });
+ipcMain.handle('spaces:add', (_e, d) => {
+  ensureSpaces(); if (settings.spaces.length >= 6) return spacesOut();
+  const name = String((d && d.name) || 'New space').trim().slice(0, 24) || 'New space';
+  const id = crypto.randomBytes(4).toString('hex'), color = SPACE_COLORS[settings.spaces.length % SPACE_COLORS.length];
+  settings.spaces.push({ id, name, color, auto: { on: false, days: [1, 2, 3, 4, 5], from: '08:00', to: '15:00' }, snap: snapshot() });
+  writeSettings(); switchSpace(id); return spacesOut();
+});
+ipcMain.handle('spaces:update', (_e, id, d) => {
+  ensureSpaces(); const x = settings.spaces.find((s) => s.id === id); if (!x || !d) return spacesOut();
+  if (typeof d.name === 'string' && d.name.trim()) x.name = d.name.trim().slice(0, 24);
+  if (SPACE_COLORS.includes(d.color)) x.color = d.color;
+  if (d.auto && typeof d.auto === 'object') {
+    const a = { ...x.auto }, hm = (v) => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+    if (typeof d.auto.on === 'boolean') a.on = d.auto.on; if (Array.isArray(d.auto.days)) a.days = [...new Set(d.auto.days.filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))];
+    if (hm(d.auto.from)) a.from = d.auto.from; if (hm(d.auto.to)) a.to = d.auto.to; x.auto = a;
+  }
+  writeSettings(); send('space', spacesOut()); buildMenu(); return spacesOut();
+});
+ipcMain.handle('spaces:remove', (_e, id) => {
+  ensureSpaces(); if (settings.spaces.length <= 1) return spacesOut();
+  if (settings.space === id) switchSpace(settings.spaces.find((s) => s.id !== id).id);
+  settings.spaces = settings.spaces.filter((s) => s.id !== id); writeSettings(); send('space', spacesOut()); buildMenu(); return spacesOut();
+});
+ipcMain.on('spaces:menu', (_e, pos) => {
+  if (!win || inSetup || locked) return; ensureSpaces();
+  const items = settings.spaces.map((x, i) => ({ label: x.name, type: 'radio', checked: x.id === settings.space, accelerator: i < 5 ? 'CmdOrCtrl+Alt+' + (i + 1) : undefined, click: () => switchSpace(x.id) }));
+  items.push({ type: 'separator' }, { label: 'New space…', enabled: settings.spaces.length < 6, click: () => { showHome(); send('space:new'); } }, { label: 'Edit spaces…', click: () => { showHome(); send('settings'); } });
+  Menu.buildFromTemplate(items).popup({ window: win, x: pos && pos.x, y: pos && pos.y });
+});
+// on a schedule: a space switches on when its hours start, and back when they end
+const spaceEdge = {};
+function inHours(a, d) { if (!a || !a.on || !(a.days || []).includes(d.getDay())) return false; const m = d.getHours() * 60 + d.getMinutes(), t = (v) => { const p = String(v).split(':'); return (+p[0]) * 60 + (+p[1] || 0); }; const f = t(a.from), to = t(a.to); return f < to ? m >= f && m < to : m >= f || m < to; }
+function spaceTick() {
+  if (!settings.setupDone || inSetup) return; ensureSpaces(); const now = new Date();
+  for (const x of settings.spaces) {
+    const on = inHours(x.auto, now), was = spaceEdge[x.id];
+    spaceEdge[x.id] = on;
+    if (on && was !== true && settings.space !== x.id) switchSpace(x.id, 'auto');
+    else if (!on && was === true && settings.space === x.id) { const home = settings.spaces.find((s) => s.id !== x.id && !(s.auto && s.auto.on)) || settings.spaces.find((s) => s.id !== x.id); if (home) switchSpace(home.id, 'auto'); }
+  }
+}
+setInterval(spaceTick, 30000); app.whenReady().then(() => setTimeout(spaceTick, 5000));
+
+// ---- screen capture: an area, a window or the whole screen, or a screen recording ----
+let capBar = null, capArea = null, capRes = null, capRec = null, capStop = null, capShot = null, capFile = null, capRecTimer = null;
+const capDisplay = () => screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+function capAllowed() {
+  if (!isMac) return true;
+  try { const st = systemPreferences.getMediaAccessStatus('screen'); if (st === 'granted') return true; } catch { return true; }
+  dialog.showMessageBox({ type: 'info', message: 'Let Lareon see your screen', detail: 'To take screenshots and recordings, turn on Lareon in System Settings › Privacy & Security › Screen Recording, then open Lareon again.', buttons: ['Open System Settings', 'Not now'] }).then((r) => { if (r.response === 0) shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture'); });
+  return false;
+}
+function capWin(file, opts) {
+  const w = new BrowserWindow({ show: false, frame: false, resizable: false, alwaysOnTop: true, skipTaskbar: true, fullscreenable: false, transparent: !!(opts && opts.transparent), backgroundColor: opts && opts.transparent ? '#00000000' : BG(), ...(opts || {}), webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false } });
+  w.loadFile(path.join(__dirname, file)); return w;
+}
+function openCapture() {
+  if (!settings.setupDone || locked) return;
+  if (capRec) return stopRecording();
+  if (!capAllowed()) return;
+  if (!capBar || capBar.isDestroyed()) { capBar = capWin('capture-bar.html', { width: 520, height: 76 }); capBar.on('blur', () => { if (capBar && !capBar.isDestroyed() && !capBar.__keep) capBar.hide(); }); capBar.on('closed', () => { capBar = null; }); }
+  const d = capDisplay().workArea; capBar.setPosition(Math.round(d.x + d.width / 2 - 260), Math.round(d.y + 24));
+  const go = () => { capBar.webContents.send('cap:bar'); capBar.show(); capBar.focus(); };
+  if (capBar.webContents.isLoading()) capBar.webContents.once('did-finish-load', go); else go();
+}
+async function grabScreen(disp) {
+  const sf = disp.scaleFactor || 1, size = { width: Math.round(disp.size.width * sf), height: Math.round(disp.size.height * sf) };
+  const srcs = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: size });
+  const src = srcs.find((s) => String(s.display_id) === String(disp.id)) || srcs[0];
+  return src ? src.thumbnail : null;
+}
+const hideBar = () => new Promise((r) => { if (capBar && !capBar.isDestroyed()) capBar.hide(); setTimeout(r, 220); });
+ipcMain.on('cap:screen', async () => { await hideBar(); try { const img = await grabScreen(capDisplay()); if (img && !img.isEmpty()) showShot(img); } catch {} });
+ipcMain.on('cap:area', async () => {
+  await hideBar(); const disp = capDisplay();
+  try {
+    const img = await grabScreen(disp); if (!img || img.isEmpty()) return; capShot = { img, disp };
+    if (capArea && !capArea.isDestroyed()) capArea.destroy();
+    capArea = capWin('capture-area.html', { x: disp.bounds.x, y: disp.bounds.y, width: disp.bounds.width, height: disp.bounds.height, enableLargerThanScreen: true, hasShadow: false, movable: false });
+    capArea.setAlwaysOnTop(true, 'screen-saver'); try { capArea.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch {}
+    capArea.webContents.once('did-finish-load', () => { capArea.webContents.send('cap:frozen', img.toDataURL()); capArea.show(); capArea.focus(); });
+  } catch {}
+});
+ipcMain.on('cap:areaDone', (_e, r) => {
+  if (capArea && !capArea.isDestroyed()) capArea.destroy(); capArea = null; if (!r || !capShot) return;
+  const sf = capShot.img.getSize().width / capShot.disp.bounds.width, rect = { x: Math.round(r.x * sf), y: Math.round(r.y * sf), width: Math.round(r.w * sf), height: Math.round(r.h * sf) };
+  if (rect.width < 4 || rect.height < 4) return; showShot(capShot.img.crop(rect)); capShot = null;
+});
+ipcMain.handle('cap:windows', async () => {
+  try { const srcs = await desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: 320, height: 200 } });
+    return srcs.filter((s) => s.name && !/^Lareon/.test(s.name)).slice(0, 12).map((s) => ({ id: s.id, name: s.name.slice(0, 60), thumb: s.thumbnail.toDataURL() })); } catch { return []; }
+});
+ipcMain.on('cap:window', async (_e, id) => {
+  await hideBar();
+  try { const d = capDisplay(), sf = d.scaleFactor || 1; const srcs = await desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: Math.round(d.size.width * sf), height: Math.round(d.size.height * sf) } });
+    const s = srcs.find((x) => x.id === id); if (s && !s.thumbnail.isEmpty()) showShot(s.thumbnail); } catch {}
+});
+ipcMain.on('cap:barSize', (_e, h) => { if (capBar && !capBar.isDestroyed()) { const b = capBar.getBounds(); capBar.setBounds({ x: b.x, y: b.y, width: 520, height: Math.max(76, Math.min(440, Math.round(+h || 76))) }); } });
+ipcMain.on('cap:close', () => { if (capBar && !capBar.isDestroyed()) capBar.hide(); });
+function capName(ext) { const d = new Date(); return 'Lareon ' + (ext === 'png' ? 'screenshot' : 'recording') + ' ' + isoDay(d) + ' at ' + pad(d.getHours()) + '.' + pad(d.getMinutes()) + '.' + pad(d.getSeconds()) + '.' + ext; }
+function showResult(file, kind) {
+  capFile = { path: file, kind, name: path.basename(file) };
+  if (!capRes || capRes.isDestroyed()) { capRes = capWin('capture.html', { width: 640, height: 560, resizable: true, minWidth: 460, minHeight: 420 }); capRes.on('closed', () => { capRes = null; }); }
+  const go = () => { capRes.webContents.send('cap:result', { ...capFile, size: fs.statSync(file).size }); capRes.center(); capRes.show(); capRes.focus(); };
+  if (capRes.webContents.isLoading()) capRes.webContents.once('did-finish-load', go); else go();
+}
+function showShot(img) {
+  const f = path.join(app.getPath('temp'), capName('png')); fs.writeFileSync(f, img.toPNG()); showResult(f, 'image');
+  try { clipboard.writeImage(img); } catch {}
+}
+// recording the whole screen
+ipcMain.on('cap:record', async () => {
+  await hideBar(); const disp = capDisplay();
+  try {
+    const srcs = await desktopCapturer.getSources({ types: ['screen'] }); const src = srcs.find((s) => String(s.display_id) === String(disp.id)) || srcs[0]; if (!src) return;
+    capRec = capWin('capture-rec.html', { width: 10, height: 10, show: false, skipTaskbar: true });
+    capRec.webContents.session.setDisplayMediaRequestHandler((_r, cb) => cb({ video: src }), { useSystemPicker: false });
+    capRec.webContents.once('did-finish-load', () => capRec.webContents.send('cap:start'));
+    capStop = capWin('capture-stop.html', { width: 170, height: 48 }); const w = disp.workArea; capStop.setPosition(Math.round(w.x + w.width / 2 - 85), Math.round(w.y + 14));
+    capStop.setAlwaysOnTop(true, 'screen-saver'); capStop.setContentProtection(true);
+    capStop.webContents.once('did-finish-load', () => { capStop.showInactive(); capStop.webContents.send('cap:recording', Date.now()); });
+    capRecTimer = setTimeout(stopRecording, 10 * 60 * 1000); // at most ten minutes
+  } catch { capRec = null; }
+});
+function stopRecording() { clearTimeout(capRecTimer); if (capRec && !capRec.isDestroyed()) capRec.webContents.send('cap:stop'); if (capStop && !capStop.isDestroyed()) capStop.destroy(); capStop = null; }
+ipcMain.on('cap:stopRec', stopRecording);
+ipcMain.on('cap:recorded', (_e, buf) => {
+  try { if (capRec && !capRec.isDestroyed()) capRec.destroy(); } catch {} capRec = null;
+  if (!buf || !buf.byteLength) return; const f = path.join(app.getPath('temp'), capName('webm')); fs.writeFileSync(f, Buffer.from(buf)); showResult(f, 'video');
+});
+// what to do with it
+ipcMain.handle('cap:act', async (_e, what, extra) => {
+  if (!capFile || locked) return { error: 'gone' };
+  if (what === 'copy' && capFile.kind === 'image') { clipboard.writeImage(nativeImage.createFromPath(capFile.path)); return { ok: true }; }
+  if (what === 'save') {
+    const r = await dialog.showSaveDialog(capRes || win, { defaultPath: path.join(app.getPath(capFile.kind === 'image' ? 'pictures' : 'videos'), capFile.name) });
+    if (r.canceled || !r.filePath) return { canceled: true }; fs.copyFileSync(capFile.path, r.filePath); return { ok: true, path: r.filePath };
+  }
+  if (what === 'show' && extra) { shell.showItemInFolder(extra); return { ok: true }; }
+  if (what === 'email') { if (capRes && !capRes.isDestroyed()) capRes.hide(); openCompose({ attach: [{ path: capFile.path, name: capFile.name, size: fs.statSync(capFile.path).size }] }); return { ok: true }; }
+  if (what === 'cove' || what === 'sheen') {
+    const up = await coveUpload(capFile.path, capFile.kind === 'image' ? 'image/png' : 'video/webm', (p) => { if (capRes && !capRes.isDestroyed()) capRes.webContents.send('cap:progress', p); });
+    if (!up.ok) return up;
+    if (what === 'sheen' && capFile.kind === 'image') { if (capRes && !capRes.isDestroyed()) capRes.hide(); showMain(); openIn('sheen', 'https://sheen.lareon.org/app#cove=' + encodeURIComponent(up.id) + '&n=' + encodeURIComponent(up.name) + '&p=' + encodeURIComponent(up.parent || '')); }
+    return { ok: true, name: up.name };
+  }
+  if (what === 'close') { if (capRes && !capRes.isDestroyed()) capRes.hide(); return { ok: true }; }
+  if (what === 'discard') { if (capRes && !capRes.isDestroyed()) capRes.hide(); try { fs.unlinkSync(capFile.path); } catch {} capFile = null; return { ok: true }; }
+  return { error: 'unknown' };
+});
+async function coveUpload(file, type, onProgress) {
+  if (!sess) return { error: 'Sign in to save to Cove.' };
+  if (!enabledKeys().includes('cove')) return { error: 'Turn on Cove to save there.' };
+  try {
+    const buf = fs.readFileSync(file), name = path.basename(file);
+    const st = await api('/api/cove/uploads', { method: 'POST', token: sess.token, body: { name, size: buf.length, type } });
+    if (st.status !== 200 || !st.j || !st.j.id) return { error: (st.j && st.j.error) || 'Couldn’t start the upload.' };
+    const seg = st.j.seg || 4 * 1024 * 1024, parts = Math.max(1, Math.ceil(buf.length / seg));
+    for (let n = 0; n < parts; n++) {
+      const r = await net.fetch(API + '/api/cove/uploads/' + st.j.id + '/' + n, { method: 'PUT', headers: { Authorization: 'Bearer ' + sess.token, 'Content-Type': 'application/octet-stream' }, body: buf.subarray(n * seg, Math.min(buf.length, (n + 1) * seg)) });
+      if (!r.ok) return { error: 'The upload stopped. Try again.' }; onProgress && onProgress((n + 1) / parts);
+    }
+    let thumb = '', w = 0, h = 0;
+    if (type.startsWith('image/')) { const im = nativeImage.createFromPath(file), sz = im.getSize(); w = sz.width; h = sz.height; thumb = 'data:image/jpeg;base64,' + im.resize({ width: Math.min(480, sz.width) }).toJPEG(80).toString('base64'); }
+    const dn = await api('/api/cove/uploads/' + st.j.id + '/done', { method: 'POST', token: sess.token, body: { thumb, w, h } });
+    if (dn.status !== 200) return { error: (dn.j && dn.j.error) || 'Couldn’t finish the upload.' };
+    logActivity({ app: 'cove', title: 'Saved to Cove', body: st.j.name || name });
+    return { ok: true, id: st.j.id, name: st.j.name || name, parent: st.j.parent || '' };
+  } catch { return { error: 'You’re offline. Try again when you’re connected.' }; }
+}
 
 ipcMain.on('wall:get', (e) => { e.returnValue = wallNow(); });
 
