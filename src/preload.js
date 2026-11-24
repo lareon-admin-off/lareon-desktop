@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('lareon', {
   assistCopy: (t) => ipcRenderer.send('assist:copy', t),
   assistClose: () => ipcRenderer.send('assist:close'),
   mailDefault: (on) => ipcRenderer.invoke('mail:default', !!on),
+  homeAction: (a) => ipcRenderer.send('home:action', a),
   activityToggle: (r) => ipcRenderer.send('activity:toggle', r),
   onActivity: (cb) => ipcRenderer.on('activity', (_e, v) => cb(v)),
   onActivityUpdate: (cb) => ipcRenderer.on('activity:update', () => cb()),

@@ -987,6 +987,7 @@ ipcMain.handle('assist:run', (_e, what, text, lang) => {
   return askAster(how + bare + '\n\n---\n' + text + '\n---', []);
 });
 ipcMain.on('assist:copy', (_e, t) => { try { clipboard.writeText(String(t || '')); } catch {} });
+ipcMain.on('home:action', (_e, a) => { if (!inSetup && /^(compose|doc|task|ask|assist)$/.test(String(a))) handOff('--lareon=' + a); });
 ipcMain.on('assist:close', () => { if (assist && !assist.isDestroyed()) assist.hide(); });
 
 // ---- the Dock (Mac) and taskbar (Windows) menus ----
