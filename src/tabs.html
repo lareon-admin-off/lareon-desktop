@@ -257,6 +257,15 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
 .sp-now button{display:flex;gap:13px;align-items:center;text-align:left;border-radius:18px;padding:15px 16px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);color:var(--fg);min-width:0;transition:transform .25s var(--ease),border-color .2s}
 .sp-now button:hover{transform:translateY(-3px);border-color:var(--line2)}.sp-now img{width:30px;height:30px;flex:none}
 .sp-now .tx{min-width:0}.sp-now b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:500;font-size:15px;line-height:1.35}.sp-now small{display:block;color:var(--fg3);font-size:13px;margin-top:2px}
+
+.sp-learn{border:0;background:none;color:var(--fg2);font-size:13.5px;padding:6px 12px;border-radius:999px;margin-top:-6px}.sp-learn:hover{color:var(--fg);background:var(--hover)}
+.dis{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(10,8,16,.5);backdrop-filter:blur(10px);animation:fade .3s both;padding:24px}
+.dis .box{width:min(920px,100%);max-height:calc(100vh - 80px);overflow:auto;background:var(--solid);border:1px solid var(--line2);border-radius:24px;padding:26px 28px;box-shadow:var(--shadow);animation:rise .5s var(--ease) both}
+.dis .dh{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.dis h2{font-size:28px;letter-spacing:-.03em;font-weight:600}.dis .dh p{color:var(--fg2)}
+.dgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}@media(max-width:760px){.dgrid{grid-template-columns:1fr}}
+.dc{background:var(--panel2);border:1px solid var(--line);border-radius:18px;padding:16px 18px}.dc .ti{display:flex;align-items:center;gap:10px;margin-bottom:6px}.dc .ti img{width:28px;height:28px}.dc h3{font-size:16px;font-weight:600}
+.dc p{color:var(--fg2);font-size:14px;margin-bottom:8px}.dc ul{list-style:none;padding:0;display:grid;gap:5px}.dc li{font-size:13.5px;color:var(--fg);padding-left:16px;position:relative}.dc li:before{content:"";position:absolute;left:3px;top:8px;width:5px;height:5px;border-radius:50%;background:var(--orange)}
+.dc.wide{grid-column:1/-1}.dk{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:center;font-size:14px}.dk kbd{font:600 12px system-ui;background:var(--panel);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:2px 8px;justify-self:start}
 </style></head><body>
 <div class="bar">
  <svg class="brand" viewBox="0 0 150 150" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#c84bff"/></linearGradient></defs><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#g)"/></svg>
@@ -300,6 +309,7 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
   <div class="sp-res" id="sres" hidden></div>
   <div class="sp-dock rise" id="sdock" style="--i:2"></div>
   <div class="sp-now rise" id="snow" style="--i:3"></div>
+  <button class="sp-learn rise" id="learn" style="--i:4" data-i="dis.t"></button>
  <div hidden>
   <div class="hero rise">
   <div><p class="sub" id="date"></p><h1 id="greet"></h1></div>
@@ -332,6 +342,7 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
  </div>
 </main>
 <section id="set" hidden><div class="wrap"><div class="hd"><h1 data-i="set.title"></h1><button class="btn pri" id="setx" data-i="set.close"></button></div><div id="setb"></div></div></section>
+<div class="dis" id="dis" hidden><div class="box"><div class="dh"><div><h2 data-i="dis.t"></h2><p data-i="dis.p"></p></div><button class="btn pri" id="disx" data-i="set.close"></button></div><div id="disb"></div></div></div>
 <div class="wn" id="wn" hidden><div class="box"><h2 data-i="wn.title"></h2><div class="vv" id="wnv"></div><ul id="wnl"></ul><button class="btn pri" id="wnb" data-i="wn.btn"></button></div></div>
 <div id="opening" hidden><div><img id="op-img" alt=""><span id="op-t"></span></div></div>
 <div id="pal" hidden><div class="box"><input id="pi" data-ip="jump.ph" autocomplete="off"><ul id="pl"></ul></div></div>
@@ -611,6 +622,22 @@ $('sask').onsubmit = function (e) {
     var c = $('sac'); if (c) c.onclick = function () { lareon.show('aster'); }; var xx = $('sax'); if (xx) xx.onclick = function () { r.hidden = true; $('sq').value = ''; };
   });
 };
+// ---- Get to know Lareon (the tour, kept out of setup) ----
+function discover() {
+  var m = mod === 'Cmd' ? '⌘' : 'Ctrl', sh = mod === 'Cmd' ? '⌘⇧' : 'Ctrl+Shift+';
+  function card(img, title, lede, tips, wide) { return '<div class="dc' + (wide ? ' wide' : '') + '"><div class="ti">' + (img ? '<img src="' + img + '" alt="">' : '') + '<h3>' + esc(title) + '</h3></div>' + (lede ? '<p>' + esc(lede) + '</p>' : '') + (tips && tips.length ? '<ul>' + tips.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') + '</div>'; }
+  var h = '<div class="dgrid">' + card('../build/art/lareon-icon.svg', t('one.h'), t('one.p'), [t('one.t1'), t('one.t2'), t('one.t3')], true);
+  if (APPS.dusk) h += card(art('dusk'), t('td.h'), t('td.p'), [t('td.t1'), t('td.t2')]);
+  if (APPS.fledge) h += card(art('fledge'), t('tf.h'), t('tf.p'), [t('tf.t1'), t('tf.t2')]);
+  if (APPS.aster) h += card(art('aster'), t('ta.h'), t('ta.p'), [t('ta.t1'), t('ta.t2'), t('pc.assist') + ': ' + sh + 'E']);
+  ['rustle', 'cove', 'verse', 'ward', 'sheen', 'lark', 'grove'].forEach(function (k) { if (APPS[k]) h += card(art(k), APPS[k].name, t('d.' + k), null); });
+  h += card('', t('pv.h'), t('pv.p'), [t('pv.t1'), t('pv.t2'), t('pv.t3')], true);
+  var keys = [[m + ' K', t('ks.jump')], [m + ' 1', t('ks.home')], ['Ctrl Tab', t('sc.next')], [m + ' \\', t('split.t')], [m + ' [  ]', t('nav.back') + ' / ' + t('nav.fwd')], [sh + 'Space', t('set.qk')], [sh + 'A', t('set.ask')], [sh + 'M', t('pc.compose')], [sh + 'E', t('pc.assist')], [m + ' R', t('ks.reload')]];
+  h += '<div class="dc wide"><div class="ti"><h3>' + esc(t('ks.h')) + '</h3></div><div class="dk">' + keys.map(function (k) { return '<kbd>' + esc(k[0]) + '</kbd><span>' + esc(k[1]) + '</span>'; }).join('') + '</div></div></div>';
+  $('disb').innerHTML = h; $('dis').hidden = false;
+}
+$('learn').onclick = discover; $('disx').onclick = function () { $('dis').hidden = true; };
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('dis').hidden) $('dis').hidden = true; });
 var briefDone = false;
 function loadBrief(force) {
   var c = $('briefc'), b = $('briefb');
@@ -819,6 +846,7 @@ var WN = {
     ['Aster on any text', 'Copy text in any app and press Ctrl+Shift+E (⌘⇧E on Mac). Aster can explain, summarise, rewrite, fix, translate or reply, then you copy the result back.'],
     ['Quick actions', 'Right-click Lareon in the Dock or taskbar to write an email, start a document, add a task or ask Aster.'],
     ['Accurate flags', 'Every language now shows its real, detailed flag.'],
+    ['A hands-on setup', 'Setup now lets you pick your wallpaper, sidebar, alerts, start page, email links and an app lock. The tour moved to Home: click Get to know Lareon.'],
     ['A brand-new Home', 'A big clock over your wallpaper, one bar to ask Aster or search everything, a dock of all your apps with their counts, and three cards for right now: your next event, your newest mail and the document you were working on.']
   ],
   '1.4.0': [
