@@ -1,6 +1,6 @@
 {
   "name": "lareon-desktop",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Lareon for desktop: every Lareon app in one window",
   "main": "src/main.js",
   "author": "Lareon <help@lareon.org>",

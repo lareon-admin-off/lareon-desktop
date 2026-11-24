@@ -73,7 +73,7 @@ function paintChrome() {
 }
 nativeTheme.on('updated', paintChrome);
 
-let win, current = null, inSetup = false, pending2fa = null;
+let win, current = null, inSetup = false, pending2fa = null, pendingTicket = '';
 const views = {};
 const stateFile = () => path.join(app.getPath('userData'), 'window.json');
 const loadState = () => { try { return JSON.parse(fs.readFileSync(stateFile(), 'utf8')); } catch { return {}; } };
@@ -223,7 +223,7 @@ ipcMain.handle('auth:login', async (_e, c) => {
     const { status, j } = await api('/api/login', { method: 'POST', body: { username, password, device: settings.td || '' } });
     if (j && (j.code === 'region' || j.code === 'maint')) return { code: j.code };
     if (j && j.token) return finishLogin(j.token, j.user);
-    if (j && j.requires2FA) { pending2fa = username; return { need2fa: true, contact: j.contact || '', app: !!j.app }; }
+    if (j && j.requires2FA) { pending2fa = username; pendingTicket = String(j.ticket || ''); return { need2fa: true, contact: j.contact || '', app: !!j.app }; }
     if (status === 403 && j && j.error === 'banned') return { banned: { reason: j.reason === '__under13' ? '' : String(j.reason || ''), kind: j.reason === '__under13' ? 'u' : (j.export_token && j.delete_at ? 't' : 's'), token: j.export_token ? String(j.export_token) : '', deleteAt: j.delete_at || '' } };
     
     if (status === 429) return { error: 'Too many attempts. Wait a few minutes and try again.' };
@@ -234,9 +234,10 @@ ipcMain.handle('auth:verify', async (_e, c) => {
   if (!pending2fa) return { error: 'Start again from the sign-in screen.' };
   const code = typeof c === 'string' ? c : (c && c.code);
   try {
-    const { j } = await api('/api/auth/2fa/verify', { method: 'POST', body: { username: pending2fa, code: String(code || '').trim() } });
+    const { j } = await api('/api/auth/2fa/verify', { method: 'POST', body: { username: pending2fa, code: String(code || '').trim(), ticket: pendingTicket } });
+    if (j && j.code === 'relogin') { pending2fa = null; pendingTicket = ''; return { error: j.error || 'Your sign-in timed out. Enter your password again.' }; }
     if (j && j.token) {
-      const user = pending2fa; pending2fa = null;
+      const user = pending2fa; pending2fa = null; pendingTicket = '';
       if (c && c.trust && j.trust_pending) {
         try { const t = await api('/api/auth/trust-device', { method: 'POST', body: { username: user, days: 30, pending: j.trust_pending } }); if (t.j && t.j.device) { settings.td = t.j.device; writeSettings(); } } catch {}
       }
