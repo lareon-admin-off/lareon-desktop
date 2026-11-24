@@ -1,4 +1,5 @@
-const { app, BrowserWindow, Tray, globalShortcut, nativeImage, WebContentsView, shell, Menu, session, ipcMain, Notification, nativeTheme, safeStorage, net, dialog, screen } = require('electron');
+const { app, BrowserWindow, Tray, globalShortcut, nativeImage, WebContentsView, shell, Menu, session, ipcMain, Notification, nativeTheme, safeStorage, net, dialog, screen, powerMonitor, systemPreferences } = require('electron');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const apps = require('./apps.json');
@@ -21,7 +22,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 
 // ---- settings (chosen in the setup wizard) ----
 const DEFAULT_APPS = Object.fromEntries(Object.entries(apps).map(([k, a]) => [k, !a.off]));
-const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, railWide: false, order: [], homeCards: { today: true, mail: true, brief: true, focus: true, apps: true }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
+const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, wallPhase: '', wallTint: true, railWide: false, notifyApps: { fledge: true, rustle: true, dusk: true }, quiet: { on: false, from: '22:00', to: '07:00' }, lock: { pin: '', idle: 0, sleep: true, touch: true }, order: [], homeCards: { today: true, mail: true, brief: true, focus: true, apps: true }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 let settings = { ...DEFAULTS };
 function loadSettings() {
@@ -202,7 +203,7 @@ function showHome(note) {
   win.webContents.focus();
 }
 function reveal(key) {
-  if (current !== key || !views[key]) return;
+  if (locked || current !== key || !views[key]) return;
   layout();
   const other = partner(key), both = other && views[other];
   for (const [k, v] of Object.entries(views)) v.setVisible(k === key || (both && k === other));
@@ -210,6 +211,7 @@ function reveal(key) {
 }
 function show(key) {
   if (!win) return;
+  if (locked) { current = key && (apps[key] || key === 'home') ? key : current; return; }
   if (key === 'home' || !appOf(key)) return showHome();
   if (!sess && key !== 'help') return showHome('Sign in to open ' + appOf(key).name + '.');
   if (!views[key]) views[key] = makeView(key);
@@ -425,6 +427,7 @@ function makeTray() {
       { label: 'Today at a glance', click: togglePeek },
       { label: 'Ask Aster', click: openAsk },
       { label: 'Quick add a task', click: openQuick },
+      { label: 'Lock Lareon', click: () => lockNow() },
       { type: 'separator' },
       { label: 'Quit Lareon', click: () => { quitting = true; app.quit(); } }
     ]);
@@ -442,7 +445,7 @@ function makeQuick() {
   quick.on('closed', () => { quick = null; });
 }
 function openQuick() {
-  if (!settings.setupDone) return;
+  if (!settings.setupDone || locked) return;
   if (!quick) makeQuick();
   if (quick.isVisible()) { quick.hide(); return; }
   quick.center(); quick.show(); quick.focus(); quick.webContents.send('quick:show');
@@ -479,7 +482,7 @@ function floatWin(file, w, h, extra) {
   return wnd;
 }
 function openAsk() {
-  if (!settings.setupDone) return;
+  if (!settings.setupDone || locked) return;
   if (!ask || ask.isDestroyed()) ask = floatWin('ask.html', 620, 120);
   if (ask.isVisible()) { ask.hide(); return; }
   ask.setSize(620, 120); ask.center(); ask.show(); ask.focus(); ask.webContents.send('ask:show');
@@ -488,7 +491,7 @@ ipcMain.on('ask:resize', (_e, h) => { if (ask && !ask.isDestroyed()) { const b =
 ipcMain.on('ask:close', () => { if (ask && !ask.isDestroyed()) ask.hide(); });
 ipcMain.on('ask:continue', () => { if (ask && !ask.isDestroyed()) ask.hide(); showMain(); show('aster'); });
 function togglePeek() {
-  if (!settings.setupDone) return;
+  if (!settings.setupDone || locked) return;
   if (!peek || peek.isDestroyed()) peek = floatWin('peek.html', 340, 440);
   if (peek.isVisible()) { peek.hide(); return; }
   const { screen } = require('electron');
@@ -560,6 +563,8 @@ ipcMain.on('wn:seen', () => { settings.lastSeen = app.getVersion(); writeSetting
 app.on('will-quit', () => { try { globalShortcut.unregisterAll(); } catch {} });
 function startPage() {
   showHome();
+  if (hasPin()) lockNow();
+  setTimeout(() => actBroadcast(true), 800);
   const want = settings.startApp === 'last' ? settings.lastApp : settings.startApp;
   if (sess && want && want !== 'home' && enabledKeys().includes(want)) show(want);
   whatsNew(false);
@@ -610,7 +615,7 @@ function createWindow() {
 }
 
 ipcMain.on('theme:get', (e) => { e.returnValue = ['light', 'dark'].includes(settings.theme) ? settings.theme : ''; });
-const publicSettings = () => ({ catalog: apps, order: enabledKeys(), wall: settings.wall || 'peaks', wallTime: !!settings.wallTime, railWide: !!settings.railWide, homeCards: { ...DEFAULTS.homeCards, ...(settings.homeCards || {}) }, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
+const publicSettings = () => ({ catalog: apps, order: enabledKeys(), ...(() => { const w = wallNow(); return { wall: w.wall, wallPhase: w.phase, wallTint: w.tint }; })(), notifyApps: { ...DEFAULTS.notifyApps, ...(settings.notifyApps || {}) }, quiet: { ...DEFAULTS.quiet, ...(settings.quiet || {}) }, lock: { hasPin: !!(settings.lock && settings.lock.pin), idle: (settings.lock && settings.lock.idle) || 0, sleep: !settings.lock || settings.lock.sleep !== false, touch: !settings.lock || settings.lock.touch !== false, canTouch: canTouch() }, railWide: !!settings.railWide, homeCards: { ...DEFAULTS.homeCards, ...(settings.homeCards || {}) }, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
 ipcMain.handle('settings:get', () => publicSettings());
 ipcMain.handle('settings:set', (_e, p) => {
   p = p || {};
@@ -624,12 +629,27 @@ ipcMain.handle('settings:set', (_e, p) => {
   if (typeof p.startApp === 'string' && (p.startApp === 'home' || p.startApp === 'last' || enabledKeys().includes(p.startApp))) settings.startApp = p.startApp;
   let appsChanged = false;
   if (p.apps && typeof p.apps === 'object') appsChanged = setApps(p.apps);
-  const WALLS = ['peaks', 'aurora', 'dunes', 'tide', 'bloom', 'cosmos', 'calm'];
-  if (WALLS.includes(p.wall) || typeof p.wallTime === 'boolean') {
+  const WALLS = ['peaks', 'aurora', 'meadow', 'forest', 'glacier', 'canyon', 'dunes', 'tide', 'bloom', 'waves', 'cosmos', 'calm'];
+  if (WALLS.includes(p.wall) || PHASES.includes(p.wallPhase) || typeof p.wallTint === 'boolean' || typeof p.wallTime === 'boolean') {
     if (WALLS.includes(p.wall)) settings.wall = p.wall;
-    if (typeof p.wallTime === 'boolean') settings.wallTime = p.wallTime;
-    const w = { wall: settings.wall, time: !!settings.wallTime };
+    if (typeof p.wallTime === 'boolean') settings.wallPhase = p.wallTime ? 'auto' : 'theme';
+    if (PHASES.includes(p.wallPhase)) settings.wallPhase = p.wallPhase;
+    if (typeof p.wallTint === 'boolean') settings.wallTint = p.wallTint;
+    const w = wallNow();
     for (const b of BrowserWindow.getAllWindows()) { try { b.webContents.send('wall', w); } catch {} }
+  }
+  if (p.notifyApps && typeof p.notifyApps === 'object') for (const k of ['fledge', 'rustle', 'dusk']) if (typeof p.notifyApps[k] === 'boolean') settings.notifyApps = { ...settings.notifyApps, [k]: p.notifyApps[k] };
+  if (p.quiet && typeof p.quiet === 'object') {
+    const q = { ...DEFAULTS.quiet, ...(settings.quiet || {}) }, hm = (v) => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+    if (typeof p.quiet.on === 'boolean') q.on = p.quiet.on; if (hm(p.quiet.from)) q.from = p.quiet.from; if (hm(p.quiet.to)) q.to = p.quiet.to;
+    settings.quiet = q;
+  }
+  if (p.lock && typeof p.lock === 'object') {
+    const l = { ...DEFAULTS.lock, ...(settings.lock || {}) };
+    if ([0, 1, 5, 15, 30, 60].includes(p.lock.idle)) l.idle = p.lock.idle;
+    if (typeof p.lock.sleep === 'boolean') l.sleep = p.lock.sleep;
+    if (typeof p.lock.touch === 'boolean') l.touch = p.lock.touch;
+    settings.lock = l;
   }
   if (typeof p.railWide === 'boolean' && p.railWide !== settings.railWide) { settings.railWide = p.railWide; layout(); send('rail', p.railWide); }
   if (Array.isArray(p.order)) { settings.order = p.order.filter((k) => typeof k === 'string' && apps[k]).slice(0, 40); appsChanged = true; }
@@ -731,7 +751,130 @@ function setApps(map) {
   if (changed) { writeSettings(); buildMenu(); send('apps-changed'); layout(); }
   return changed;
 }
-ipcMain.on('wall:get', (e) => { e.returnValue = { wall: settings.wall || 'peaks', time: !!settings.wallTime }; });
+const PHASES = ['auto', 'theme', 'dawn', 'day', 'dusk', 'night'];
+const wallNow = () => ({ wall: settings.wall || 'peaks', phase: PHASES.includes(settings.wallPhase) ? settings.wallPhase : (settings.wallTime ? 'auto' : 'theme'), tint: settings.wallTint !== false });
+// ---- activity: every alert Lareon showed, and every download from the apps ----
+const actFile = () => path.join(app.getPath('userData'), 'activity.json');
+let activity = null, actSeen = 0;
+function loadActivity() { if (activity) return; try { const j = JSON.parse(fs.readFileSync(actFile(), 'utf8')); activity = Array.isArray(j.notes) ? j.notes : []; actSeen = +j.seen || 0; } catch { activity = []; } }
+const saveActivity = () => { try { fs.writeFileSync(actFile(), JSON.stringify({ notes: activity.slice(0, 80), seen: actSeen }), { mode: 0o600 }); } catch {} };
+const unseen = () => { loadActivity(); return activity.filter((n) => n.at > actSeen).length; };
+function actBroadcast(quiet) { const u = unseen(); send('activity', { unseen: u, downloads: dlList().filter((d) => d.state === 'progressing').length }); if (!quiet && actWin && !actWin.isDestroyed()) actWin.webContents.send('activity:update'); }
+function logActivity(n) { loadActivity(); activity.unshift({ id: crypto.randomBytes(6).toString('hex'), at: Date.now(), ...n }); activity = activity.slice(0, 80); saveActivity(); actBroadcast(); }
+const downloads = new Map();
+const dlList = () => [...downloads.values()].map(({ item, ...d }) => d).sort((a, b) => b.at - a.at).slice(0, 40);
+function trackDownload(item, wc) {
+  const id = crypto.randomBytes(6).toString('hex'), from = Object.keys(views).find((k) => views[k] && views[k].webContents === wc) || '';
+  const d = { id, item, at: Date.now(), name: item.getFilename(), total: item.getTotalBytes(), got: 0, state: 'progressing', path: '', app: from };
+  downloads.set(id, d);
+  item.on('updated', (_e, st) => { d.got = item.getReceivedBytes(); d.total = item.getTotalBytes(); d.path = item.getSavePath() || d.path; d.state = st === 'interrupted' ? 'interrupted' : 'progressing'; actBroadcast(); });
+  item.once('done', (_e, st) => { d.got = item.getReceivedBytes(); d.path = item.getSavePath() || d.path; d.state = st; actBroadcast(); if (st === 'completed') logActivity({ app: from, title: 'Downloaded', body: d.name, dl: id }); });
+  actBroadcast();
+}
+let actWin = null;
+ipcMain.on('activity:toggle', (_e, r) => {
+  if (!win || inSetup) return;
+  if (!actWin || actWin.isDestroyed()) actWin = floatWin('activity.html', 380, 520);
+  if (actWin.isVisible()) return actWin.hide();
+  const b = win.getContentBounds(), x = Math.round(b.x + ((r && r.x) || b.width - 400)), y = Math.round(b.y + ((r && r.y) || BAR));
+  actWin.setPosition(Math.max(b.x, Math.min(x - 190, b.x + b.width - 384)), y + 4); actWin.show(); actWin.focus(); actWin.webContents.send('activity:update');
+});
+ipcMain.handle('activity:get', () => { loadActivity(); const r = { notes: locked ? [] : activity.slice(0, 80), seen: actSeen, downloads: locked ? [] : dlList(), locked }; return r; });
+ipcMain.on('activity:seen', () => { loadActivity(); actSeen = Date.now(); saveActivity(); actBroadcast(true); });
+ipcMain.on('activity:close', () => { if (actWin && !actWin.isDestroyed()) actWin.hide(); });
+ipcMain.on('activity:clear', () => { activity = []; saveActivity(); for (const [k, d] of downloads) if (d.state !== 'progressing') downloads.delete(k); actBroadcast(); });
+ipcMain.on('activity:open', (_e, id) => {
+  loadActivity(); const n = activity.find((x) => x.id === id); if (!n || locked) return;
+  if (actWin && !actWin.isDestroyed()) actWin.hide();
+  showMain(); if (n.url && n.app) openIn(n.app, n.url); else if (n.app && apps[n.app]) show(n.app); else showHome();
+});
+ipcMain.on('dl:act', (_e, id, what) => {
+  const d = downloads.get(id); if (!d || locked) return;
+  if (what === 'open' && d.state === 'completed' && d.path) shell.openPath(d.path);
+  else if (what === 'show' && d.path) shell.showItemInFolder(d.path);
+  else if (what === 'cancel' && d.state === 'progressing') { try { d.item.cancel(); } catch {} }
+});
+
+// ---- app lock: a PIN (and Touch ID on a Mac); locks after a while away or when the computer sleeps ----
+let locked = false, unlockTries = 0, unlockWait = 0;
+const canTouch = () => { try { return isMac && systemPreferences.canPromptTouchID(); } catch { return false; } };
+const hasPin = () => !!(settings.lock && settings.lock.pin);
+function pinHash(pin, salt) { salt = salt || crypto.randomBytes(16).toString('hex'); return salt + ':' + crypto.scryptSync(String(pin), salt, 32).toString('hex'); }
+function pinOk(pin) { try { const [salt, h] = String(settings.lock.pin).split(':'); return crypto.timingSafeEqual(Buffer.from(h, 'hex'), crypto.scryptSync(String(pin), salt, 32)); } catch { return false; } }
+function lockNow() {
+  if (!hasPin() || locked || !win || inSetup) return;
+  locked = true; for (const v of Object.values(views)) v.setVisible(false);
+  for (const w of [actWin, peek, ask, quick]) { try { if (w && !w.isDestroyed()) w.hide(); } catch {} }
+  send('lock', { on: true, touch: canTouch() && settings.lock.touch !== false });
+}
+function unlockDone() { locked = false; unlockTries = 0; send('lock', { on: false }); const k = current; if (k && k !== 'home' && appOf(k)) { current = null; show(k); } else showHome(); }
+ipcMain.handle('lock:unlock', (_e, pin) => {
+  if (!locked) return { ok: true };
+  if (Date.now() < unlockWait) return { wait: Math.ceil((unlockWait - Date.now()) / 1000) };
+  if (pinOk(pin)) { unlockDone(); return { ok: true }; }
+  unlockTries++; if (unlockTries >= 5) { unlockWait = Date.now() + 30000 * Math.min(8, unlockTries - 4); }
+  return { error: true, wait: unlockWait > Date.now() ? Math.ceil((unlockWait - Date.now()) / 1000) : 0 };
+});
+ipcMain.handle('lock:touch', async () => {
+  if (!locked || !canTouch() || settings.lock.touch === false) return { ok: false };
+  try { await systemPreferences.promptTouchID('unlock Lareon'); unlockDone(); return { ok: true }; } catch { return { ok: false }; }
+});
+ipcMain.handle('lock:set', (_e, d) => {
+  d = d || {};
+  if (hasPin() && !pinOk(d.old)) return { error: 'old' };
+  if (d.pin === '') { settings.lock = { ...settings.lock, pin: '' }; writeSettings(); buildMenu(); return { ok: true }; }
+  if (!/^\d{4,8}$/.test(String(d.pin || ''))) return { error: 'pin' };
+  settings.lock = { ...DEFAULTS.lock, ...(settings.lock || {}), pin: pinHash(d.pin) }; writeSettings(); buildMenu(); return { ok: true };
+});
+ipcMain.on('lock:now', () => lockNow());
+ipcMain.handle('lock:state', () => ({ on: locked, touch: canTouch() && settings.lock && settings.lock.touch !== false }));
+setInterval(() => { try { const m = settings.lock && settings.lock.idle; if (m && hasPin() && !locked && powerMonitor.getSystemIdleTime() >= m * 60) lockNow(); } catch {} }, 20000);
+app.whenReady().then(() => { try { for (const ev of ['lock-screen', 'suspend']) powerMonitor.on(ev, () => { if (settings.lock && settings.lock.sleep !== false) lockNow(); }); } catch {} });
+
+// ---- New: start something in any app from one place ----
+async function newDoc() {
+  if (!sess || !enabledKeys().includes('verse')) return;
+  try {
+    const r = await api('/api/verse/docs', { method: 'POST', token: sess.token, body: { title: '', body: '' } });
+    if (r.status === 200 && r.j && r.j.doc && r.j.doc.id) { showMain(); return openIn('verse', 'https://verse.lareon.org/app#' + encodeURIComponent(r.j.doc.id)); }
+  } catch {}
+  showMain(); show('verse');
+}
+ipcMain.on('new:menu', (_e, pos) => {
+  if (!win || inSetup || locked || !sess) return;
+  const on = (k) => enabledKeys().includes(k), go = (k) => () => { showMain(); show(k); };
+  const items = [
+    on('verse') && { label: 'Document', click: newDoc },
+    on('dusk') && { label: 'Task', click: () => openQuick() },
+    on('dusk') && { label: 'Event', click: go('dusk') },
+    on('fledge') && { label: 'Email', click: go('fledge') },
+    on('rustle') && { label: 'Chat', click: go('rustle') },
+    on('cove') && { label: 'Upload to Cove', click: go('cove') },
+    on('ward') && { label: 'Password', click: go('ward') },
+    on('sheen') && { label: 'Photo edit', click: go('sheen') },
+    { type: 'separator' },
+    { label: 'Ask Aster…', click: () => openAsk() }
+  ].filter(Boolean);
+  Menu.buildFromTemplate(items).popup({ window: win, x: pos && pos.x, y: pos && pos.y });
+});
+
+// ---- lareon:// links: lareon://verse/app#doc opens that page in the Verse tab ----
+function openLink(u) {
+  try {
+    const x = new URL(String(u)); if (x.protocol !== 'lareon:') return false;
+    const k = x.hostname === 'mail' ? 'fledge' : x.hostname, a = apps[k] || (k === 'account' ? EXTRA.account : null); if (!a) return false;
+    const base = new URL(a.url), target = base.origin + (x.pathname && x.pathname !== '/' ? x.pathname : base.pathname) + x.search + x.hash;
+    showMain(); if (k !== 'account' && !enabledKeys().includes(k)) return false;
+    if (!settings.setupDone || inSetup) return false;
+    setTimeout(() => openIn(k, target), win && win.webContents.isLoading() ? 900 : 0); return true;
+  } catch { return false; }
+}
+try { app.setAsDefaultProtocolClient('lareon'); } catch {}
+app.on('open-url', (e, u) => { e.preventDefault(); if (app.isReady() && win) openLink(u); else app.whenReady().then(() => setTimeout(() => openLink(u), 1500)); });
+const argLink = (argv) => (argv || []).find((a) => /^lareon:\/\//i.test(a));
+app.whenReady().then(() => { const l = argLink(process.argv); if (l) setTimeout(() => openLink(l), 1500); });
+
+ipcMain.on('wall:get', (e) => { e.returnValue = wallNow(); });
 
 ipcMain.on('open:url', (_e, u) => {
   if (inSetup || typeof u !== 'string') return;
@@ -743,7 +886,7 @@ ipcMain.handle('apps:all', () => apps);
 ipcMain.handle('apps', () => { const o = {}; for (const k of enabledKeys()) o[k] = apps[k]; return o; });
 ipcMain.handle('apps:order', () => enabledKeys());
 ipcMain.on('show', (_e, k) => { if (!inSetup && (k === 'home' || k === 'account' || k === 'help' || enabledKeys().includes(k))) show(k); });
-app.on('second-instance', () => showMain());
+app.on('second-instance', (_e, argv) => { showMain(); const l = argLink(argv); if (l) openLink(l); });
 let quitting = false;
 app.on('before-quit', () => { quitting = true; });
 function showMain() { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } else if (app.isReady()) createWindow(); }
@@ -763,6 +906,7 @@ function buildMenu() {
       { label: 'Back', accelerator: 'CmdOrCtrl+[', click: () => navGo('back') }, { label: 'Forward', accelerator: 'CmdOrCtrl+]', click: () => navGo('fwd') }, { type: 'separator' },
       { label: 'Next app', accelerator: 'Ctrl+Tab', click: () => cycle(1) }, { label: 'Previous app', accelerator: 'Ctrl+Shift+Tab', click: () => cycle(-1) },
       { label: 'Split view', accelerator: 'CmdOrCtrl+\\', click: () => { if (!inSetup) toggleSplit(); } },
+      { label: 'Lock Lareon', accelerator: 'CmdOrCtrl+Shift+L', enabled: hasPin(), click: lockNow },
       { label: 'Show app names in the sidebar', type: 'checkbox', checked: !!settings.railWide, click: (mi) => { settings.railWide = mi.checked; writeSettings(); layout(); send('rail', settings.railWide); } },
       { type: 'separator' }, { role: 'togglefullscreen' }, { type: 'separator' },
       { label: 'Zoom in', accelerator: 'CmdOrCtrl+Plus', click: () => cur() && cur().setZoomLevel(cur().getZoomLevel() + 0.5) },
@@ -781,13 +925,22 @@ function buildMenu() {
 
 // ---- desktop notifications: new mail and event reminders, checked while Lareon is running ----
 const seen = { mailTop: null, unread: null, events: new Set() };
-function notify(title, body, key, snoozable) {
+const quietNow = () => {
+  const q = settings.quiet || {}; if (!q.on) return false;
+  const n = new Date(), m = n.getHours() * 60 + n.getMinutes(), t = (v) => { const p = String(v || '0:0').split(':'); return (+p[0]) * 60 + (+p[1] || 0); }, a = t(q.from), b = t(q.to);
+  return a === b ? false : a < b ? m >= a && m < b : m >= a || m < b;
+};
+function notify(title, body, key, snoozable, url) {
+  logActivity({ app: key || '', title, body, url: url || '' });
+  if (key && settings.notifyApps && settings.notifyApps[key] === false) return;
+  if (quietNow()) return;
+  if (locked) { title = key && apps[key] ? apps[key].name : 'Lareon'; body = 'Something new. Unlock Lareon to see it.'; }
   try {
     if (!Notification.isSupported() || Date.now() < (settings.snoozeUntil || 0)) return;
     const o = { title, body, silent: settings.notifSound === false };
     if (snoozable && isMac) o.actions = [{ type: 'button', text: 'Snooze 10 min' }];
     const n = new Notification(o);
-    n.on('click', () => { showMain(); if (key) show(key); });
+    n.on('click', () => { showMain(); if (url && key) openIn(key, url); else if (key) show(key); });
     n.on('action', () => { setTimeout(() => notify(title, body, key, false), 10 * 60 * 1000); });
     n.show();
   } catch {}
@@ -930,6 +1083,7 @@ function startUpdater() {
 app.whenReady().then(() => {
   loadSettings(); loadSess(); nativeTheme.themeSource = settings.theme || 'system'; applyLogin();
   // Clipboard and full screen are fine for Lareon pages; the mic and camera only for Rustle (calls and voice messages); location and the rest are refused.
+  try { session.fromPartition('persist:lareon').on('will-download', (_e, item, wc) => trackDownload(item, wc)); } catch {}
   session.fromPartition('persist:lareon').setPermissionRequestHandler((wc, perm, cb) => {
     const h = hostOf(wc.getURL());
     if (perm === 'media') return cb(h === 'rustle.lareon.org' && settings.apps.rustle !== false);

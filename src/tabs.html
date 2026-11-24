@@ -143,7 +143,7 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
 .ri .rn{font-size:14px;font-weight:500;white-space:nowrap;opacity:0;transition:opacity .25s;pointer-events:none}
 body.wide .ri .rn{opacity:1}
 .ri[aria-current=true]{background:var(--panel2);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line2)}
-.ri[aria-current=true]:before{content:"";position:absolute;left:-10px;top:11px;bottom:11px;width:3px;border-radius:0 3px 3px 0;background:linear-gradient(180deg,#ff7c1f,#d94fc4 60%,#a35cf5)}
+.ri[aria-current=true]:before{content:"";position:absolute;left:-10px;top:11px;bottom:11px;width:3px;border-radius:0 3px 3px 0;background:var(--grad)}
 .ri.pair:after{content:"";position:absolute;right:5px;bottom:6px;width:6px;height:6px;border-radius:50%;background:var(--violet);box-shadow:0 0 0 2px var(--bar)}
 .ri .bd{position:absolute;left:30px;top:5px;margin:0;font-size:10px;padding:0 5px;line-height:16px;min-width:16px;text-align:center;box-shadow:0 0 0 2px var(--bar)}
 .ri.drag{opacity:.35}.ri.over{box-shadow:inset 0 2px 0 var(--orange)}
@@ -169,6 +169,28 @@ body.wide .ri .rn{opacity:1}
 .wt span.n{display:block;font-size:13px;color:var(--fg2);margin:6px 2px 0}.wt[aria-checked=true] span.n{color:var(--fg);font-weight:500}
 .phs{display:flex;gap:6px;padding-bottom:12px}.phs .wt .pv{height:52px}
 .c-hidden{display:none!important}.c-today.solo,.c-mail.solo{grid-column:span 12}
+
+/* New and the activity bell */
+.ib.nw{width:auto;padding:0 11px 0 8px;gap:5px;display:flex;align-items:center;font-size:13px;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:9px;height:30px}
+.ib.nw:hover{border-color:var(--line2)}.ib.nw svg{width:15px;height:15px}
+#bell{position:relative}#bell i{position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 2px var(--bar);display:none}#bell.dot i{display:block}
+#bell.dl svg{stroke:var(--orange)}
+/* time-of-day chooser */
+.phw{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 14px}.phw button{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--fg2);display:flex;align-items:center;gap:7px;transition:border-color .2s,color .2s,background .2s}
+.phw button i{width:12px;height:12px;border-radius:50%;flex:none}.phw button[aria-checked=true]{border-color:var(--orange);color:var(--fg);background:var(--solid)}
+.tm{display:flex;align-items:center;gap:6px}.tm .sel{max-width:96px}
+/* the lock screen */
+#lock{position:fixed;inset:0;z-index:80;display:grid;place-items:center;-webkit-app-region:drag}
+#lock .lk{position:relative;z-index:1;width:min(340px,calc(100vw - 40px));text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 26px 24px;border-radius:22px;background:var(--panel);border:1px solid var(--line2);backdrop-filter:blur(26px) saturate(1.4);-webkit-backdrop-filter:blur(26px) saturate(1.4);box-shadow:var(--shadow);-webkit-app-region:no-drag;animation:rise .6s var(--ease) both}
+#lock .lk img{width:58px;height:58px;filter:drop-shadow(0 10px 24px rgba(163,92,245,.45))}
+#lock h2{font-size:22px;letter-spacing:-.02em;font-weight:600}#lock p{color:var(--fg2);font-size:14px;margin-top:-8px}
+#lock input{width:100%;text-align:center;font:600 26px var(--mono);letter-spacing:.5em;padding:10px 0 10px .5em;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:12px;outline:0;-webkit-user-select:text;user-select:text}
+#lock input:focus{border-color:var(--orange);box-shadow:0 0 0 3px color-mix(in srgb,var(--orange) 22%,transparent)}
+#lock .err{color:var(--red);font-size:13px;min-height:18px;margin-top:-6px}
+#lock.shake .lk{animation:shake .4s}@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+#lock .btn{width:100%;padding:10px}
+body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.locked #divider,body.locked .bar>*:not(.brand){visibility:hidden!important}
+.pinf{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.pinf input{width:110px;font:500 14px var(--mono);letter-spacing:.2em;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:9px;padding:6px 10px;outline:0;-webkit-user-select:text;user-select:text}.pinf input:focus{border-color:var(--orange)}
 </style></head><body>
 <div class="bar">
  <svg class="brand" viewBox="0 0 150 150" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff7c1f"/><stop offset="1" stop-color="#c84bff"/></linearGradient></defs><path d="M75 28 Q55 45 55 70 Q40 65 25 75 Q42 80 53 90 Q45 105 48 122 Q60 110 68 95 Q70 112 75 128 Q80 112 82 95 Q90 110 102 122 Q105 105 97 90 Q108 80 125 75 Q110 65 95 70 Q95 45 75 28Z" fill="url(#g)"/></svg>
@@ -176,6 +198,8 @@ body.wide .ri .rn{opacity:1}
  <div class="navb" id="navb" hidden><button class="ib" id="nb" data-ia="nav.back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><button class="ib" id="nf" data-ia="nav.fwd"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button><button class="ib" id="nr" data-ia="nav.reload"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button></div>
  <div class="sp"></div>
  <span class="chip" id="chip"><i></i><span data-i="net.off"></span></span>
+ <button class="ib nw" id="new" data-ia="new.t"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span data-i="new.t"></span></button>
+ <button class="ib" id="bell" data-ia="act.t"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10.3 20a2 2 0 0 0 3.4 0"/></svg><i></i></button>
  <button class="kb" id="kb"><span data-i="jump"></span><kbd id="kbk">Ctrl K</kbd></button>
  <button class="ib" id="th" data-ia="tm.toggle"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg></button>
  <button class="ib" id="st" data-ia="set.title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
@@ -192,6 +216,9 @@ body.wide .ri .rn{opacity:1}
  </div>
 </aside>
 <div id="divider" title=""><i></i></div>
+<div id="lock" hidden><div class="lk"><img src="../build/art/lareon-icon.svg" alt=""><h2 data-i="lk.h"></h2><p data-i="lk.p"></p>
+ <form id="lkf" style="width:100%;display:flex;flex-direction:column;gap:12px"><input id="lki" type="password" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="PIN"><div class="err" id="lke"></div><button class="btn pri" type="submit" data-i="lk.go"></button></form>
+ <button class="btn" id="lkt" hidden data-i="lk.touch"></button></div></div>
 <div class="load" id="load"><i></i></div>
 <div id="ban" role="status" data-i="net.banner"></div><div id="toast" role="status"></div>
 
@@ -458,7 +485,7 @@ function renderSet() {
     row(t('set.lang'), '', (function () { var x = mk('button', 'btn lgsel', i18n.flag(i18n.lang) + '<span>' + esc(i18n.names[i18n.lang]) + '</span>'); x.onclick = function () { i18n.menu(x); }; return x; })()),
     row(t('set.rail'), t('set.rail.d'), sw(!!S.railWide, function (v) { railWide(v); put({ railWide: v }); }))
   ]));
-  b.appendChild(group(t('set.wall'), [wallPicker(), row(t('set.wallTime'), t('set.wallTime.d'), sw(!!S.wallTime, function (v) { S.wallTime = v; setWall(); put({ wallTime: v }).then(renderSet); }))]));
+  b.appendChild(group(t('set.wall'), [wallPicker(), phasePicker(), row(t('set.tint'), t('set.tint.d'), sw(S.wallTint !== false, function (v) { S.wallTint = v; setWall(); put({ wallTint: v }); }))]));
   var hc = S.homeCards || {}, hcRow = function (k, label) { return row(label, '', sw(hc[k] !== false, function (v) { var o = {}; o[k] = v; S.homeCards[k] = v; put({ homeCards: o }); cards(); })); };
   b.appendChild(group(t('set.homecards'), [hcRow('today', t('today')), hcRow('mail', t('inbox')), hcRow('brief', t('brief.t')), hcRow('focus', t('focus.t')), hcRow('apps', t('apps'))]));
   var paused = S.snoozeUntil && S.snoozeUntil > Date.now();
@@ -472,6 +499,22 @@ function renderSet() {
       var at = 0; if (v === '1h') at = Date.now() + 3600000; else if (v === 'tom') { var d = new Date(); d.setDate(d.getDate() + 1); d.setHours(8, 0, 0, 0); at = d.getTime(); }
       put({ snoozeUntil: at }).then(renderSet);
     }))
+  ].filter(Boolean)));
+  // which apps may send alerts, and quiet hours
+  var na = S.notifyApps || {}, q = S.quiet || {}, hours = []; for (var hh = 0; hh < 24; hh++) for (var mm = 0; mm < 60; mm += 30) { var v2 = String(hh).padStart(2, '0') + ':' + (mm ? '30' : '00'); hours.push([v2, new Date(2000, 0, 1, hh, mm).toLocaleTimeString(i18n.lang, { hour: 'numeric', minute: '2-digit' })]); }
+  var tmRow = (function () { var d = mk('div', 'tm'); d.appendChild(pick(hours, q.from || '22:00', function (v) { put({ quiet: { from: v } }); })); d.appendChild(mk('span', '', '–')); d.appendChild(pick(hours, q.to || '07:00', function (v) { put({ quiet: { to: v } }); })); return d; })();
+  b.appendChild(group(t('set.quiet'), [
+    APPS.rustle ? row(t('al.rustle') + ' · Rustle', '', sw(na.rustle !== false, function (v) { put({ notifyApps: { rustle: v } }); })) : null,
+    row(t('set.quiet'), t('set.quiet.d'), sw(!!q.on, function (v) { put({ quiet: { on: v } }).then(renderSet); })), q.on ? row(t('set.quiet.h'), '', tmRow) : null
+  ].filter(Boolean)));
+  // app lock
+  var L = S.lock || {};
+  b.appendChild(group(t('set.lock'), [
+    row(t('set.pin'), L.hasPin ? t('set.pin.on') : t('set.pin.d'), pinForm(L.hasPin)),
+    L.hasPin ? row(t('set.idle'), '', pick([[0, t('idle.never')], [1, t('lead.n', { n: 1 })], [5, t('lead.n', { n: 5 })], [15, t('lead.n', { n: 15 })], [30, t('lead.n', { n: 30 })], [60, t('lead.n', { n: 60 })]], L.idle || 0, function (v) { put({ lock: { idle: +v } }); })) : null,
+    L.hasPin ? row(t('set.lsleep'), '', sw(L.sleep !== false, function (v) { put({ lock: { sleep: v } }); })) : null,
+    L.hasPin && L.canTouch ? row(t('set.touch'), '', sw(L.touch !== false, function (v) { put({ lock: { touch: v } }); })) : null,
+    L.hasPin ? row(t('lk.now'), '', (function () { var x = mk('button', 'btn', esc(t('lk.now'))); x.onclick = function () { closeSet(); lareon.lockNow(); }; return x; })()) : null
   ].filter(Boolean)));
   var startOpts = [['home', t('start.home')], ['last', t('start.last')]].concat(Object.keys(APPS).map(function (k) { return [k, APPS[k].name]; }));
   b.appendChild(group(t('set.startup'), [
@@ -497,12 +540,28 @@ function renderSet() {
   b.appendChild(group(t('set.about'), [row('Lareon', t('set.version', { v: S.version }) + ' · Larsonia', (function () { var d = mk('div', 'btns'); var w = mk('button', 'btn', esc(t('wn.link'))); w.onclick = function () { showWN(S.version); }; var x = mk('button', 'btn', esc(t('set.setup'))); x.onclick = function () { lareon.setupAgain(); }; d.appendChild(w); d.appendChild(x); return d; })())]));
   $('set').scrollTop = keep;
 }
-function setWall() { if (window.wallpapers && S) window.wallpapers.set({ wall: S.wall || 'peaks', time: !!S.wallTime }); }
+function setWall() { if (window.wallpapers && S) window.wallpapers.set({ wall: S.wall || 'peaks', phase: S.wallPhase || 'theme', tint: S.wallTint !== false }); refreshPreviews(); }
+function refreshPreviews() { [].forEach.call(document.querySelectorAll('.wt .pv'), function (pv) { var k = pv.getAttribute('data-k'); pv.innerHTML = ''; pv.appendChild(window.wallpapers.preview(k)); }); }
+var PH = [['auto', 'ph.auto', 'conic-gradient(#ffb57a,#8ec5f2,#ff7a4a,#1a1230,#ffb57a)'], ['theme', 'ph.theme', 'linear-gradient(90deg,#f3effa 50%,#13111b 50%)'], ['dawn', 'ph.dawn', 'linear-gradient(#c86a8e,#ffb57a)'], ['day', 'ph.day', 'linear-gradient(#8ec5f2,#ffe8c8)'], ['dusk', 'ph.dusk', 'linear-gradient(#7a2f6e,#ff7a4a)'], ['night', 'ph.night', 'linear-gradient(#0b0914,#3b2360)']];
+function phasePicker() {
+  var d = mk('div', 'phw'); d.setAttribute('role', 'radiogroup'); d.setAttribute('aria-label', t('set.phase'));
+  PH.forEach(function (p) { var b = mk('button', '', '<i style="background:' + p[2] + '"></i>' + esc(t(p[1]))); b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', (S.wallPhase || 'theme') === p[0] ? 'true' : 'false'); b.onclick = function () { S.wallPhase = p[0]; [].forEach.call(d.children, function (x) { x.setAttribute('aria-checked', x === b ? 'true' : 'false'); }); setWall(); put({ wallPhase: p[0] }); }; d.appendChild(b); });
+  return d;
+}
+function pinForm(has) {
+  var f = mk('form', 'pinf'), o = has ? mk('input') : null, n = mk('input'), go = mk('button', 'btn', esc(t(has ? 'pin.change' : 'pin.set'))), rm = has ? mk('button', 'btn', esc(t('pin.remove'))) : null;
+  [o, n].forEach(function (x, i) { if (!x) return; x.type = 'password'; x.inputMode = 'numeric'; x.maxLength = 8; x.placeholder = t(i === 0 && has ? 'pin.old' : 'pin.new'); f.appendChild(x); });
+  go.type = 'submit'; f.appendChild(go); if (rm) { rm.type = 'button'; f.appendChild(rm); }
+  function done(r) { if (r && r.ok) { toast('✓'); lareon.getSettings().then(function (x) { S = x; renderSet(); }); } else toast(t(r && r.error === 'old' ? 'pin.bad' : 'pin.rule'), true); }
+  f.onsubmit = function (e) { e.preventDefault(); lareon.lockSet({ old: o ? o.value : '', pin: n.value }).then(done); };
+  if (rm) rm.onclick = function () { lareon.lockSet({ old: o.value, pin: '' }).then(done); };
+  return f;
+}
 function wallPicker() {
   var box = mk('div', 'walls'); box.setAttribute('role', 'radiogroup');
   window.wallpapers.list.forEach(function (w) {
     var b = mk('button', 'wt'); b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', (S.wall || 'peaks') === w.key ? 'true' : 'false');
-    var pv = mk('span', 'pv'); pv.appendChild(window.wallpapers.preview(w.key)); b.appendChild(pv); b.appendChild(mk('span', 'n', esc(w.name)));
+    var pv = mk('span', 'pv'); pv.setAttribute('data-k', w.key); pv.appendChild(window.wallpapers.preview(w.key)); b.appendChild(pv); b.appendChild(mk('span', 'n', esc(w.name)));
     b.onclick = function () { S.wall = w.key; setWall(); [].forEach.call(box.children, function (x) { x.setAttribute('aria-checked', x === b ? 'true' : 'false'); }); put({ wall: w.key }); };
     box.appendChild(b);
   });
@@ -514,7 +573,26 @@ function cards() {
   document.querySelector('.c-today').classList.toggle('solo', !on('mail')); document.querySelector('.c-mail').classList.toggle('solo', !on('today'));
   $('briefc').classList.toggle('c-hidden', !on('brief')); document.querySelector('.c-focus').classList.toggle('c-hidden', !on('focus')); document.querySelector('.c-apps').classList.toggle('c-hidden', !on('apps'));
 }
-lareon.onWall(function (w) { if (S) { S.wall = w.wall; S.wallTime = w.time; } if (window.wallpapers) window.wallpapers.set(w); });
+lareon.onWall(function (w) { if (S) { S.wall = w.wall; S.wallPhase = w.phase; S.wallTint = w.tint; } if (window.wallpapers) window.wallpapers.set(w); });
+// New, the activity bell, the lock screen
+$('new').onclick = function () { var r = $('new').getBoundingClientRect(); lareon.newMenu({ x: Math.round(r.left), y: Math.round(r.bottom + 4) }); };
+$('bell').onclick = function () { var r = $('bell').getBoundingClientRect(); lareon.activityToggle({ x: Math.round(r.left + r.width / 2), y: Math.round(r.bottom) }); };
+lareon.onActivity(function (a) { $('bell').classList.toggle('dot', !!(a && a.unseen)); $('bell').classList.toggle('dl', !!(a && a.downloads)); });
+var lockWait = 0;
+function showLock(v) {
+  var on = !!(v && v.on); $('lock').hidden = !on; document.body.classList.toggle('locked', on);
+  if (on) { $('lki').value = ''; $('lke').textContent = ''; $('lkt').hidden = !v.touch; closeSet(); palClose(); setTimeout(function () { $('lki').focus(); }, 60); }
+}
+$('lkf').onsubmit = function (e) {
+  e.preventDefault(); var v = $('lki').value; if (!v) return;
+  lareon.lockUnlock(v).then(function (r) {
+    if (r && r.ok) return showLock({ on: false });
+    $('lki').value = ''; $('lock').classList.remove('shake'); void $('lock').offsetWidth; $('lock').classList.add('shake');
+    $('lke').textContent = r && r.wait ? t('lk.wait', { s: r.wait }) : t('lk.bad');
+  });
+};
+$('lkt').onclick = function () { lareon.lockTouch(); };
+lareon.onLock(showLock); lareon.lockState().then(showLock);
 function openSetNow() { lareon.getSettings().then(function (r) { S = r; $('set').hidden = false; renderSet(); $('set').focus(); }); }
 function openSet() { if (cur !== 'home') { lareon.show('home'); setTimeout(openSetNow, 80); } else openSetNow(); }
 function closeSet() { $('set').hidden = true; }
@@ -528,6 +606,15 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$
 
 // ---- what's new ----
 var WN = {
+  '1.4.0': [
+    ['Twelve wallpapers', 'New: Meadow, Forest, Glacier, Canyon and Waves. Pick any time of day for them, dawn, day, dusk or night, or let the clock decide.'],
+    ['Colours that match', 'Buttons, switches and links now take your wallpaper’s colours. You can turn this off in Settings.'],
+    ['Activity', 'The bell at the top keeps every alert from your apps and every file you download, with Open and Show in folder.'],
+    ['New, from anywhere', 'The New button starts a document, task, email, chat, upload or password in the right app.'],
+    ['App lock', 'Set a PIN (and Touch ID on a Mac) so Lareon locks when you step away or your computer sleeps.'],
+    ['Quiet hours', 'Choose hours with no pop-ups. Alerts still wait for you in Activity.'],
+    ['Lareon links', 'Links that start with lareon:// open straight in the right app.']
+  ],
   '1.3.0': [
     ['Apps in a sidebar', 'Your apps now sit down the left side instead of across the top. Drag them into any order, right-click one for more, or show their names with the arrow at the bottom.'],
     ['Split view', 'Open two apps side by side, like Verse next to Aster. Right-click an app and choose Open beside, or press Ctrl or ⌘ + \\. Drag the line between them to resize.'],

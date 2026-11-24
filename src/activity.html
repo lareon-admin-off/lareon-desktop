@@ -1,0 +1,59 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lareon</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+<style>
+html,body{height:100%;overflow:hidden}body{background:var(--solid);display:flex;flex-direction:column;border:1px solid var(--line2);border-radius:14px}
+.hd{display:flex;align-items:center;gap:6px;padding:12px 12px 8px}.hd b{font-size:15px;font-weight:600;flex:1}
+.seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:2px;margin:0 12px 8px}
+.seg button{flex:1;border:0;background:none;color:var(--fg2);font-size:13px;padding:6px;border-radius:8px;transition:background .2s,color .2s}.seg button[aria-selected=true]{background:var(--solid);color:var(--fg);box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.seg em{font-style:normal;font:500 10px var(--mono);background:var(--orange);color:#fff;border-radius:999px;padding:0 5px;margin-left:5px}
+#c{flex:1;overflow:auto;padding:0 8px 10px}#c::-webkit-scrollbar{width:8px}#c::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+.day{font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);margin:10px 6px 4px}
+.n{display:flex;gap:11px;align-items:flex-start;padding:9px 8px;border-radius:10px;cursor:pointer;transition:background .15s;position:relative;width:100%;border:0;background:none;text-align:left;color:var(--fg)}
+.n:hover{background:var(--hover)}.n img{width:26px;height:26px;flex:none;margin-top:1px}
+.n .t{flex:1;min-width:0}.n b{display:block;font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.n span{display:block;font-size:12.5px;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.n time{font:500 11px var(--mono);color:var(--fg3);flex:none}.n.new:before{content:"";position:absolute;left:1px;top:19px;width:5px;height:5px;border-radius:50%;background:var(--orange)}
+.bar{height:4px;border-radius:2px;background:var(--line);margin-top:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--grad);transition:width .3s}
+.acts{display:flex;gap:6px;margin-top:6px}.acts button{border:1px solid var(--line);background:var(--panel2);border-radius:7px;padding:3px 9px;font-size:12px;color:var(--fg)}.acts button:hover{border-color:var(--line2)}
+.empty{color:var(--fg3);font-size:14px;text-align:center;padding:40px 16px;line-height:1.5}.empty svg{width:34px;height:34px;stroke:var(--fg3);fill:none;stroke-width:1.5;display:block;margin:0 auto 10px}
+.link{background:none;border:0;color:var(--orange);font-size:13px;padding:2px 4px}
+button{font:inherit;cursor:pointer}
+</style></head><body>
+<div class="hd"><b data-i="act.t"></b><button class="link" id="clr" data-i="act.clear"></button></div>
+<div class="seg" role="tablist"><button role="tab" id="tn" aria-selected="true"><span data-i="act.notes"></span></button><button role="tab" id="td" aria-selected="false"><span data-i="act.dl"></span></button></div>
+<div id="c"></div>
+<script src="i18n-more.js"></script><script src="i18n-apps.js"></script><script src="i18n.js"></script>
+<script>
+var $ = function (i) { return document.getElementById(i); }, t = function (k, v) { return i18n.t(k, v); }, tab = 'n', CAT = {}, D = null;
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function art(k) { return CAT[k] && CAT[k].art ? '../build/art/' + CAT[k].art : '../build/art/lareon-icon.svg'; }
+function when(at) { var d = new Date(at), n = new Date(); return d.toDateString() === n.toDateString() ? d.toLocaleTimeString(i18n.lang, { hour: 'numeric', minute: '2-digit' }) : d.toLocaleDateString(i18n.lang, { month: 'short', day: 'numeric' }); }
+function dayOf(at) { var d = new Date(at), n = new Date(), y = new Date(n); y.setDate(n.getDate() - 1); return d.toDateString() === n.toDateString() ? t('act.today') : d.toDateString() === y.toDateString() ? t('act.yday') : d.toLocaleDateString(i18n.lang, { weekday: 'long', month: 'long', day: 'numeric' }); }
+function size(b) { return b >= 1073741824 ? (b / 1073741824).toFixed(1) + ' GB' : b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB'; }
+function empty(svg, msg) { return '<div class="empty"><svg viewBox="0 0 24 24">' + svg + '</svg>' + esc(msg) + '</div>'; }
+function paint() {
+  if (!D) return; var c = $('c'), h = '', last = '';
+  $('tn').setAttribute('aria-selected', tab === 'n'); $('td').setAttribute('aria-selected', tab === 'd');
+  var running = D.downloads.filter(function (d) { return d.state === 'progressing'; }).length;
+  $('td').innerHTML = '<span>' + esc(t('act.dl')) + '</span>' + (running ? '<em>' + running + '</em>' : '');
+  if (D.locked) { c.innerHTML = empty('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', t('act.locked')); return; }
+  if (tab === 'n') {
+    if (!D.notes.length) { c.innerHTML = empty('<path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/>', t('act.none')); return; }
+    D.notes.forEach(function (n) { var dd = dayOf(n.at); if (dd !== last) { last = dd; h += '<div class="day">' + esc(dd) + '</div>'; } h += '<button class="n' + (n.at > D.seen ? ' new' : '') + '" data-id="' + esc(n.id) + '"><img src="' + art(n.app) + '" alt=""><span class="t"><b>' + esc(n.title) + '</b><span>' + esc(n.body) + '</span></span><time>' + esc(when(n.at)) + '</time></button>'; });
+    c.innerHTML = h; [].forEach.call(c.querySelectorAll('.n'), function (b) { b.onclick = function () { lareon.activityOpen(b.getAttribute('data-id')); }; });
+  } else {
+    if (!D.downloads.length) { c.innerHTML = empty('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>', t('act.dlnone')); return; }
+    D.downloads.forEach(function (d) {
+      var pct = d.total ? Math.round(d.got / d.total * 100) : 0, st = d.state === 'progressing' ? size(d.got) + (d.total ? ' / ' + size(d.total) : '') : d.state === 'completed' ? size(d.total || d.got) : t(d.state === 'cancelled' ? 'dl.cancelled' : 'dl.failed');
+      h += '<div class="n" data-id="' + esc(d.id) + '"><img src="' + art(d.app) + '" alt=""><span class="t"><b>' + esc(d.name) + '</b><span>' + esc(st) + '</span>' + (d.state === 'progressing' ? '<div class="bar"><i style="width:' + pct + '%"></i></div>' : '') +
+        '<div class="acts">' + (d.state === 'completed' ? '<button data-a="open">' + esc(t('dl.open')) + '</button><button data-a="show">' + esc(t('dl.show')) + '</button>' : d.state === 'progressing' ? '<button data-a="cancel">' + esc(t('dl.cancel')) + '</button>' : '') + '</div></span><time>' + esc(when(d.at)) + '</time></div>';
+    });
+    c.innerHTML = h; [].forEach.call(c.querySelectorAll('.acts button'), function (b) { b.onclick = function () { lareon.dlAct(b.closest('.n').getAttribute('data-id'), b.getAttribute('data-a')); }; });
+  }
+}
+function load() { Promise.all([lareon.activityGet(), lareon.appsAll()]).then(function (r) { D = r[0]; CAT = r[1] || {}; paint(); if (tab === 'n') lareon.activitySeen(); }); }
+$('tn').onclick = function () { tab = 'n'; paint(); lareon.activitySeen(); }; $('td').onclick = function () { tab = 'd'; paint(); };
+$('clr').onclick = function () { lareon.activityClear(); };
+lareon.onActivityUpdate(load);
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') lareon.activityClose(); });
+lareon.info().then(function (r) { i18n.set(r.lang || i18n.guess(r.locale), true); load(); });
+</script></body></html>
