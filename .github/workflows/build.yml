@@ -39,6 +39,10 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      # the app's own version always matches the release tag (v1.7.0 -> 1.7.0), so updates never loop
+      - if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: npm pkg set version="${GITHUB_REF_NAME#v}"
       - run: npm install --no-save sharp
       - run: node build/make-art.js
       - run: npm run dist
