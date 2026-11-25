@@ -630,12 +630,15 @@ ipcMain.handle('brief:get', async (_e, force) => {
 });
 function whatsNew(force) {
   const v = app.getVersion();
-  if (force) return send('whatsnew', v);
+  const prev = settings.lastSeen || '';
+  if (force) return win && !win.isDestroyed() && win.webContents.send('whatsnew', v, prev);
   if (settings.lastSeen === v) return;
   if (!settings.lastSeen && !settings.setupDone) { settings.lastSeen = v; writeSettings(); return; }
-  setTimeout(() => send('whatsnew', v), 1400);
+  setTimeout(() => { if (win && !win.isDestroyed()) win.webContents.send('whatsnew', v, prev); }, 1400);
 }
 ipcMain.on('wn:seen', () => { settings.lastSeen = app.getVersion(); writeSettings(); });
+// buttons on the What's new screen open a place inside Lareon (lareon://aster/chat#autopilot) or lareon.org
+ipcMain.handle('wn:open', (_e, u) => { u = String(u || ''); if (/^lareon:\/\//.test(u)) return openLink(u); if (u === 'https://lareon.org/verify' || u === 'https://lareon.org/changelog') { shell.openExternal(u); return true; } return false; });
 app.on('will-quit', () => { try { globalShortcut.unregisterAll(); } catch {} });
 function startPage() {
   showHome();
