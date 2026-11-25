@@ -119,6 +119,28 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
 /* focus */
 .c-focus{grid-column:span 12}
 .c-notes{grid-column:span 12}
+#tzp{position:fixed;inset:0;z-index:55;display:grid;place-items:center;padding:24px;background:rgba(8,6,14,.55);backdrop-filter:blur(8px);opacity:0;transition:opacity .25s var(--ease)}
+#tzp.on{opacity:1}#tzp.out{opacity:0}
+.tz-box{width:min(980px,100%);max-height:100%;overflow:auto;background:var(--solid);border:1px solid var(--line2);border-radius:22px;box-shadow:var(--shadow);padding:20px 22px;transform:translateY(10px) scale(.985);transition:transform .35s var(--ease)}#tzp.on .tz-box{transform:none}
+.tz-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.tz-hd h2{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0}.tz-hd p{margin:4px 0 0;color:var(--fg2);font-size:13.5px}
+.tz-x{font-size:24px;line-height:1;color:var(--fg2);background:none;border:0;border-radius:10px;padding:4px 10px;cursor:pointer}.tz-x:hover{background:var(--hover)}
+.tz-sr{position:relative;margin:14px 0 12px}.tz-sr input{width:100%;font:inherit;font-size:15px;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:12px;padding:10px 14px;outline:0;-webkit-user-select:text;user-select:text}.tz-sr input:focus{border-color:var(--violet)}
+.tz-sr ul{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:3;list-style:none;margin:0;padding:6px;background:var(--solid);border:1px solid var(--line2);border-radius:12px;box-shadow:var(--shadow)}.tz-sr li{padding:9px 12px;border-radius:9px;cursor:pointer;font-size:14px}.tz-sr li:hover{background:var(--hover)}.tz-sr li.no{color:var(--fg3);cursor:default}
+.tz-map{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#0e0c18}
+.tz-map svg{display:block;width:100%;height:auto;cursor:crosshair}
+.tz-map .land{fill:#2c2840}.tz-map .sea{fill:#0e0c18;stroke:#0e0c18;stroke-width:.3}
+.tz-map .bd{fill:#a9b8ff;transition:opacity .2s}.tz-map .hb{fill:#ff9a4d;opacity:.22;pointer-events:none;transition:x .35s var(--ease)}.tz-map .bd:hover{opacity:.13!important}
+.tz-map .night{fill:#05040b;opacity:.38;pointer-events:none}
+.tz-map .bl{font:600 5px var(--mono);fill:#bdb6e6;text-anchor:middle;pointer-events:none}
+.tz-map .ct{cursor:pointer}.tz-map .ct .dt{fill:#8fb8ff;stroke:#0e0c18;stroke-width:.6}.tz-map .ct:hover .dt{fill:#fff}
+.tz-map .lars .dt{fill:#ff8a33;stroke:#ffe2c9;stroke-width:.8}.tz-map .pulse{fill:#ff8a33;opacity:.35;animation:tzp 2s ease-out infinite;transform-origin:center;transform-box:fill-box}
+@keyframes tzp{from{transform:scale(.4);opacity:.6}to{transform:scale(1.6);opacity:0}}
+.tz-map .lt{font:800 5.2px var(--sans);fill:#ffb27a;text-anchor:middle;paint-order:stroke;stroke:#0e0c18;stroke-width:1.4px;pointer-events:none}
+.tz-map .ring{fill:none;stroke:#fff;stroke-width:.9;animation:tzr .4s var(--ease) both;transform-box:fill-box;transform-origin:center}@keyframes tzr{from{transform:scale(2);opacity:0}}
+.tz-tip{position:absolute;transform:translate(-50%,-100%);background:var(--solid);color:var(--fg);border:1px solid var(--line2);border-radius:8px;padding:4px 9px;font-size:12.5px;white-space:nowrap;pointer-events:none;box-shadow:var(--shadow)}
+.tz-ft{display:flex;align-items:center;gap:10px;margin-top:14px}.tz-cur{flex:1;display:flex;align-items:center;gap:12px;min-width:0}.tz-cur i{width:12px;height:12px;border-radius:50%;background:#8fb8ff;flex:none}.tz-cur.lars i{background:linear-gradient(135deg,#ff8a33,#c26bff);box-shadow:0 0 0 5px rgba(255,138,51,.18)}
+.tz-cur b{display:block;font-size:16px}.tz-cur span{display:block;font-size:13px;color:var(--fg2)}
+.tz-ft .btn:disabled{opacity:.45;cursor:default}
 #l2{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow:auto;background:#0d0a16;color:#fff;opacity:0;transition:opacity .45s var(--ease);text-shadow:none;--fg:#fff}
 #l2.on{opacity:1}#l2.out{opacity:0;pointer-events:none;transform:scale(1.02);transition:opacity .4s var(--ease),transform .4s var(--ease)}
 .wn-bg{position:fixed;inset:0;overflow:hidden;pointer-events:none}.wn-bg i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;opacity:.55;will-change:transform;animation:wnf 18s ease-in-out infinite alternate}
@@ -609,11 +631,11 @@ function acrossTiles() {
 }
 // ---- Spotlight ----
 function spotClock() {
-  var d = new Date(), s2 = d.toLocaleTimeString(i18n.lang, { hour: 'numeric', minute: '2-digit' }), m = s2.match(/^(.*?)\s?([AaPp]\.?\s?[Mm]\.?|午前|午後|오전|오후)$/);
+  var d = zDate(), s2 = d.toLocaleTimeString(i18n.lang, zOpts({ hour: 'numeric', minute: '2-digit' })), m = s2.match(/^(.*?)\s?([AaPp]\.?\s?[Mm]\.?|午前|午後|오전|오후)$/);
   $('sclock').innerHTML = m ? esc(m[1]) + '<small>' + esc(m[2]) + '</small>' : esc(s2);
-  var h = d.getHours(), first = user ? String(user.name || user.username || '').split(' ')[0] : '';
+  var h = zHour(), first = user ? String(user.name || user.username || '').split(' ')[0] : '';
   $('sgreet').textContent = t(h < 12 ? 'greet.m' : h < 18 ? 'greet.a' : 'greet.e') + (first ? ', ' + first : '');
-  $('sdate').textContent = d.toLocaleDateString(i18n.lang, { weekday: 'long', month: 'long', day: 'numeric' });
+  $('sdate').textContent = d.toLocaleDateString(i18n.lang, zOpts({ weekday: 'long', month: 'long', day: 'numeric' }));
   wcPaint();
 }
 setInterval(function () { if (cur === 'home' && user) spotClock(); }, 10000);
@@ -840,6 +862,10 @@ function renderSet() {
     row(t('set.rail'), t('set.rail.d'), sw(!!S.railWide, function (v) { railWide(v); put({ railWide: v }); })),
     row('Text size', 'Makes every screen easier to read', seg([['normal', 'Default'], ['large', 'Large'], ['xl', 'Larger']], S.textSize || 'normal', function (v) { textSize(v); put({ textSize: v }); }))
   ]));
+  b.appendChild(group('Time', [
+    row('Time zone', tzName(TZ) + ' · ' + zDate().toLocaleTimeString(i18n.lang, zOpts({ hour: 'numeric', minute: '2-digit' })), (function () { var x = mk('button', 'btn', 'Change…'); x.onclick = openTz; return x; })()),
+    row('Larsonia Standard Time', 'Larsonia\'s national time (UTC−7:30, all year) on Home' + (S.platform === 'darwin' ? ' and in the menu bar' : ' and the tray'), sw(S.lrtClock !== false, function (v) { put({ lrtClock: v }).then(wcPaint); }))
+  ]));
   b.appendChild(group(t('set.wall'), [wallPicker(), phasePicker(), row(t('set.tint'), t('set.tint.d'), sw(S.wallTint !== false, function (v) { S.wallTint = v; setWall(); put({ wallTint: v }); }))]));
   var paused = S.snoozeUntil && S.snoozeUntil > Date.now();
   b.appendChild(group(t('set.notif'), [
@@ -897,7 +923,6 @@ function renderSet() {
     row('Ask about my screen', 'Press ' + (mk2.indexOf('⌘') >= 0 ? '⌘⌥A' : 'Ctrl+Alt+A') + ' and Aster looks at your screen: errors, forms, charts, messages', sw(S.screenKey !== false, function (v) { put({ screenKey: v }); })),
     S.platform === 'darwin' && !S.axOk ? row('Replace text in any app', 'Allow Lareon in System Settings → Privacy & Security → Accessibility, so Aster can rewrite the text you select and put it back', null) : null,
     row('Aster can use your computer', 'In the screen window (' + (mk2.indexOf('⌘') >= 0 ? '⌘⌥A' : 'Ctrl+Alt+A') + '), Do it lets Aster move the cursor and type for you. It asks every time, and before sending, buying or deleting', sw(S.agent !== false, function (v) { put({ agent: v }); })),
-    row('Larsonia Time', 'Larsonia\'s national time (UTC−7:30, all year) on Home' + (S.platform === 'darwin' ? ' and in the menu bar' : ' and the tray'), sw(S.lrtClock !== false, function (v) { put({ lrtClock: v }).then(wcPaint); })),
     row('Notes on Home', 'A notepad on your Home screen that saves as you type', sw(!(S.homeCards && S.homeCards.notes === false), function (v) { put({ homeCards: { notes: v } }).then(cards); }))
   ]));
   b.appendChild(group(t('set.updates'), [
@@ -1072,6 +1097,70 @@ function fseg() { var d = $('fseg'); d.innerHTML = ''; [15, 25, 50].forEach(func
 $('fgo').onclick = function () { fend ? fstop(false) : fstart(); };
 fseg(); if (fend) { frun(); lareon.focusState(fend); }
 
+// ---- Time zone: Lareon can show any time zone, including Larsonia Standard Time (LST, UTC−7:30 all year) ----
+var TZ = '';
+function zOff(z, ms) {
+  if (z === 'LST') return -450;
+  try { var o = {}; new Intl.DateTimeFormat('en-US', { timeZone: z, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(ms)).forEach(function (x) { o[x.type] = x.value; }); return Math.round((Date.UTC(+o.year, o.month - 1, +o.day, +o.hour % 24, +o.minute, +o.second) - Math.floor(ms / 1000) * 1000) / 60000); } catch (e) { return -new Date(ms).getTimezoneOffset(); }
+}
+function zOpts(o) { o = o || {}; if (TZ === 'LST') o.timeZone = 'UTC'; else if (TZ) o.timeZone = TZ; return o; }
+function zDate(ms) { ms = ms || Date.now(); return TZ === 'LST' ? new Date(ms - 7.5 * 3600000) : new Date(ms); }
+function zHour() { return +new Intl.DateTimeFormat('en-US', zOpts({ hour: 'numeric', hourCycle: 'h23' })).format(zDate()) % 24; }
+function utcName(m) { var a = Math.abs(m), h = Math.floor(a / 60), mm = a % 60; return 'UTC' + (m < 0 ? '−' : '+') + h + (mm ? ':' + String(mm).padStart(2, '0') : ''); }
+function tzName(z) { if (!z) { var sys = ''; try { sys = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) {} return 'Automatic (' + String(sys).replace(/_/g, ' ').split('/').pop() + ')'; } if (z === 'LST') return 'Larsonia Standard Time'; return z.replace(/_/g, ' ').split('/').pop() + ' · ' + utcName(zOff(z, Date.now())); }
+lareon.getSettings().then(function (x) { if (x && x.tz) { TZ = x.tz; if (user) spotClock(); } });
+var TZC = [['Larsonia', -116.5081, 43.7244, 'LST'], ['Honolulu', -157.86, 21.31, 'Pacific/Honolulu'], ['Anchorage', -149.9, 61.22, 'America/Anchorage'], ['Los Angeles', -118.24, 34.05, 'America/Los_Angeles'], ['Vancouver', -123.12, 49.28, 'America/Vancouver'], ['Phoenix', -112.07, 33.45, 'America/Phoenix'], ['Denver', -104.99, 39.74, 'America/Denver'], ['Chicago', -87.63, 41.88, 'America/Chicago'], ['Mexico City', -99.13, 19.43, 'America/Mexico_City'], ['New York', -74.0, 40.71, 'America/New_York'], ['Toronto', -79.38, 43.65, 'America/Toronto'], ['Bogotá', -74.07, 4.71, 'America/Bogota'], ['St. John’s', -52.71, 47.56, 'America/St_Johns'], ['São Paulo', -46.63, -23.55, 'America/Sao_Paulo'], ['Buenos Aires', -58.38, -34.6, 'America/Argentina/Buenos_Aires'], ['Reykjavík', -21.9, 64.15, 'Atlantic/Reykjavik'], ['London', -0.13, 51.51, 'Europe/London'], ['Lisbon', -9.14, 38.72, 'Europe/Lisbon'], ['El Aaiún', -13.2, 27.15, 'Africa/El_Aaiun'], ['Paris', 2.35, 48.86, 'Europe/Paris'], ['Algiers', 3.06, 36.75, 'Africa/Algiers'], ['Constantine', 6.61, 36.37, 'Africa/Algiers'], ['Lagos', 3.38, 6.52, 'Africa/Lagos'], ['Stockholm', 18.07, 59.33, 'Europe/Stockholm'], ['Cairo', 31.24, 30.04, 'Africa/Cairo'], ['Ramallah', 35.2, 31.9, 'Asia/Hebron'], ['Istanbul', 28.98, 41.01, 'Europe/Istanbul'], ['Nairobi', 36.82, -1.29, 'Africa/Nairobi'], ['Johannesburg', 28.05, -26.2, 'Africa/Johannesburg'], ['Moscow', 37.62, 55.76, 'Europe/Moscow'], ['Tehran', 51.39, 35.69, 'Asia/Tehran'], ['Dubai', 55.27, 25.2, 'Asia/Dubai'], ['Delhi', 77.21, 28.61, 'Asia/Kolkata'], ['Kathmandu', 85.32, 27.72, 'Asia/Kathmandu'], ['Bangkok', 100.5, 13.76, 'Asia/Bangkok'], ['Singapore', 103.82, 1.35, 'Asia/Singapore'], ['Beijing', 116.4, 39.9, 'Asia/Shanghai'], ['Seoul', 126.98, 37.57, 'Asia/Seoul'], ['Tokyo', 139.69, 35.69, 'Asia/Tokyo'], ['Adelaide', 138.6, -34.93, 'Australia/Adelaide'], ['Sydney', 151.21, -33.87, 'Australia/Sydney'], ['Auckland', 174.76, -36.85, 'Pacific/Auckland']];
+function openTz() {
+  if (document.getElementById('tzp')) return;
+  palClose();
+  if (!window.WORLD_WATER) { var sc = document.createElement('script'); sc.src = 'world.js'; sc.onload = openTz; document.head.appendChild(sc); return; }
+  var pick = TZ, now = Date.now(), w = mk('div', '', ''), X = function (lon) { return lon + 180; }, Y = function (lat) { return 90 - lat; };
+  w.id = 'tzp';
+  var bands = '', labs = '';
+  for (var o = -12; o <= 12; o++) { var x0 = Math.max(0, X(o * 15 - 7.5)), x1 = Math.min(360, X(o * 15 + 7.5)); bands += '<rect class="bd" data-o="' + o + '" x="' + x0 + '" y="0" width="' + (x1 - x0) + '" height="180" opacity="' + ((o + 12) % 2 ? 0.07 : 0.02) + '"/>'; labs += '<text x="' + Math.max(4, Math.min(356, X(o * 15))) + '" y="15" class="bl">' + (o ? (o > 0 ? '+' : '−') + Math.abs(o) : '0') + '</text>'; }
+  var d0 = new Date(now), doy = (Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth(), d0.getUTCDate()) - Date.UTC(d0.getUTCFullYear(), 0, 0)) / 864e5, dec = -23.44 * Math.cos(2 * Math.PI / 365 * (doy + 10)) * Math.PI / 180, sunLon = -15 * (d0.getUTCHours() + d0.getUTCMinutes() / 60 - 12), ring = [];
+  for (var lon = -180; lon <= 180; lon += 4) ring.push(X(lon) + ' ' + Y(Math.atan(-Math.cos((lon - sunLon) * Math.PI / 180) / Math.tan(dec || 1e-6)) * 180 / Math.PI).toFixed(1));
+  var night = 'M' + ring.join(' L') + ' L360 ' + (dec > 0 ? 180 : 0) + ' L0 ' + (dec > 0 ? 180 : 0) + 'Z';
+  var dots = TZC.map(function (c, i) { return [c, i]; }).sort(function (a, b) { return (a[0][3] === 'LST') - (b[0][3] === 'LST'); }).map(function (ci) { var c = ci[0], i = ci[1]; return '<g class="ct' + (c[3] === 'LST' ? ' lars' : '') + '" data-i="' + i + '" transform="translate(' + X(c[1]).toFixed(1) + ' ' + Y(c[2]).toFixed(1) + ')">' + (c[3] === 'LST' ? '<circle r="5" class="pulse"/>' : '') + '<circle r="' + (c[3] === 'LST' ? 2.6 : 1.6) + '" class="dt"/>' + (c[3] === 'LST' ? '<text x="0" y="-5.5" class="lt">Larsonia</text>' : '') + '<title>' + esc(c[0]) + '</title></g>'; }).join('');
+  w.innerHTML = '<div class="tz-box"><div class="tz-hd"><div><h2>Time zone</h2><p>Pick a place on the map or search. Lareon’s clocks, greeting and reminders follow it.</p></div><button class="tz-x" aria-label="Close">×</button></div>' +
+    '<div class="tz-sr"><input id="tzq" placeholder="Search cities and time zones" autocomplete="off" spellcheck="false"><ul id="tzl" hidden></ul></div>' +
+    '<div class="tz-map"><svg viewBox="0 6 360 156" preserveAspectRatio="xMidYMid meet"><rect width="360" height="180" class="land"/><path class="sea" d="' + WORLD_WATER + '"/>' + bands + '<g id="tzsel"></g><path class="night" d="' + night + '"/>' + labs + dots + '</svg><div class="tz-tip" id="tztip" hidden></div></div>' +
+    '<div class="tz-ft"><div class="tz-cur"><i></i><div><b id="tzn"></b><span id="tzt"></span></div></div><button class="btn" id="tzauto">Use automatic</button><button class="btn pri" id="tzok">Use this time zone</button></div></div>';
+  document.body.appendChild(w); requestAnimationFrame(function () { w.className = 'on'; });
+  var svg = w.querySelector('svg');
+  function paint() {
+    var off = pick ? zOff(pick, Date.now()) : -new Date().getTimezoneOffset(), tm = new Date(Date.now() + (pick === 'LST' ? -7.5 * 3600000 : 0)).toLocaleTimeString(i18n.lang, pick === 'LST' ? { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' } : pick ? { timeZone: pick, hour: 'numeric', minute: '2-digit' } : { hour: 'numeric', minute: '2-digit' });
+    $('tzn').textContent = tzName(pick); $('tzt').textContent = tm + ' now · ' + utcName(off) + (pick === 'LST' ? ' all year, no clock changes' : '');
+    w.querySelector('.tz-cur').classList.toggle('lars', pick === 'LST');
+    var c = TZC.find(function (x) { return x[3] === pick; }); var g = $('tzsel'); g.innerHTML = '';
+    var cx = X(off / 60 * 15); g.innerHTML = '<rect class="hb" x="' + Math.max(0, cx - 7.5) + '" y="0" width="' + (Math.min(360, cx + 7.5) - Math.max(0, cx - 7.5)) + '" height="180"/>' + (c ? '<circle cx="' + X(c[1]) + '" cy="' + Y(c[2]) + '" r="4.2" class="ring"/>' : '');
+    $('tzok').disabled = pick === TZ;
+  }
+  function choose(z) { pick = z; paint(); }
+  [].forEach.call(svg.querySelectorAll('.ct'), function (g) { var c = TZC[+g.getAttribute('data-i')]; g.onclick = function (e) { e.stopPropagation(); choose(c[3]); }; g.onmouseenter = function () { tip(c[0] + ' · ' + new Date(Date.now() + (c[3] === 'LST' ? -7.5 * 3600000 : 0)).toLocaleTimeString(i18n.lang, { timeZone: c[3] === 'LST' ? 'UTC' : c[3], hour: 'numeric', minute: '2-digit' }), g); }; g.onmouseleave = function () { $('tztip').hidden = true; }; });
+  svg.onclick = function (e) { var pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; var p = pt.matrixTransform(svg.getScreenCTM().inverse()), best = null, bd = 1e9; TZC.forEach(function (c) { var dx = X(c[1]) - p.x, dy = Y(c[2]) - p.y, dd = dx * dx + dy * dy; if (dd < bd) { bd = dd; best = c; } }); if (best && bd < 900) choose(best[3]); };
+  function tip(text, el) { var r = el.getBoundingClientRect(), m = w.querySelector('.tz-map').getBoundingClientRect(), t = $('tztip'); t.textContent = text; t.hidden = false; t.style.left = (r.left - m.left + r.width / 2) + 'px'; t.style.top = (r.top - m.top - 8) + 'px'; }
+  var ALL = []; try { ALL = Intl.supportedValuesOf('timeZone'); } catch (e) {}
+  $('tzq').oninput = function () {
+    var q = $('tzq').value.trim().toLowerCase(), l = $('tzl'); if (!q) { l.hidden = true; return; }
+    var res = [];
+    if ('automatic'.indexOf(q) === 0) res.push(['', 'Automatic (this computer)']);
+    if (/^(lst|lars|larsonia)/.test(q) || 'larsonia standard time'.indexOf(q) >= 0) res.push(['LST', 'Larsonia Standard Time · UTC−7:30']);
+    TZC.forEach(function (c) { if (c[3] !== 'LST' && c[0].toLowerCase().indexOf(q) >= 0) res.push([c[3], c[0] + ' · ' + utcName(zOff(c[3], Date.now()))]); });
+    ALL.forEach(function (z) { if (z.toLowerCase().replace(/_/g, ' ').indexOf(q) >= 0 && !res.some(function (r) { return r[0] === z; })) res.push([z, z.replace(/_/g, ' ') + ' · ' + utcName(zOff(z, Date.now()))]); });
+    l.innerHTML = res.slice(0, 8).map(function (r, i) { return '<li data-z="' + esc(r[0]) + '">' + esc(r[1]) + '</li>'; }).join('') || '<li class="no">No time zone matches</li>'; l.hidden = false;
+    [].forEach.call(l.querySelectorAll('li[data-z]'), function (li) { li.onclick = function () { choose(li.getAttribute('data-z')); l.hidden = true; $('tzq').value = ''; }; });
+  };
+  $('tzq').onkeydown = function (e) { if (e.key === 'Enter') { var f = $('tzl').querySelector('li[data-z]'); if (f) f.click(); } };
+  function close() { w.className = 'out'; setTimeout(function () { w.remove(); }, 300); document.removeEventListener('keydown', key); }
+  function key(e) { if (e.key === 'Escape') close(); }
+  document.addEventListener('keydown', key);
+  w.querySelector('.tz-x').onclick = close; w.onclick = function (e) { if (e.target === w) close(); };
+  $('tzauto').onclick = function () { choose(''); };
+  $('tzok').onclick = function () { TZ = pick; put({ tz: pick }).then(function () { if (user) spotClock(); if (!$('set').hidden) renderSet(); }); toast('Time zone: ' + tzName(pick)); close(); };
+  paint();
+}
+
 // Larsonia Time (UTC−7:30, no clock changes), world clocks and upcoming reminders under the Home clock
 function lrtTime(ms) { var d = new Date((ms || Date.now()) - 7.5 * 3600000); return d.toLocaleTimeString(i18n.lang, { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' }); }
 function wcList() { try { return JSON.parse(localStorage.getItem('lareon.clocks') || '[]'); } catch (e) { return []; } }
@@ -1079,10 +1168,12 @@ function wcSave(l) { try { localStorage.setItem('lareon.clocks', JSON.stringify(
 var REM = [];
 function wcPaint() {
   var b = $('swc'); if (!b) return; var h = '';
-  if (!S || S.lrtClock !== false) h += '<span class="lrt" title="Larsonia Time · UTC−7:30, all year"><i></i>Larsonia <b>' + esc(lrtTime()) + '</b></span>';
+  if (TZ === 'LST') h += '<span>This computer <b>' + esc(new Date().toLocaleTimeString(i18n.lang, { hour: 'numeric', minute: '2-digit' })) + '</b></span>';
+  else if (!S || S.lrtClock !== false) h += '<span class="lrt" title="Larsonia Standard Time · UTC−7:30, all year"><i></i>Larsonia <b>' + esc(lrtTime()) + '</b></span>';
   wcList().forEach(function (c, i) { var tm = ''; try { tm = new Date().toLocaleTimeString(i18n.lang, { timeZone: c.z, hour: 'numeric', minute: '2-digit' }); } catch (e) { return; } h += '<span>' + esc(c.n) + ' <b>' + esc(tm) + '</b><button data-wc="' + i + '" title="Remove">×</button></span>'; });
-  REM.filter(function (r) { return r.at > Date.now(); }).slice(0, 2).forEach(function (r) { var d = new Date(r.at), today = d.toDateString() === new Date().toDateString(); h += '<span class="rm">⏰ ' + esc(r.title) + ' · <b>' + esc((today ? '' : d.toLocaleDateString(i18n.lang, { weekday: 'short' }) + ' ') + d.toLocaleTimeString(i18n.lang, { hour: 'numeric', minute: '2-digit' })) + '</b><button data-rm="' + esc(r.id) + '" title="Cancel reminder">×</button></span>'; });
+  REM.filter(function (r) { return r.at > Date.now(); }).slice(0, 2).forEach(function (r) { var d = zDate(r.at), today = d.toLocaleDateString('en', zOpts()) === zDate().toLocaleDateString('en', zOpts()); h += '<span class="rm">⏰ ' + esc(r.title) + ' · <b>' + esc((today ? '' : d.toLocaleDateString(i18n.lang, zOpts({ weekday: 'short' })) + ' ') + d.toLocaleTimeString(i18n.lang, zOpts({ hour: 'numeric', minute: '2-digit' }))) + '</b><button data-rm="' + esc(r.id) + '" title="Cancel reminder">×</button></span>'; });
   b.innerHTML = h;
+  var lc = b.querySelector('.lrt'); if (lc) { lc.style.cursor = 'pointer'; lc.onclick = openTz; }
   [].forEach.call(b.querySelectorAll('[data-wc]'), function (x) { x.onclick = function () { var l = wcList(); l.splice(+x.getAttribute('data-wc'), 1); wcSave(l); }; });
   [].forEach.call(b.querySelectorAll('[data-rm]'), function (x) { x.onclick = function () { lareon.removeReminder(x.getAttribute('data-rm')).then(function (r) { REM = r || []; wcPaint(); }); }; });
 }
@@ -1102,6 +1193,7 @@ function parseWhen(txt) {
   var title = s.replace(/\s+/g, ' ').replace(/\s(at|on|by)\s*$/i, '').trim(), at = null;
   if (rel) at = Date.now() + rel;
   else if (d || hh !== null) { d = d || new Date(now); d.setHours(hh !== null ? hh : 9, hh !== null ? mm : 0, 0, 0); if (d.getTime() <= Date.now() && !/today/i.test(txt)) d.setDate(d.getDate() + 1); at = d.getTime(); }
+  if (at && !rel && TZ) at -= (zOff(TZ, at) + new Date(at).getTimezoneOffset()) * 60000;
   var day = at ? new Date(at) : null;
   return { title: title, at: at, day: day ? day.getFullYear() + '-' + String(day.getMonth() + 1).padStart(2, '0') + '-' + String(day.getDate()).padStart(2, '0') : '' };
 }
@@ -1160,14 +1252,14 @@ function answers(raw) {
     if (T[A] && T[B]) { var cc = T[A] === 'c' ? n : T[A] === 'f' ? (n - 32) * 5 / 9 : n - 273.15, r = T[B] === 'c' ? cc : T[B] === 'f' ? cc * 9 / 5 + 32 : cc + 273.15; out.push({ a: 1, n: nice(r) + ' °' + T[B].toUpperCase(), s: n + ' °' + T[A].toUpperCase(), f: copy(nice(r)) }); }
     else if (UNITS[A] && UNITS[B] && UNITS[A][0] === UNITS[B][0]) { var r2 = n * UNITS[A][1] / UNITS[B][1]; out.push({ a: 1, n: nice(r2) + ' ' + B, s: n + ' ' + A, f: copy(nice(r2)) }); }
   }
-  if (/^(lrt|larsonia(n)? time|time in larsonia|what time is it in larsonia|larsonia now)$/.test(lq)) out.push({ a: 1, n: lrtTime(), s: 'Larsonia Time · UTC−7:30', f: copy(lrtTime()) });
+  if (/^(lst|lrt|larsonia(n)?( standard)? time|time in larsonia|what time is it in larsonia|larsonia now)$/.test(lq)) out.push({ a: 1, n: lrtTime(), s: 'Larsonia Standard Time · UTC−7:30', f: copy(lrtTime()) }, { n: 'Open the time zone map', f: function () { openTz(); } });
   else if ((m = /^(?:add (?:a )?(?:world )?clock(?: for)?|clock)\s+([a-z .]+)$/.exec(lq)) && CITIES[m[1].trim()]) { var cz = CITIES[m[1].trim()], cn = m[1].trim().replace(/\b\w/g, function (x) { return x.toUpperCase(); }); out.push({ n: 'Add a ' + cn + ' clock to Home', f: function () { var l = wcList().filter(function (c) { return c.n !== cn; }); l.push({ n: cn, z: cz }); wcSave(l); lareon.show('home'); toast(cn + ' clock added'); } }); }
   else if ((m = /^(?:time\s+in\s+|what time is it in\s+)?([a-z .]+?)(?:\s+time)?$/.exec(lq)) && CITIES[m[1].trim()] && (/time/.test(lq))) {
     var z = CITIES[m[1].trim()], now = new Date(), tt = now.toLocaleTimeString([], { timeZone: z, hour: 'numeric', minute: '2-digit' }), dd = now.toLocaleDateString([], { timeZone: z, weekday: 'long' });
     out.push({ a: 1, n: tt, s: m[1].replace(/\b\w/g, function (x) { return x.toUpperCase(); }) + ' · ' + dd, f: copy(tt) });
   }
   if ((m = /^(?:remind me(?: to)?|todo|task|add task)\s+(.+)/i.exec(q))) {
-    var w = parseWhen(m[1]), when = w.at ? new Date(w.at) : null, label = when ? (when.toDateString() === new Date().toDateString() ? 'today' : when.toLocaleDateString(i18n.lang, { weekday: 'long' })) + ' at ' + when.toLocaleTimeString(i18n.lang, { hour: 'numeric', minute: '2-digit' }) : '';
+    var w = parseWhen(m[1]), when = w.at ? zDate(w.at) : null, label = when ? (when.toLocaleDateString('en', zOpts()) === zDate().toLocaleDateString('en', zOpts()) ? 'today' : when.toLocaleDateString(i18n.lang, zOpts({ weekday: 'long' }))) + ' at ' + when.toLocaleTimeString(i18n.lang, zOpts({ hour: 'numeric', minute: '2-digit' })) : '';
     out.push({ n: (when ? 'Remind me ' + label + ': ' : 'Add to Dusk: ') + (w.title || m[1]), f: function () { lareon.addTask(w.title || m[1], w.at ? { at: w.at, day: w.day } : null).then(function (r) { toast(r ? (when ? 'Reminder set for ' + label : 'Added to Dusk') + ' · ' + (w.title || m[1]) : 'Sign in to add tasks', !r); }); } });
   }
   if ((m = /^(?:note|jot)\s+(.+)/i.exec(q))) out.push({ n: 'Add to Notes: ' + m[1], f: function () { lareon.show('home'); ntAppend(m[1]); toast('Added to Notes'); } });
@@ -1184,7 +1276,7 @@ function palItems() {
   a.push({ n: t('set.title'), f: openSet }, { n: t('tm.toggle'), f: flipTheme }, { n: t('focus.t') + ' · ' + t('focus.min', { n: 25 }), f: function () { lareon.show('home'); if (!fend) fstart(25); } });
   a.push({ n: t('lang'), f: function () { i18n.menu($('lg')); } });
   if (SP && SP.spaces.length > 1) SP.spaces.forEach(function (x) { if (x.id !== SP.active) a.push({ n: t('spc.switch', { s: x.name }), f: function () { lareon.spacesSwitch(x.id); } }); });
-  a.push({ n: t('cp.t'), f: function () { lareon.homeAction('capture'); } }, { n: 'Shelf · clipboard history', f: function () { lareon.openShelf(); } }, { n: 'Ask Aster about my screen', f: function () { lareon.screenOpen(); } }, { n: 'Let Aster do something on my computer', f: function () { lareon.screenOpen(); } }, { n: 'What’s new in Lareon 2.0', f: whatsNew }, { n: 'Share a file · get a link', f: function () { lareon.sharePick(); } }, { n: 'Notes', f: function () { lareon.show('home'); setTimeout(function () { $('nta').focus(); }, 80); } });
+  a.push({ n: t('cp.t'), f: function () { lareon.homeAction('capture'); } }, { n: 'Shelf · clipboard history', f: function () { lareon.openShelf(); } }, { n: 'Ask Aster about my screen', f: function () { lareon.screenOpen(); } }, { n: 'Time zone · map and settings', f: function () { openTz(); } }, { n: 'Let Aster do something on my computer', f: function () { lareon.screenOpen(); } }, { n: 'What’s new in Lareon 2.0', f: whatsNew }, { n: 'Share a file · get a link', f: function () { lareon.sharePick(); } }, { n: 'Notes', f: function () { lareon.show('home'); setTimeout(function () { $('nta').focus(); }, 80); } });
   return a;
 }
 var found = [];
