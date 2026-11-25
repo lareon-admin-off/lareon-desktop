@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verified citizens only · Lareon</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; font-src 'self'">
+<style>
+/* Same format as Lareon's account notices (the ban and suspension screens on lareon.org) */
+:root{--c:#ff8a2b}
+html,body{margin:0;height:100%}
+body{background:#13111b;color:#ece9f5;font-family:Geist,Inter,system-ui,-apple-system,"Segoe UI",sans-serif;overflow-y:auto;-webkit-font-smoothing:antialiased;animation:f .25s ease both;-webkit-app-region:drag}
+*{box-sizing:border-box}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(640px 400px at 50% -6%,color-mix(in srgb,var(--c) 22%,transparent),transparent 70%),radial-gradient(600px 380px at 50% 108%,rgba(163,92,245,.08),transparent 70%)}
+.w{position:relative;max-width:420px;margin:0 auto;padding:56px 20px 40px;text-align:center;-webkit-app-region:no-drag}
+.x{position:fixed;top:14px;right:14px;z-index:2;-webkit-app-region:no-drag;width:34px;height:34px;border-radius:50%;border:1px solid #2b2838;background:rgba(255,255,255,.04);color:#a9a6bd;font:inherit;font-size:18px;line-height:1;cursor:pointer}.x:hover{color:#ece9f5;border-color:#433f58}
+.lg{width:96px;height:96px;margin:0 auto 22px;display:block;filter:drop-shadow(0 0 28px color-mix(in srgb,var(--c) 55%,transparent));animation:up .6s cubic-bezier(.2,.8,.2,1) both}
+.bd{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent);border-radius:999px;padding:6px 14px;margin-bottom:16px;animation:up .6s .05s cubic-bezier(.2,.8,.2,1) both}
+h1{font-size:28px;font-weight:600;letter-spacing:-.03em;line-height:1.15;margin:0 0 10px;animation:up .6s .1s cubic-bezier(.2,.8,.2,1) both}
+.tx{color:#a9a6bd;font-size:14px;line-height:1.55;margin:0 auto 24px;max-width:350px;animation:up .6s .15s cubic-bezier(.2,.8,.2,1) both}
+.bx{line-height:1.5;text-align:left;background:rgba(255,255,255,.04);border:1px solid #2b2838;border-radius:14px;margin-bottom:14px;font-size:13.5px;overflow:hidden;animation:up .6s .2s cubic-bezier(.2,.8,.2,1) both}
+.bx>div{padding:13px 18px}.bx>div+div{border-top:1px solid #2b2838}
+.bx small{display:block;font-size:12px;color:#8d8aa3;margin-bottom:3px}.bx b{font-weight:600}.bx i{font-style:normal;color:var(--c);font-weight:500;margin-left:6px}
+.bx ul{margin:0;padding-left:18px}.bx li{margin:2px 0}
+.lad{display:flex;gap:4px;margin-top:9px}.lad span{flex:1;height:5px;border-radius:99px;background:#252336}.lad span.on{background:var(--c)}
+.wn{font-size:12.5px;color:#8d8aa3;line-height:1.65;margin:0 4px 22px;animation:up .6s .25s cubic-bezier(.2,.8,.2,1) both}
+.bt{display:flex;flex-direction:column;gap:10px;animation:up .6s .3s cubic-bezier(.2,.8,.2,1) both}
+.b1,.b2{display:flex;align-items:center;justify-content:center;gap:8px;height:46px;border-radius:999px;font:inherit;font-size:14.5px;font-weight:600;text-decoration:none;cursor:pointer;border:1px solid transparent;transition:transform .15s,filter .2s}
+.b1{background:linear-gradient(135deg,#ff7c1f,#d94fc4 55%,#a35cf5);color:#fff;background-origin:border-box}.b1:hover{filter:brightness(1.08);transform:translateY(-1px)}
+:focus:not(:focus-visible){outline:none}.b1:focus-visible,.b2:focus-visible,.x:focus-visible{outline:2px solid rgba(255,255,255,.55);outline-offset:3px}
+.b2{background:transparent;border-color:#2b2838;color:#ece9f5}.b2:hover{border-color:#433f58}
+.ft{margin-top:22px;font-size:12.5px;color:#8d8aa3;line-height:1.7}
+.lgl{margin-top:26px;font:500 11px/1 "Geist Mono",ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:#5f5c74}
+@keyframes f{from{opacity:0}}@keyframes up{from{opacity:0;transform:translateY(8px)}}
+@media(prefers-reduced-motion:reduce){body,*{animation:none!important}}
+</style></head><body>
+<button class="x" id="x" type="button" aria-label="Close">&times;</button>
+<div class="w" role="alertdialog" aria-modal="true" aria-labelledby="t">
+<img class="lg" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNTAgMTUwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMSIgeDI9IjAiIHkyPSIwIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZjdjMWYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNjODRiZmYiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBkPSJNNzUgMjggUTU1IDQ1IDU1IDcwIFE0MCA2NSAyNSA3NSBRNDIgODAgNTMgOTAgUTQ1IDEwNSA0OCAxMjIgUTYwIDExMCA2OCA5NSBRNzAgMTEyIDc1IDEyOCBRODAgMTEyIDgyIDk1IFE5MCAxMTAgMTAyIDEyMiBRMTA1IDEwNSA5NyA5MCBRMTA4IDgwIDEyNSA3NSBRMTEwIDY1IDk1IDcwIFE5NSA0NSA3NSAyOFoiIGZpbGw9InVybCgjZykiLz48L3N2Zz4K" alt="Lareon"><div class="bd">Verified citizens only</div>
+<h1 id="t">Do it is for verified citizens</h1>
+<p class="tx">Do it lets Aster use your mouse and keyboard to get things done for you. It’s open to verified citizens of the Nation of Larsonia.</p>
+<div class="bx"><div><small>Account</small><b id="u">You</b><i>Not verified yet</i></div>
+<div><small>Verifying unlocks</small><ul><li>Do it in the Lareon app</li><li>Aster Autopilot: morning briefs, filed receipts, weekly plans and your own jobs</li><li>Double the daily Aster messages</li></ul></div>
+<div><small>How to verify</small>Send in the citizenship certificate made for you at lareon.org/verify.<div class="lad" aria-hidden="true"><span class="on"></span><span></span><span></span></div></div></div>
+<p class="wn">Asking about your screen and everything else in Lareon keeps working normally. Nothing on your account has changed.</p>
+<div class="bt"><button class="b1" id="go" type="button">Get verified</button><button class="b2" id="back" type="button">Not now</button></div>
+<div class="ft">Questions: <b style="font-weight:500;color:#ece9f5;user-select:all">help@lareon.org</b><br>A person reads every message.</div><div class="lgl">Lareon · Nation of Larsonia</div>
+</div>
+<script>
+(function(){var q=new URLSearchParams(location.search),n=q.get('name');if(n)document.getElementById('u').textContent=n;
+document.getElementById('go').onclick=function(){lareon.lockVerify()};
+document.getElementById('back').onclick=document.getElementById('x').onclick=function(){lareon.lockClose()};
+document.addEventListener('keydown',function(e){if(e.key==='Escape')lareon.lockClose()});
+document.getElementById('go').focus();})();
+</script></body></html>

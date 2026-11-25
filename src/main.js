@@ -540,7 +540,8 @@ async function askAster(message, history, images, extra) {
     let j = null; try { j = await r.json(); } catch {}
     if (r.status === 401) { endSession('Your session ended. Sign in again.'); return { error: 'signin' }; }
     if (r.ok && j && j.reply) return { ok: true, text: String(j.reply), chat: j.chat_id || '' };
-    return { error: (j && j.error) || 'Aster could not answer just now.' };
+    if (j && j.code === 'verify') verCache = { t: Date.now(), v: false };
+    return { error: (j && j.error) || 'Aster could not answer just now.', code: j && j.code };
   } catch { return { code: 'net' }; }
 }
 ipcMain.handle('aster:ask', (_e, msg, history) => askAster(String(msg) + '\n\n(Reply briefly in Markdown. Write any math in LaTeX between $ ... $ or $$ ... $$.)', history));
@@ -1312,6 +1313,7 @@ async function agentLoop() {
     const front = await frontApp();
     const r = await askAster(AGENT_RULES(a0.task.slice(0, 300), W, H, a0.log.slice(-6).map((x, i, l) => String(x).slice(0, i === l.length - 1 ? 600 : 90)), front.slice(0, 100)), [{ role: 'user', content: LAREON_KNOW() }, { role: 'assistant', content: 'Understood. I will use Lareon directly when it fits.' }], [jpg], { agent: true });
     if (a0.stop) return;
+    if (r && r.code === 'verify') { agentEnd('Do it is for verified Larsonian citizens.'); showVerifyLock(); return; }
     if (!r || !r.ok) return agentEnd(r && r.error === 'signin' ? 'Sign in to Lareon to use this.' : r && r.code === 'net' ? 'You’re offline.' : (r && r.error) || 'Aster couldn’t continue.');
     const act = parseAct(r.text); a0.n++;
     if (!act) { a0.log.push('(your reply was not valid JSON; reply with only the JSON object)'); a0.bad = (a0.bad || 0) + 1; if (a0.bad >= 3) return agentEnd('Aster got confused. Try saying the task differently.'); continue; }
@@ -1343,10 +1345,33 @@ async function agentLoop() {
     await wait(900);
   }
 }
+// Do it is for verified Larsonian citizens (the server enforces it too). Others get a full-screen notice in the
+// same format as Lareon's account notices, with a way to get verified.
+let verCache = { t: 0, v: null }, lockWin = null;
+async function isVerified() {
+  if (!sess) return null;
+  if (verCache.v !== null && Date.now() - verCache.t < 120000) return verCache.v;
+  try { const r = await api('/api/aster/status', { token: sess.token }); if (r.status === 200 && r.j && typeof r.j.verified === 'boolean') { verCache = { t: Date.now(), v: r.j.verified }; return r.j.verified; } } catch {}
+  return null; // unknown (offline etc.): let the server decide
+}
+function showVerifyLock() {
+  if (lockWin && !lockWin.isDestroyed()) { lockWin.show(); lockWin.focus(); return; }
+  const disp = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()), u = (sess && sess.user) || {};
+  lockWin = new BrowserWindow({ ...disp.bounds, show: false, frame: false, resizable: false, movable: false, minimizable: false, maximizable: false, fullscreenable: false, alwaysOnTop: true, skipTaskbar: false, backgroundColor: '#13111b', title: 'Verified citizens only', webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false } });
+  lockWin.setAlwaysOnTop(true, 'floating'); try { lockWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch {}
+  lockWin.loadFile(path.join(__dirname, 'verify-lock.html'), { query: { name: String(u.display_name || u.username || '').slice(0, 80) } });
+  lockWin.once('ready-to-show', () => { if (lockWin && !lockWin.isDestroyed()) { lockWin.show(); lockWin.focus(); } });
+  lockWin.on('closed', () => { lockWin = null; });
+}
+function closeVerifyLock() { if (lockWin && !lockWin.isDestroyed()) lockWin.close(); }
+ipcMain.on('lock:close', closeVerifyLock);
+ipcMain.on('lock:verify', () => { shell.openExternal('https://lareon.org/verify'); verCache = { t: 0, v: null }; closeVerifyLock(); });
+ipcMain.handle('aster:verified', () => isVerified());
 async function agentStart(task) {
   task = String(task || '').trim().slice(0, 600); if (!task) return { error: 'Say what you want Aster to do.' };
   if (settings.agent === false) return { error: 'Turned off in Settings → Aster can use your computer.' };
   if (!sess) return { error: 'signin' };
+  if ((await isVerified()) === false) { if (scr && !scr.isDestroyed()) scr.hide(); showVerifyLock(); return { error: 'verify' }; }
   if (agent) return { error: 'Aster is already working on something.' };
   if (isMac && !systemPreferences.isTrustedAccessibilityClient(false)) { try { systemPreferences.isTrustedAccessibilityClient(true); } catch {} return { error: 'Allow Lareon in System Settings → Privacy & Security → Accessibility, then try again.' }; }
   const ok = await dialog.showMessageBox({ type: 'question', message: 'Let Aster use your computer?', detail: 'Aster will look at your screen and move the mouse and type to:\n\n“' + task + '”\n\nYou’ll see Aster’s cursor. It asks you before it sends, buys, deletes or signs in, and it never types passwords. Press Stop or Esc to take back control at any time.', buttons: ['Let Aster do it', 'Cancel'], defaultId: 0, cancelId: 1, noLink: true });

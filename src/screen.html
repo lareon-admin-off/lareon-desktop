@@ -25,6 +25,7 @@ form .do{display:flex;align-items:center;gap:6px;background:var(--panel2)!import
 .st{font-size:13px;color:var(--fg2);display:flex;gap:8px;align-items:baseline;animation:lx-in .25s var(--ease) both}.st i{font:500 11px var(--mono);color:var(--fg3);font-style:normal;flex:none}.st.end{color:var(--fg);font-weight:600}
 form button{font:inherit;font-size:13px;border:0;background:var(--grad);color:#fff;border-radius:10px;padding:0 14px;cursor:pointer}
 .ft{font-size:11.5px;color:var(--fg3);margin-top:8px;text-align:center}
+.do.lk{opacity:.75}.do.lk:after{content:'';display:inline-block;width:9px;height:9px;margin-left:5px;vertical-align:-1px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2zm2 0h6V7a3 3 0 0 0-6 0z'/%3E%3C/svg%3E") center/contain no-repeat}
 </style></head><body>
 <div class="hd"><img src="../build/art/aster-logo.svg" alt=""><b>Aster · your screen</b><button id="again" title="Take a new look">New look</button><span class="k">Esc</span></div>
 <div class="shot"><img id="img" alt="Your screen"></div>
@@ -47,11 +48,13 @@ function ask(q,label){
   a.scrollIntoView({block:'end',behavior:'smooth'});
  });
 }
-lareon.onScreenShot(function(src){$('img').src=src;H=[];$('log').innerHTML='';busy=false;var s=document.querySelector('.shot');s.style.animation='none';void s.offsetWidth;s.style.animation='';chips();setTimeout(function(){$('i').focus()},30)});
+lareon.onScreenShot(function(src){doLock();$('img').src=src;H=[];$('log').innerHTML='';busy=false;var s=document.querySelector('.shot');s.style.animation='none';void s.offsetWidth;s.style.animation='';chips();setTimeout(function(){$('i').focus()},30)});
 $('f').onsubmit=function(e){e.preventDefault();var v=$('i').value.trim();if(!v)return;$('i').value='';ask(v)};
 $('do').onclick=function(){var v=$('i').value.trim();if(!v){$('i').placeholder='Tell Aster what to do, e.g. Open Ridge and find coffee near me';$('i').focus();return}
  add('q',esc(v));var w=add('a busy','Waiting for your OK…');
- lareon.agentStart(v).then(function(r){if(r&&r.ok){w.remove();$('i').value='';return}w.className='a';w.textContent=r&&r.error==='cancel'?'Okay, Aster won\u2019t touch anything.':r&&r.error==='signin'?'Sign in to Lareon to use this.':(r&&r.error)||'Aster couldn\u2019t start.'})};
+ lareon.agentStart(v).then(function(r){if(r&&r.ok){w.remove();$('i').value='';return}w.className='a';w.textContent=r&&r.error==='verify'?'Do it is for verified Larsonian citizens.':r&&r.error==='cancel'?'Okay, Aster won\u2019t touch anything.':r&&r.error==='signin'?'Sign in to Lareon to use this.':(r&&r.error)||'Aster couldn\u2019t start.'})};
+function doLock(){if(lareon.asterVerified)lareon.asterVerified().then(function(v){var b=$('do');if(!b)return;b.classList.toggle('lk',v===false);b.title=v===false?'Do it is for verified Larsonian citizens':'Aster takes the cursor and does it (asks you first)'})}
+doLock();
 lareon.onAgentLog(function(v){var d=document.createElement('div');d.className='st'+(v.done?' end':'');d.innerHTML=(v.n?'<i>'+v.n+'</i>':'')+'<span>'+esc(v.say||'')+'</span>';$('log').appendChild(d);d.scrollIntoView({block:'end'})});
 $('again').onclick=function(){lareon.screenAgain()};
 document.addEventListener('keydown',function(e){if(e.key==='Escape')lareon.screenClose()});
