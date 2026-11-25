@@ -2,7 +2,7 @@
 :root{color-scheme:dark light;
 --bg:#13111b;--bar:rgba(19,17,27,.72);--panel:rgba(27,24,38,.72);--panel2:rgba(46,41,66,.62);--solid:#1b1826;
 --line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.18);
---fg:#efecf8;--fg2:#b3b0c6;--fg3:#8a869f;
+--fg:#ffffff;--fg2:#d6d3e6;--fg3:#b2aec6;
 --orange:#ff7c1f;--violet:#a35cf5;--green:#3ddc84;--red:#ff4466;--field:rgba(10,8,18,.55);--fieldw:rgba(24,21,34,.95);--shadow:0 30px 80px -30px rgba(0,0,0,.75);
 --grad:linear-gradient(90deg,#ff7c1f,#d94fc4 60%,#a35cf5);--gradtext:linear-gradient(180deg,#ffd29a,#ff7aa2 55%,#c98bff);--onacc:#fff;--hover:rgba(255,255,255,.07);
 --sky1:#0b0914;--sky2:#1a1230;--sky3:#3b2360;--orb:#fff3df;--orb-glow:rgba(255,200,150,.28);--glow:rgba(255,124,31,.2);
@@ -11,7 +11,7 @@
 @media(prefers-color-scheme:light){:root:not([data-theme]){
 --bg:#f3effa;--bar:rgba(243,239,250,.72);--panel:rgba(255,255,255,.7);--panel2:rgba(255,255,255,.78);--solid:#ffffff;
 --line:rgba(48,32,92,.13);--line2:rgba(48,32,92,.24);
---fg:#1d1832;--fg2:#4f4a68;--fg3:#77728f;
+--fg:#100c1f;--fg2:#36314d;--fg3:#514c69;
 --orange:#e8600a;--violet:#8a3fe0;--green:#12a150;--red:#d4274a;--field:rgba(255,255,255,.92);--fieldw:rgba(255,255,255,.95);--shadow:0 30px 70px -30px rgba(90,60,150,.4);
 --gradtext:linear-gradient(180deg,#e8600a,#d1387f 55%,#7d35d6);--hover:rgba(48,32,92,.07);
 --sky1:#aebbf2;--sky2:#d9c9f1;--sky3:#ffdcc4;--orb:#fff6e0;--orb-glow:rgba(255,168,92,.6);--glow:rgba(255,150,80,.35);
@@ -19,7 +19,7 @@
 :root[data-theme=light]{color-scheme:light;
 --bg:#f3effa;--bar:rgba(243,239,250,.72);--panel:rgba(255,255,255,.7);--panel2:rgba(255,255,255,.78);--solid:#ffffff;
 --line:rgba(48,32,92,.13);--line2:rgba(48,32,92,.24);
---fg:#1d1832;--fg2:#4f4a68;--fg3:#77728f;
+--fg:#100c1f;--fg2:#36314d;--fg3:#514c69;
 --orange:#e8600a;--violet:#8a3fe0;--green:#12a150;--red:#d4274a;--field:rgba(255,255,255,.92);--fieldw:rgba(255,255,255,.95);--shadow:0 30px 70px -30px rgba(90,60,150,.4);
 --gradtext:linear-gradient(180deg,#e8600a,#d1387f 55%,#7d35d6);--hover:rgba(48,32,92,.07);
 --sky1:#aebbf2;--sky2:#d9c9f1;--sky3:#ffdcc4;--orb:#fff6e0;--orb-glow:rgba(255,168,92,.6);--glow:rgba(255,150,80,.35);
@@ -27,7 +27,7 @@
 :root[data-theme=dark]{color-scheme:dark;
 --bg:#13111b;--bar:rgba(19,17,27,.72);--panel:rgba(27,24,38,.72);--panel2:rgba(46,41,66,.62);--solid:#1b1826;
 --line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.18);
---fg:#efecf8;--fg2:#b3b0c6;--fg3:#8a869f;
+--fg:#ffffff;--fg2:#d6d3e6;--fg3:#b2aec6;
 --orange:#ff7c1f;--violet:#a35cf5;--green:#3ddc84;--red:#ff4466;--field:rgba(10,8,18,.55);--fieldw:rgba(24,21,34,.95);--shadow:0 30px 80px -30px rgba(0,0,0,.75);
 --grad:linear-gradient(90deg,#ff7c1f,#d94fc4 60%,#a35cf5);--gradtext:linear-gradient(180deg,#ffd29a,#ff7aa2 55%,#c98bff);--onacc:#fff;--hover:rgba(255,255,255,.07);
 --sky1:#0b0914;--sky2:#1a1230;--sky3:#3b2360;--orb:#fff3df;--orb-glow:rgba(255,200,150,.28);--glow:rgba(255,124,31,.2);
@@ -41,3 +41,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 ::view-transition-old(root),::view-transition-new(root){animation-duration:.9s;animation-timing-function:ease-in-out}
 .themeflash{transition:none}
+/* easier to read on every theme and wallpaper: brighter grey text, a little more weight, and a soft edge behind text that sits on the wallpaper */
+body{font-weight:450;letter-spacing:.005em}
+small,.sub,.muted,[class*=hint],[class*=meta]{font-weight:500}
+:root:not([data-theme=light]) body{text-shadow:0 1px 2px rgba(0,0,0,.35)}
