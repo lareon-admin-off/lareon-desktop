@@ -119,6 +119,26 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
 /* focus */
 .c-focus{grid-column:span 12}
 .c-notes{grid-column:span 12}
+#wn{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow:auto;background:#0d0a16;color:#fff;opacity:0;transition:opacity .45s var(--ease);text-shadow:none;--fg:#fff}
+#wn.on{opacity:1}#wn.out{opacity:0;transform:scale(1.02);transition:opacity .4s var(--ease),transform .4s var(--ease)}
+.wn-bg{position:fixed;inset:0;overflow:hidden;pointer-events:none}.wn-bg i{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(90px);opacity:.5;animation:wnf 18s ease-in-out infinite alternate}
+.wn-bg i:nth-child(1){background:#ff7a2f;left:-20vmax;top:-25vmax}.wn-bg i:nth-child(2){background:#b14cff;right:-22vmax;top:-10vmax;animation-delay:-6s}.wn-bg i:nth-child(3){background:#ff4f8b;left:20%;bottom:-35vmax;opacity:.35;animation-delay:-11s}
+@keyframes wnf{to{transform:translate(6vmax,4vmax) scale(1.15)}}
+.wn-in{position:relative;width:min(1080px,92vw);padding:48px 0 40px;text-align:center}
+.wn-hd{display:inline-flex;align-items:center;gap:10px;font:600 18px var(--sans);animation:lx-in .6s var(--ease) both}.wn-hd img{width:30px;height:30px}
+.wn-hd b{font:800 13px var(--mono);padding:3px 9px;border-radius:999px;background:linear-gradient(135deg,#ff8a33,#c26bff)}
+#wn h1{font:800 clamp(34px,5.4vw,64px)/1.04 var(--sans);letter-spacing:-.035em;margin:22px 0 12px;animation:lx-in .7s var(--ease) .08s both}
+#wn h1 em{font-style:normal;background:linear-gradient(100deg,#ffc08a,#ff7aa2 45%,#c98bff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.wn-lede{color:#cfc9e6;font-size:17px;margin:0 0 34px;animation:lx-in .7s var(--ease) .16s both}
+.wn-g{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;text-align:left}
+@media(max-width:900px){.wn-g{grid-template-columns:repeat(2,1fr)}}
+.wn-c{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:18px;backdrop-filter:blur(20px);display:flex;flex-direction:column;gap:6px;animation:lx-in .6s var(--ease) var(--d) both;transition:transform .25s var(--ease),background .25s,border-color .25s}
+.wn-c:hover{transform:translateY(-3px);background:rgba(255,255,255,.1);border-color:rgba(255,170,110,.45)}
+.wn-c svg{width:30px;height:30px;padding:6px;border-radius:9px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;background:linear-gradient(135deg,#ff8a33,#c26bff);margin-bottom:4px}
+.wn-c b{font-size:15px;font-weight:700}.wn-c p{margin:0;color:#cfc9e6;font-size:13.5px;line-height:1.45;flex:1}
+.wn-c small{color:#a9a3c4;font-size:12px}.wn-c kbd{font:600 11.5px var(--mono);color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:1px 6px}
+.wn-ft{display:flex;gap:10px;justify-content:center;margin-top:30px;animation:lx-in .6s var(--ease) .9s both}
+.wn-ft .btn{font-size:15px;padding:11px 22px;border-radius:12px;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)}.wn-ft .btn.pri{border:0;background:linear-gradient(135deg,#ff8a33,#e2457e 55%,#9b5cff)}
 #dz{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(10,8,18,.5);backdrop-filter:blur(10px);opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}
 #dz.on{opacity:1}
 #dz .dz-b{display:flex;flex-direction:column;align-items:center;gap:8px;padding:46px 64px;border:2px dashed color-mix(in srgb,var(--orange) 70%,transparent);border-radius:24px;background:var(--solid);box-shadow:var(--shadow);transform:scale(.96);transition:transform .25s var(--ease)}
@@ -760,7 +780,32 @@ function put(p) { return lareon.setSettings(p).then(function (r) { if (r) S = r;
 function group(title, rows) { var g = mk('div', 'sg'); g.appendChild(mk('h3', '', esc(title))); var c = mk('div', 'card'); rows.forEach(function (r) { c.appendChild(r); }); g.appendChild(c); return g; }
 function textSize(v) { if (v && v !== 'normal') document.documentElement.setAttribute('data-size', v); else document.documentElement.removeAttribute('data-size'); }
 lareon.getSettings().then(function (x) { if (x) textSize(x.textSize); });
-setTimeout(function () { try { if (!localStorage.getItem('lareon.v2')) { localStorage.setItem('lareon.v2', '1'); var mac = /Mac/.test(navigator.platform); toast('Welcome to Lareon 2.0 · ' + (mac ? '⌘⌥A' : 'Ctrl+Alt+A') + ' asks Aster about your screen, drop any file on Lareon to get a link, and ' + (mac ? '⌘⇧E' : 'Ctrl+Shift+E') + ' rewrites selected text in any app'); } } catch (e) {} }, 1800);
+// Lareon 2.0: a full-screen welcome, shown once
+function whatsNew() {
+  if (cur !== 'home') lareon.show('home');
+  var mac = /Mac/.test(navigator.platform), K = function (m, w) { return '<kbd>' + (mac ? m : w) + '</kbd>'; };
+  var F = [
+    ['cursor', 'Aster can use your computer', 'Say what you want done. Aster moves the cursor and types in any app, and asks you first.', K('⌘⌥A', 'Ctrl+Alt+A') + ' → Do it'],
+    ['eye', 'Ask about your screen', 'Errors, forms, charts, messages: Aster sees what you see and explains it.', K('⌘⌥A', 'Ctrl+Alt+A')],
+    ['pen', 'Rewrite anywhere', 'Select text in any app. Aster fixes, shortens or translates it and puts it back.', K('⌘⇧E', 'Ctrl+Shift+E')],
+    ['link', 'Drop to share', 'Drop any file on Lareon. You get a private link, already copied.', 'Drag & drop'],
+    ['clip', 'Shelf', 'Everything you copied, searchable. Kept in memory only, passwords skipped.', K('⌘⌥V', 'Ctrl+Alt+V')],
+    ['bolt', 'Jump to, smarter', 'Sums, unit conversions, time anywhere, and "remind me to…" right in the bar.', K('⌘K', 'Ctrl+K')],
+    ['note', 'Notes on Home', 'A notepad that saves as you type. Send any line to Dusk as a task.', 'On Home'],
+    ['sun', 'Easy to read, day and night', 'Text follows your wallpaper, a font for each look, and smooth motion all round.', 'Everywhere']
+  ];
+  var I = { cursor: '<path d="M5 3v15l4-4 3 7 3-1.3-3-6.7h6z"/>', eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', pen: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>', link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>', clip: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6"/>', bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>', note: '<path d="M5 3h10l4 4v14H5z"/><path d="M8 11h8M8 15h6"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>' };
+  var w = mk('div', '', '<div class="wn-bg"><i></i><i></i><i></i></div><div class="wn-in"><div class="wn-hd"><img src="../build/art/aster-logo.svg" alt=""><span>Lareon</span><b>2.0</b></div><h1>Your computer, <em>with Aster on it.</em></h1><p class="wn-lede">The biggest Lareon update yet. Here’s what’s new.</p><div class="wn-g">' +
+    F.map(function (f, n) { return '<div class="wn-c" style="--d:' + (0.35 + n * 0.06) + 's"><svg viewBox="0 0 24 24">' + I[f[0]] + '</svg><b>' + f[1] + '</b><p>' + f[2] + '</p><small>' + f[3] + '</small></div>'; }).join('') +
+    '</div><div class="wn-ft"><button class="btn" id="wn-try">Try Aster on my screen</button><button class="btn pri" id="wn-go">Get started</button></div></div>');
+  w.id = 'wn'; document.body.appendChild(w); requestAnimationFrame(function () { w.className = 'on'; });
+  function close() { w.className = 'out'; setTimeout(function () { w.remove(); }, 450); document.removeEventListener('keydown', key); }
+  function key(e) { if (e.key === 'Escape' || e.key === 'Enter') close(); }
+  document.addEventListener('keydown', key);
+  $('wn-go').onclick = close; $('wn-try').onclick = function () { close(); setTimeout(function () { lareon.screenOpen(); }, 500); };
+}
+setTimeout(function () { try { if (!localStorage.getItem('lareon.v2')) { localStorage.setItem('lareon.v2', '1'); whatsNew(); } } catch (e) {} }, 900);
+lareon.onWhatsNew && lareon.onWhatsNew(whatsNew);
 function applyTheme(v) { if (window.setTheme) window.setTheme(v === 'system' ? '' : v, true); }
 function renderSet() {
   if (!S || $('set').hidden) return;
@@ -1075,7 +1120,7 @@ function palItems() {
   a.push({ n: t('set.title'), f: openSet }, { n: t('tm.toggle'), f: flipTheme }, { n: t('focus.t') + ' · ' + t('focus.min', { n: 25 }), f: function () { lareon.show('home'); if (!fend) fstart(25); } });
   a.push({ n: t('lang'), f: function () { i18n.menu($('lg')); } });
   if (SP && SP.spaces.length > 1) SP.spaces.forEach(function (x) { if (x.id !== SP.active) a.push({ n: t('spc.switch', { s: x.name }), f: function () { lareon.spacesSwitch(x.id); } }); });
-  a.push({ n: t('cp.t'), f: function () { lareon.homeAction('capture'); } }, { n: 'Shelf · clipboard history', f: function () { lareon.openShelf(); } }, { n: 'Ask Aster about my screen', f: function () { lareon.screenOpen(); } }, { n: 'Let Aster do something on my computer', f: function () { lareon.screenOpen(); } }, { n: 'Share a file · get a link', f: function () { lareon.sharePick(); } }, { n: 'Notes', f: function () { lareon.show('home'); setTimeout(function () { $('nta').focus(); }, 80); } });
+  a.push({ n: t('cp.t'), f: function () { lareon.homeAction('capture'); } }, { n: 'Shelf · clipboard history', f: function () { lareon.openShelf(); } }, { n: 'Ask Aster about my screen', f: function () { lareon.screenOpen(); } }, { n: 'Let Aster do something on my computer', f: function () { lareon.screenOpen(); } }, { n: 'What’s new in Lareon 2.0', f: whatsNew }, { n: 'Share a file · get a link', f: function () { lareon.sharePick(); } }, { n: 'Notes', f: function () { lareon.show('home'); setTimeout(function () { $('nta').focus(); }, 80); } });
   return a;
 }
 var found = [];
