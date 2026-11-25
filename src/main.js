@@ -22,7 +22,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 
 // ---- settings (chosen in the setup wizard) ----
 const DEFAULT_APPS = Object.fromEntries(Object.entries(apps).map(([k, a]) => [k, !a.off]));
-const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, wallPhase: '', wallTint: true, railWide: false, textSize: 'normal', notifyApps: { fledge: true, rustle: true, dusk: true }, quiet: { on: false, from: '22:00', to: '07:00' }, composeKey: true, assistKey: true, captureKey: true, spaces: null, space: '', lock: { pin: '', idle: 0, sleep: true, touch: true }, order: [], homeCards: { today: true, mail: true, brief: true, across: true, focus: false, apps: false }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
+const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, wallPhase: '', wallTint: true, railWide: false, textSize: 'normal', notifyApps: { fledge: true, rustle: true, dusk: true }, quiet: { on: false, from: '22:00', to: '07:00' }, composeKey: true, assistKey: true, captureKey: true, shelf: true, spaces: null, space: '', lock: { pin: '', idle: 0, sleep: true, touch: true }, order: [], homeCards: { today: true, mail: true, brief: true, across: true, focus: false, apps: false, notes: true }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 let settings = { ...DEFAULTS };
 function loadSettings() {
@@ -476,7 +476,42 @@ function openQuick() {
   if (quick.isVisible()) { quick.hide(); return; }
   quick.center(); quick.show(); quick.focus(); quick.webContents.send('quick:show');
 }
+// Shelf: clipboard history. Kept in memory only, never written to disk, cleared on lock and quit.
+// Skips anything a password manager marks as concealed, and things that look like keys or passwords.
+let shelf = null, shelfItems = [], shelfLast = '', shelfId = 0;
+const shelfSecret = (t) => /^(sk|pk|rk|whsec)_|^xkeysib-|^gh[pousr]_|^AKIA|BEGIN [A-Z ]*PRIVATE KEY/.test(t) || (/^\S{12,128}$/.test(t) && /[A-Za-z]/.test(t) && /\d/.test(t) && !/^https?:|@|\//.test(t) && /[^A-Za-z0-9]/.test(t));
+function shelfPoll() {
+  if (settings.shelf === false || locked) return;
+  let t = ''; try { t = clipboard.readText(); } catch { return; }
+  if (!t || t === shelfLast) return; shelfLast = t;
+  let fm = []; try { fm = clipboard.availableFormats(); } catch {}
+  if (fm.some((f) => /Concealed|TransientType|ExcludeClipboardContentFromMonitorProcessing/i.test(f))) return;
+  const v = t.trim(); if (!v || v.length > 20000 || shelfSecret(v)) return;
+  shelfItems = [{ id: ++shelfId, t: v, at: Date.now() }].concat(shelfItems.filter((x) => x.t !== v)).slice(0, 60);
+}
+setInterval(shelfPoll, 1000);
+function openShelf() {
+  if (!settings.setupDone || locked) return;
+  if (!shelf) {
+    shelf = new BrowserWindow({ width: 440, height: 480, show: false, frame: false, resizable: false, alwaysOnTop: true, skipTaskbar: true, fullscreenable: false, backgroundColor: BG(), webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false } });
+    shelf.loadFile(path.join(__dirname, 'shelf.html'));
+    shelf.on('blur', () => { if (shelf && shelf.isVisible()) shelf.hide(); });
+    shelf.on('closed', () => { shelf = null; });
+    shelf.once('ready-to-show', () => { shelf.center(); shelf.show(); shelf.focus(); });
+    return;
+  }
+  if (shelf.isVisible()) { shelf.hide(); return; }
+  shelf.center(); shelf.show(); shelf.focus(); shelf.webContents.send('shelf:show');
+}
+ipcMain.handle('shelf:list', () => shelfItems.map((x) => ({ ...x })));
+ipcMain.handle('shelf:pick', (_e, id) => { const x = shelfItems.find((y) => y.id === id); if (x) { shelfLast = x.t; clipboard.writeText(x.t); shelfItems = [x].concat(shelfItems.filter((y) => y !== x)); } if (shelf) shelf.hide(); return !!x; });
+ipcMain.handle('clip:write', (_e, t) => { t = String(t || '').slice(0, 20000); if (t) clipboard.writeText(t); return !!t; });
+ipcMain.handle('shelf:clear', () => { shelfItems = []; return true; });
+ipcMain.on('shelf:close', () => { if (shelf) shelf.hide(); });
+ipcMain.on('shelf:open', () => openShelf());
 function applyQuick() {
+  try { globalShortcut.unregister('CommandOrControl+Alt+V'); } catch {}
+  if (settings.shelf !== false) { try { globalShortcut.register('CommandOrControl+Alt+V', openShelf); } catch {} }
   try { globalShortcut.unregister('CommandOrControl+Shift+Space'); } catch {}
   if (settings.quickAdd !== false) { try { globalShortcut.register('CommandOrControl+Shift+Space', openQuick); } catch {} }
   try { globalShortcut.unregister('CommandOrControl+Shift+A'); } catch {}
@@ -647,13 +682,13 @@ function createWindow() {
 }
 
 ipcMain.on('theme:get', (e) => { e.returnValue = ['light', 'dark'].includes(settings.theme) ? settings.theme : ''; });
-const publicSettings = () => ({ captureKey: settings.captureKey !== false, spaces: spacesOut(), composeKey: settings.composeKey !== false, assistKey: settings.assistKey !== false, mailDefault: isMailDefault(), catalog: apps, order: enabledKeys(), ...(() => { const w = wallNow(); return { wall: w.wall, wallPhase: w.phase, wallTint: w.tint }; })(), notifyApps: { ...DEFAULTS.notifyApps, ...(settings.notifyApps || {}) }, quiet: { ...DEFAULTS.quiet, ...(settings.quiet || {}) }, lock: { hasPin: !!(settings.lock && settings.lock.pin), idle: (settings.lock && settings.lock.idle) || 0, sleep: !settings.lock || settings.lock.sleep !== false, touch: !settings.lock || settings.lock.touch !== false, canTouch: canTouch() }, railWide: !!settings.railWide, textSize: settings.textSize || 'normal', homeCards: { ...DEFAULTS.homeCards, ...(settings.homeCards || {}) }, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
+const publicSettings = () => ({ shelf: settings.shelf !== false, captureKey: settings.captureKey !== false, spaces: spacesOut(), composeKey: settings.composeKey !== false, assistKey: settings.assistKey !== false, mailDefault: isMailDefault(), catalog: apps, order: enabledKeys(), ...(() => { const w = wallNow(); return { wall: w.wall, wallPhase: w.phase, wallTint: w.tint }; })(), notifyApps: { ...DEFAULTS.notifyApps, ...(settings.notifyApps || {}) }, quiet: { ...DEFAULTS.quiet, ...(settings.quiet || {}) }, lock: { hasPin: !!(settings.lock && settings.lock.pin), idle: (settings.lock && settings.lock.idle) || 0, sleep: !settings.lock || settings.lock.sleep !== false, touch: !settings.lock || settings.lock.touch !== false, canTouch: canTouch() }, railWide: !!settings.railWide, textSize: settings.textSize || 'normal', homeCards: { ...DEFAULTS.homeCards, ...(settings.homeCards || {}) }, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
 ipcMain.handle('settings:get', () => publicSettings());
 ipcMain.handle('settings:set', (_e, p) => {
   p = p || {};
   const bool = (k) => { if (typeof p[k] === 'boolean') settings[k] = p[k]; };
-  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound', 'background', 'quickAdd', 'askKey', 'brief', 'focusMute', 'composeKey', 'assistKey', 'captureKey'].forEach(bool);
-  if (typeof p.composeKey === 'boolean' || typeof p.assistKey === 'boolean' || typeof p.captureKey === 'boolean') applyQuick();
+  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound', 'background', 'quickAdd', 'askKey', 'brief', 'focusMute', 'composeKey', 'assistKey', 'captureKey', 'shelf'].forEach(bool);
+  if (typeof p.composeKey === 'boolean' || typeof p.assistKey === 'boolean' || typeof p.captureKey === 'boolean' || typeof p.shelf === 'boolean') { applyQuick(); if (p.shelf === false) shelfItems = []; }
   if (typeof p.launchAtLogin === 'boolean') { settings.launchAtLogin = p.launchAtLogin; applyLogin(); }
   if (['system', 'light', 'dark'].includes(p.theme)) { settings.theme = p.theme; nativeTheme.themeSource = p.theme; paintChrome(); }
   if (['en', 'es', 'fr', 'de', 'pt', 'it', 'ru', 'tr', 'sv', 'ja', 'ko', 'zh', 'hi', 'ar', 'fa', 'sw', 'ary'].includes(p.lang)) settings.lang = p.lang;
@@ -687,7 +722,7 @@ ipcMain.handle('settings:set', (_e, p) => {
   if (['normal', 'large', 'xl'].includes(p.textSize)) settings.textSize = p.textSize;
   if (typeof p.railWide === 'boolean' && p.railWide !== settings.railWide) { settings.railWide = p.railWide; layout(); send('rail', p.railWide); }
   if (Array.isArray(p.order)) { settings.order = p.order.filter((k) => typeof k === 'string' && apps[k]).slice(0, 40); appsChanged = true; }
-  if (p.homeCards && typeof p.homeCards === 'object') for (const k of ['today', 'mail', 'brief', 'across', 'focus', 'apps']) if (typeof p.homeCards[k] === 'boolean') settings.homeCards = { ...settings.homeCards, [k]: p.homeCards[k] };
+  if (p.homeCards && typeof p.homeCards === 'object') for (const k of ['today', 'mail', 'brief', 'across', 'focus', 'apps', 'notes']) if (typeof p.homeCards[k] === 'boolean') settings.homeCards = { ...settings.homeCards, [k]: p.homeCards[k] };
   writeSettings(); if (p.quickAdd !== undefined || p.askKey !== undefined) applyQuick();
   if (appsChanged) { buildMenu(); send('apps-changed'); }
   if (p.badge !== undefined) setBadge(lastUnread);
@@ -837,7 +872,7 @@ function pinHash(pin, salt) { salt = salt || crypto.randomBytes(16).toString('he
 function pinOk(pin) { try { const [salt, h] = String(settings.lock.pin).split(':'); return crypto.timingSafeEqual(Buffer.from(h, 'hex'), crypto.scryptSync(String(pin), salt, 32)); } catch { return false; } }
 function lockNow() {
   if (!hasPin() || locked || !win || inSetup) return;
-  locked = true; for (const v of Object.values(views)) v.setVisible(false);
+  locked = true; shelfItems = []; if (shelf) shelf.hide(); for (const v of Object.values(views)) v.setVisible(false);
   if (capRec) stopRecording();
   for (const w of [actWin, peek, ask, quick, compose, assist, invite, capBar, capRes]) { try { if (w && !w.isDestroyed()) w.hide(); } catch {} }
   send('lock', { on: true, touch: canTouch() && settings.lock.touch !== false });

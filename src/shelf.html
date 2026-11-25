@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shelf</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+<style>
+html,body{height:100%;overflow:hidden}body{background:var(--solid);display:flex;flex-direction:column;-webkit-app-region:drag}
+header{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+header b{font-size:15px;font-weight:700}header small{color:var(--fg3);font-size:12px;margin-left:auto}
+input{-webkit-app-region:no-drag;margin:0 12px 8px;font:inherit;font-size:15px;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:9px 12px;outline:0;-webkit-user-select:text;user-select:text}
+input:focus,input:focus-visible{border-color:var(--violet);outline:none;box-shadow:none}
+ul{-webkit-app-region:no-drag;list-style:none;flex:1;overflow:auto;padding:0 8px 8px;margin:0}
+li{display:flex;gap:10px;align-items:baseline;padding:9px 10px;border-radius:9px;cursor:pointer;color:var(--fg2);animation:lx-in .25s var(--ease) both}
+li[aria-selected=true]{background:var(--panel2);color:var(--fg)}
+li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+li time{flex:none;font:500 11px var(--mono);color:var(--fg3)}
+li kbd{flex:none;font:600 11px var(--mono);color:var(--fg3);border:1px solid var(--line);border-radius:5px;padding:0 5px}
+.empty{color:var(--fg3);text-align:center;padding:40px 20px;font-size:14px;line-height:1.5;cursor:default;display:block}
+footer{-webkit-app-region:no-drag;display:flex;align-items:center;gap:8px;padding:8px 14px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--fg3)}
+footer button{margin-left:auto;font:inherit;font-size:12px;color:var(--fg2);background:none;border:1px solid var(--line);border-radius:7px;padding:4px 10px;cursor:pointer}
+footer button:hover{background:var(--hover)}
+</style></head><body>
+<header><b>Shelf</b><small>Recently copied</small></header>
+<input id="q" placeholder="Search what you copied" autocomplete="off" spellcheck="false">
+<ul id="l"></ul>
+<footer>Kept on this computer only, cleared when Lareon quits or locks<button id="clr">Clear</button></footer>
+<script>
+var $=function(i){return document.getElementById(i)},all=[],shown=[],sel=0;
+function ago(at){var s=Math.round((Date.now()-at)/1000);if(s<60)return 'now';if(s<3600)return Math.round(s/60)+'m';return Math.round(s/3600)+'h'}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function paint(){
+ var q=$('q').value.toLowerCase();shown=all.filter(function(x){return x.t.toLowerCase().indexOf(q)>=0});sel=Math.min(sel,Math.max(0,shown.length-1));
+ $('l').innerHTML=shown.map(function(x,i){return '<li data-i="'+i+'" aria-selected="'+(i===sel)+'" style="animation-delay:'+Math.min(i,10)*.015+'s"><span>'+esc(x.t.replace(/\s+/g,' '))+'</span>'+(i<9?'<kbd>'+(i+1)+'</kbd>':'')+'<time>'+ago(x.at)+'</time></li>'}).join('')||'<li class="empty">'+(all.length?'Nothing matches.':'Copy something anywhere and it shows up here.<br>Press Ctrl/⌘ + Alt/⌥ + V to open the Shelf.')+'</li>';
+ [].forEach.call($('l').querySelectorAll('li[data-i]'),function(li){li.onclick=function(){pick(+li.getAttribute('data-i'))}});
+ var s=$('l').querySelector('[aria-selected=true]');if(s)s.scrollIntoView({block:'nearest'});
+}
+function pick(i){var x=shown[i];if(x)lareon.shelfPick(x.id)}
+function load(){lareon.shelfList().then(function(r){all=r||[];sel=0;$('q').value='';paint();$('q').focus()})}
+lareon.onShowShelf(load);load();
+$('q').oninput=function(){sel=0;paint()};
+$('clr').onclick=function(){lareon.shelfClear().then(load)};
+document.addEventListener('keydown',function(e){
+ if(e.key==='Escape')return lareon.shelfClose();
+ if(e.key==='ArrowDown'){sel=Math.min(sel+1,shown.length-1);paint();e.preventDefault()}
+ else if(e.key==='ArrowUp'){sel=Math.max(sel-1,0);paint();e.preventDefault()}
+ else if(e.key==='Enter')pick(sel);
+ else if((e.metaKey||e.ctrlKey)&&/^[1-9]$/.test(e.key)){pick(+e.key-1);e.preventDefault()}
+});
+</script></body></html>
