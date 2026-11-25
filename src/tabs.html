@@ -1015,6 +1015,11 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$
 
 // ---- what's new ----
 var WN = {
+  "2.1.1": [
+    ["Aster Autopilot","Aster can now run jobs for you on Lareon’s servers, like a morning brief or a weekly plan. Find it in Aster. For verified citizens."],
+    ["Time zones and the sun in Ridge","Turn on Time zones in Ridge’s layers, then tap anywhere for sunrise and sunset."],
+    ["Do it","Aster’s Do it is now for verified Larsonian citizens."]
+  ],
   "1.6.0": [
     ["Spaces","Make separate setups like School, Work and Personal. Each keeps its own apps, wallpaper and alerts, and can switch on by itself on a schedule. Switch from the top of the sidebar."],
     ["Screenshots and recordings","Press Ctrl+Shift+X (⌘⇧X on Mac) to capture an area, a window or the whole screen, or record it. Then copy it, save it, put it in Cove, edit it in Sheen or email it."]
@@ -1080,7 +1085,8 @@ var WN = {
   ]
 };
 function showWN(v) {
-  if (/^2\./.test(String(v))) { try { localStorage.setItem('lareon.v2', '1'); } catch (e) {} whatsNew(); lareon.seenWhatsNew(); return; }
+  // 2.0 gets the big welcome once; later 2.x point releases use the small box below
+  if (/^2\./.test(String(v))) { var big = false; try { big = !localStorage.getItem('lareon.v2'); localStorage.setItem('lareon.v2', '1'); } catch (e) {} if (big || !WN[v] || document.getElementById('l2')) { if (big) whatsNew(); lareon.seenWhatsNew(); return; } }
   var items = WN[v] || WN['1.0.6'];
   $('wnv').textContent = t('wn.v', { v: v });
   $('wnl').innerHTML = items.map(function (x) { return '<li><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></li>'; }).join('');
