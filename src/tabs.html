@@ -124,7 +124,21 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
 .wn-bg{position:fixed;inset:0;overflow:hidden;pointer-events:none}.wn-bg i{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(90px);opacity:.5;animation:wnf 18s ease-in-out infinite alternate}
 .wn-bg i:nth-child(1){background:#ff7a2f;left:-20vmax;top:-25vmax}.wn-bg i:nth-child(2){background:#b14cff;right:-22vmax;top:-10vmax;animation-delay:-6s}.wn-bg i:nth-child(3){background:#ff4f8b;left:20%;bottom:-35vmax;opacity:.35;animation-delay:-11s}
 @keyframes wnf{to{transform:translate(6vmax,4vmax) scale(1.15)}}
-.wn-in{position:relative;width:min(1080px,92vw);padding:48px 0 40px;text-align:center}
+.wn-in{position:relative;width:min(1080px,92vw);padding:48px 0 40px;text-align:center;visibility:hidden}
+#wn.go .wn-in{visibility:visible}#wn:not(.go) .wn-in *{animation-play-state:paused}
+/* the big moment: the Lareon mark lands, light bursts, "Lareon 2.0" rises, then the page takes over */
+.wn-intro{position:fixed;inset:0;display:grid;place-items:center;align-content:center;gap:26px;z-index:2;cursor:pointer;transition:opacity .7s var(--ease),transform .9s var(--ease)}
+#wn.go .wn-intro{opacity:0;transform:scale(1.25);pointer-events:none}
+.wn-logo{position:relative;width:min(300px,40vmin);aspect-ratio:1;animation:wnl 1.5s cubic-bezier(.16,1.3,.3,1) .15s both}
+.wn-logo:before{content:"";position:absolute;inset:-35%;border-radius:50%;background:radial-gradient(circle,rgba(255,170,90,.75),rgba(194,107,255,.35) 45%,transparent 70%);filter:blur(20px);animation:wng 2.4s ease-out .35s both}
+.wn-logo img{position:relative;width:100%;height:100%;filter:drop-shadow(0 20px 60px rgba(255,120,60,.55))}
+@keyframes wnl{0%{opacity:0;transform:scale(.2) rotate(-25deg);filter:blur(12px)}60%{opacity:1;filter:none}100%{transform:none}}
+@keyframes wng{0%{opacity:0;transform:scale(.3)}35%{opacity:1;transform:scale(1.25)}100%{opacity:.6;transform:scale(1)}}
+.wn-rays{position:absolute;width:150vmax;height:150vmax;background:repeating-conic-gradient(from 0deg,rgba(255,190,130,.10) 0 4deg,transparent 4deg 16deg);-webkit-mask:radial-gradient(circle,#000 0,transparent 55%);mask:radial-gradient(circle,#000 0,transparent 55%);animation:wnr 2.6s ease-out .45s both,wns 40s linear infinite}
+@keyframes wnr{from{opacity:0;transform:scale(.4)}to{opacity:1}}@keyframes wns{to{rotate:360deg}}
+.wn-word{font:800 clamp(44px,8vw,104px)/1 var(--sans);letter-spacing:-.045em;animation:wnw 1s cubic-bezier(.16,1,.3,1) .95s both}
+.wn-word span{background:linear-gradient(100deg,#ffc08a,#ff7aa2 45%,#c98bff);-webkit-background-clip:text;background-clip:text;color:transparent}
+@keyframes wnw{from{opacity:0;transform:translateY(30px);letter-spacing:.1em;filter:blur(8px)}}
 .wn-hd{display:inline-flex;align-items:center;gap:10px;font:600 18px var(--sans);animation:lx-in .6s var(--ease) both}.wn-hd img{width:30px;height:30px}
 .wn-hd b{font:800 13px var(--mono);padding:3px 9px;border-radius:999px;background:linear-gradient(135deg,#ff8a33,#c26bff)}
 #wn h1{font:800 clamp(34px,5.4vw,64px)/1.04 var(--sans);letter-spacing:-.035em;margin:22px 0 12px;animation:lx-in .7s var(--ease) .08s both}
@@ -795,12 +809,13 @@ function whatsNew() {
     ['sun', 'Easy to read, day and night', 'Text follows your wallpaper, a font for each look, and smooth motion all round.', 'Everywhere']
   ];
   var I = { cursor: '<path d="M5 3v15l4-4 3 7 3-1.3-3-6.7h6z"/>', eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', pen: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>', link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>', clip: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6"/>', bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>', note: '<path d="M5 3h10l4 4v14H5z"/><path d="M8 11h8M8 15h6"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>' };
-  var w = mk('div', '', '<div class="wn-bg"><i></i><i></i><i></i></div><div class="wn-in"><div class="wn-hd"><img src="../build/art/aster-logo.svg" alt=""><span>Lareon</span><b>2.0</b></div><h1>Your computer, <em>with Aster on it.</em></h1><p class="wn-lede">The biggest Lareon update yet. Here’s what’s new.</p><div class="wn-g">' +
+  var w = mk('div', '', '<div class="wn-bg"><i></i><i></i><i></i></div><div class="wn-intro"><div class="wn-rays"></div><div class="wn-logo"><img src="../build/art/lareon-icon.svg" alt="Lareon"></div><div class="wn-word">Lareon <span>2.0</span></div></div><div class="wn-in"><div class="wn-hd"><img src="../build/art/lareon-icon.svg" alt=""><span>Lareon</span><b>2.0</b></div><h1>Lareon, <em>everywhere you work.</em></h1><p class="wn-lede">The biggest Lareon update yet. Here’s what’s new.</p><div class="wn-g">' +
     F.map(function (f, n) { return '<div class="wn-c" style="--d:' + (0.35 + n * 0.06) + 's"><svg viewBox="0 0 24 24">' + I[f[0]] + '</svg><b>' + f[1] + '</b><p>' + f[2] + '</p><small>' + f[3] + '</small></div>'; }).join('') +
     '</div><div class="wn-ft"><button class="btn" id="wn-try">Try Aster on my screen</button><button class="btn pri" id="wn-go">Get started</button></div></div>');
   w.id = 'wn'; document.body.appendChild(w); requestAnimationFrame(function () { w.className = 'on'; });
+  var introT = setTimeout(function () { w.classList.add('go'); }, 2600); w.querySelector('.wn-intro').onclick = function () { clearTimeout(introT); w.classList.add('go'); };
   function close() { w.className = 'out'; setTimeout(function () { w.remove(); }, 450); document.removeEventListener('keydown', key); }
-  function key(e) { if (e.key === 'Escape' || e.key === 'Enter') close(); }
+  function key(e) { if (!w.classList.contains('go')) { clearTimeout(introT); w.classList.add('go'); return; } if (e.key === 'Escape' || e.key === 'Enter') close(); }
   document.addEventListener('keydown', key);
   $('wn-go').onclick = close; $('wn-try').onclick = function () { close(); setTimeout(function () { lareon.screenOpen(); }, 500); };
 }
