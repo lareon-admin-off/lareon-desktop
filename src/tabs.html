@@ -828,6 +828,7 @@ function renderSet() {
     row('Shelf · clipboard history', 'Press ' + (mk2.indexOf('⌘') >= 0 ? '⌘⌥V' : 'Ctrl+Alt+V') + ' for everything you copied. Kept in memory only; passwords are skipped', sw(S.shelf !== false, function (v) { put({ shelf: v }); })),
     row('Ask about my screen', 'Press ' + (mk2.indexOf('⌘') >= 0 ? '⌘⌥A' : 'Ctrl+Alt+A') + ' and Aster looks at your screen: errors, forms, charts, messages', sw(S.screenKey !== false, function (v) { put({ screenKey: v }); })),
     S.platform === 'darwin' && !S.axOk ? row('Replace text in any app', 'Allow Lareon in System Settings → Privacy & Security → Accessibility, so Aster can rewrite the text you select and put it back', null) : null,
+    row('Aster can use your computer', 'In the screen window (' + (mk2.indexOf('⌘') >= 0 ? '⌘⌥A' : 'Ctrl+Alt+A') + '), Do it lets Aster move the cursor and type for you. It asks every time, and before sending, buying or deleting', sw(S.agent !== false, function (v) { put({ agent: v }); })),
     row('Notes on Home', 'A notepad on your Home screen that saves as you type', sw(!(S.homeCards && S.homeCards.notes === false), function (v) { put({ homeCards: { notes: v } }).then(cards); }))
   ]));
   b.appendChild(group(t('set.updates'), [
@@ -1074,7 +1075,7 @@ function palItems() {
   a.push({ n: t('set.title'), f: openSet }, { n: t('tm.toggle'), f: flipTheme }, { n: t('focus.t') + ' · ' + t('focus.min', { n: 25 }), f: function () { lareon.show('home'); if (!fend) fstart(25); } });
   a.push({ n: t('lang'), f: function () { i18n.menu($('lg')); } });
   if (SP && SP.spaces.length > 1) SP.spaces.forEach(function (x) { if (x.id !== SP.active) a.push({ n: t('spc.switch', { s: x.name }), f: function () { lareon.spacesSwitch(x.id); } }); });
-  a.push({ n: t('cp.t'), f: function () { lareon.homeAction('capture'); } }, { n: 'Shelf · clipboard history', f: function () { lareon.openShelf(); } }, { n: 'Ask Aster about my screen', f: function () { lareon.screenOpen(); } }, { n: 'Share a file · get a link', f: function () { lareon.sharePick(); } }, { n: 'Notes', f: function () { lareon.show('home'); setTimeout(function () { $('nta').focus(); }, 80); } });
+  a.push({ n: t('cp.t'), f: function () { lareon.homeAction('capture'); } }, { n: 'Shelf · clipboard history', f: function () { lareon.openShelf(); } }, { n: 'Ask Aster about my screen', f: function () { lareon.screenOpen(); } }, { n: 'Let Aster do something on my computer', f: function () { lareon.screenOpen(); } }, { n: 'Share a file · get a link', f: function () { lareon.sharePick(); } }, { n: 'Notes', f: function () { lareon.show('home'); setTimeout(function () { $('nta').focus(); }, 80); } });
   return a;
 }
 var found = [];
