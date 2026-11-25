@@ -20,10 +20,11 @@ body:before{content:"";position:absolute;left:0;right:0;top:0;height:3px;backgro
  <div class="ch" id="ch"></div>
 </div>
 <div id="a" class="md dim"></div>
-<div class="ft"><button class="btn" id="more" data-i="ask.open"></button><button class="btn pri" id="cp" data-i="as.copy" disabled></button></div>
+<div class="ft"><button class="btn" id="more" data-i="ask.open"></button><button class="btn" id="cp2" data-i="as.copy" disabled></button><button class="btn pri" id="rp" disabled hidden>Replace selection</button></div>
 <script src="vendor/katex/katex.min.js"></script><script src="md.js"></script><script src="i18n-more.js"></script><script src="i18n-apps.js"></script><script src="i18n.js"></script>
 <script>
 var $ = function (i) { return document.getElementById(i); }, t = function (k, v) { return i18n.t(k, v); }, TEXT = '', OUT = '', run = 0;
+var SEL = false, BARE = ['clear', 'short', 'fix', 'formal', 'translate', 'reply'];
 var ACTS = ['explain', 'summary', 'clear', 'short', 'fix', 'formal', 'reply'];
 function chips() {
   var c = $('ch'); c.innerHTML = '';
@@ -33,22 +34,24 @@ function chips() {
   tr.onclick = function () { go('translate', tr, sel.value); }; c.appendChild(tr); c.appendChild(sel);
 }
 function go(what, btn, lang) {
-  if (!TEXT) return; var my = ++run; OUT = '';
+  if (!TEXT) return; var my = ++run; OUT = ''; $('rp').disabled = true;
   [].forEach.call(document.querySelectorAll('.ch button'), function (x) { x.classList.toggle('on', x === btn); });
-  $('a').className = 'md dim busy'; $('a').textContent = t('ask.thinking'); $('cp').disabled = true;
+  $('a').className = 'md dim busy'; $('a').textContent = t('ask.thinking'); $('cp2').disabled = true;
   lareon.assistRun(what, TEXT, lang).then(function (r) {
     if (my !== run) return;
-    if (r && r.ok) { OUT = r.text; $('a').className = 'md'; $('a').innerHTML = window.mdRender(r.text); $('cp').disabled = false; }
+    if (r && r.ok) { OUT = r.text; $('a').className = 'md'; $('a').innerHTML = window.mdRender(r.text); $('cp2').disabled = false; $('rp').hidden = !(SEL && BARE.indexOf(what) >= 0); $('rp').disabled = false; }
     else { $('a').className = 'md dim'; $('a').textContent = r && r.error === 'signin' ? t('sess') : (r && r.error) || t('net.fail'); }
   });
 }
-lareon.onAssistText(function (txt) {
-  TEXT = txt || ''; OUT = ''; run++; $('cp').disabled = true; $('cp').textContent = t('as.copy');
+lareon.onAssistText(function (txt, sel) {
+  SEL = !!sel; $('rp').hidden = true; $('rp').disabled = true;
+  TEXT = txt || ''; OUT = ''; run++; $('cp2').disabled = true; $('cp2').textContent = t('as.copy');
   $('has').hidden = !TEXT; $('src').textContent = TEXT.slice(0, 400);
   if (!TEXT) { $('a').className = 'empty'; $('a').textContent = t('as.none'); return; }
   $('a').className = 'md dim'; $('a').textContent = t('as.pick'); chips();
 });
-$('cp').onclick = function () { lareon.assistCopy(OUT); $('cp').textContent = t('as.copied'); setTimeout(function () { lareon.assistClose(); }, 500); };
+$('cp2').onclick = function () { lareon.assistCopy(OUT); $('cp2').textContent = t('as.copied'); setTimeout(function () { lareon.assistClose(); }, 500); };
+$('rp').onclick = function () { $('rp').disabled = true; lareon.assistReplace(OUT).then(function (ok) { if (!ok) { lareon.assistCopy(OUT); } }); };
 $('more').onclick = function () { lareon.askContinue(); lareon.assistClose(); };
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') lareon.assistClose(); });
 lareon.info().then(function (r) { i18n.set(r.lang || i18n.guess(r.locale), true); if (TEXT) chips(); });

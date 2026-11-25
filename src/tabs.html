@@ -118,6 +118,49 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
 .ib svg.fl{width:22px;height:16px;stroke:none}.lgsel{display:flex;align-items:center;gap:9px}.sk2{font:500 12px var(--mono);color:var(--fg2)}
 /* focus */
 .c-focus{grid-column:span 12}
+.c-notes{grid-column:span 12}
+#wn{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow:auto;background:#0d0a16;color:#fff;opacity:0;transition:opacity .45s var(--ease);text-shadow:none;--fg:#fff}
+#wn.on{opacity:1}#wn.out{opacity:0;transform:scale(1.02);transition:opacity .4s var(--ease),transform .4s var(--ease)}
+.wn-bg{position:fixed;inset:0;overflow:hidden;pointer-events:none}.wn-bg i{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(90px);opacity:.5;animation:wnf 18s ease-in-out infinite alternate}
+.wn-bg i:nth-child(1){background:#ff7a2f;left:-20vmax;top:-25vmax}.wn-bg i:nth-child(2){background:#b14cff;right:-22vmax;top:-10vmax;animation-delay:-6s}.wn-bg i:nth-child(3){background:#ff4f8b;left:20%;bottom:-35vmax;opacity:.35;animation-delay:-11s}
+@keyframes wnf{to{transform:translate(6vmax,4vmax) scale(1.15)}}
+.wn-in{position:relative;width:min(1080px,92vw);padding:48px 0 40px;text-align:center;visibility:hidden}
+#wn.go .wn-in{visibility:visible}#wn:not(.go) .wn-in *{animation-play-state:paused}
+/* the big moment: the Lareon mark lands, light bursts, "Lareon 2.0" rises, then the page takes over */
+.wn-intro{position:fixed;inset:0;display:grid;place-items:center;align-content:center;gap:26px;z-index:2;cursor:pointer;transition:opacity .7s var(--ease),transform .9s var(--ease)}
+#wn.go .wn-intro{opacity:0;transform:scale(1.25);pointer-events:none}
+.wn-logo{position:relative;width:min(300px,40vmin);aspect-ratio:1;animation:wnl 1.5s cubic-bezier(.16,1.3,.3,1) .15s both}
+.wn-logo:before{content:"";position:absolute;inset:-35%;border-radius:50%;background:radial-gradient(circle,rgba(255,170,90,.75),rgba(194,107,255,.35) 45%,transparent 70%);filter:blur(20px);animation:wng 2.4s ease-out .35s both}
+.wn-logo img{position:relative;width:100%;height:100%;filter:drop-shadow(0 20px 60px rgba(255,120,60,.55))}
+@keyframes wnl{0%{opacity:0;transform:scale(.2) rotate(-25deg);filter:blur(12px)}60%{opacity:1;filter:none}100%{transform:none}}
+@keyframes wng{0%{opacity:0;transform:scale(.3)}35%{opacity:1;transform:scale(1.25)}100%{opacity:.6;transform:scale(1)}}
+.wn-rays{position:absolute;width:150vmax;height:150vmax;background:repeating-conic-gradient(from 0deg,rgba(255,190,130,.10) 0 4deg,transparent 4deg 16deg);-webkit-mask:radial-gradient(circle,#000 0,transparent 55%);mask:radial-gradient(circle,#000 0,transparent 55%);animation:wnr 2.6s ease-out .45s both,wns 40s linear infinite}
+@keyframes wnr{from{opacity:0;transform:scale(.4)}to{opacity:1}}@keyframes wns{to{rotate:360deg}}
+.wn-word{font:800 clamp(44px,8vw,104px)/1 var(--sans);letter-spacing:-.045em;animation:wnw 1s cubic-bezier(.16,1,.3,1) .95s both}
+.wn-word span{background:linear-gradient(100deg,#ffc08a,#ff7aa2 45%,#c98bff);-webkit-background-clip:text;background-clip:text;color:transparent}
+@keyframes wnw{from{opacity:0;transform:translateY(30px);letter-spacing:.1em;filter:blur(8px)}}
+.wn-hd{display:inline-flex;align-items:center;gap:10px;font:600 18px var(--sans);animation:lx-in .6s var(--ease) both}.wn-hd img{width:30px;height:30px}
+.wn-hd b{font:800 13px var(--mono);padding:3px 9px;border-radius:999px;background:linear-gradient(135deg,#ff8a33,#c26bff)}
+#wn h1{font:800 clamp(34px,5.4vw,64px)/1.04 var(--sans);letter-spacing:-.035em;margin:22px 0 12px;animation:lx-in .7s var(--ease) .08s both}
+#wn h1 em{font-style:normal;background:linear-gradient(100deg,#ffc08a,#ff7aa2 45%,#c98bff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.wn-lede{color:#cfc9e6;font-size:17px;margin:0 0 34px;animation:lx-in .7s var(--ease) .16s both}
+.wn-g{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;text-align:left}
+@media(max-width:900px){.wn-g{grid-template-columns:repeat(2,1fr)}}
+.wn-c{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:18px;backdrop-filter:blur(20px);display:flex;flex-direction:column;gap:6px;animation:lx-in .6s var(--ease) var(--d) both;transition:transform .25s var(--ease),background .25s,border-color .25s}
+.wn-c:hover{transform:translateY(-3px);background:rgba(255,255,255,.1);border-color:rgba(255,170,110,.45)}
+.wn-c svg{width:30px;height:30px;padding:6px;border-radius:9px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;background:linear-gradient(135deg,#ff8a33,#c26bff);margin-bottom:4px}
+.wn-c b{font-size:15px;font-weight:700}.wn-c p{margin:0;color:#cfc9e6;font-size:13.5px;line-height:1.45;flex:1}
+.wn-c small{color:#a9a3c4;font-size:12px}.wn-c kbd{font:600 11.5px var(--mono);color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:1px 6px}
+.wn-ft{display:flex;gap:10px;justify-content:center;margin-top:30px;animation:lx-in .6s var(--ease) .9s both}
+.wn-ft .btn{font-size:15px;padding:11px 22px;border-radius:12px;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)}.wn-ft .btn.pri{border:0;background:linear-gradient(135deg,#ff8a33,#e2457e 55%,#9b5cff)}
+#dz{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(10,8,18,.5);backdrop-filter:blur(10px);opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}
+#dz.on{opacity:1}
+#dz .dz-b{display:flex;flex-direction:column;align-items:center;gap:8px;padding:46px 64px;border:2px dashed color-mix(in srgb,var(--orange) 70%,transparent);border-radius:24px;background:var(--solid);box-shadow:var(--shadow);transform:scale(.96);transition:transform .25s var(--ease)}
+#dz.on .dz-b{transform:none}#dz b{font-size:22px;font-weight:700}#dz span{color:var(--fg3);font-size:13px}.c-notes h2{display:flex;align-items:center;gap:10px}.c-notes h2 .link{margin-left:auto}
+.nt-s{font:500 11px var(--mono);color:var(--fg3);opacity:0;transition:opacity .3s}.nt-s.on{opacity:1}
+#nta{display:block;width:100%;min-height:120px;max-height:340px;resize:vertical;font:inherit;line-height:1.6;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:12px;padding:12px 14px;outline:0;-webkit-user-select:text;user-select:text}
+#nta:focus{border-color:var(--violet);box-shadow:0 0 0 3px color-mix(in srgb,var(--violet) 22%,transparent)}
+#pl .ans{display:flex;align-items:baseline;gap:12px;color:var(--fg)}#pl .ans b{font-size:20px;font-weight:700}#pl .ans small{color:var(--fg3);margin-left:auto;font-size:12px}
 .fo{display:flex;align-items:center;gap:18px;flex-wrap:wrap}.fo .big{min-width:130px;font-variant-numeric:tabular-nums;font-family:var(--mono);font-weight:500;font-size:34px}
 .fo p{color:var(--fg2);font-size:13px;flex:1;min-width:180px}
 .fbar{height:4px;border-radius:2px;background:var(--line);margin-top:12px;overflow:hidden}.fbar i{display:block;height:100%;width:0;background:var(--grad);transition:width 1s linear}
@@ -344,6 +387,7 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
    <section class="card c-across rise" id="acrossc" style="--i:5" hidden><h2><span data-i="home.across"></span></h2><div class="acr" id="acr"></div></section>
    <section class="card c-brief rise" id="briefc" style="--i:5" hidden><h2><span class="bt"><img src="../build/art/aster-logo.svg" alt=""><span data-i="brief.t"></span></span> <button class="link" id="briefr" data-i="brief.refresh"></button></h2><div id="briefb"><div class="sk"></div><div class="sk"></div></div></section>
    <section class="card c-focus rise" style="--i:3"><h2 data-i="focus.t"></h2><div class="fo"><div class="big" id="fclock">25:00</div><div class="seg" id="fseg"></div><button class="btn pri" id="fgo" data-i="focus.start"></button><p id="fhint" data-i="focus.idle"></p></div><div class="fbar"><i id="fbar"></i></div></section>
+   <section class="card c-notes rise" style="--i:3"><h2><span>Notes</span> <span class="nt-s" id="nts"></span><button class="link" id="ntt" title="Send the line your cursor is on to Dusk as a task">Line → task</button></h2><textarea id="nta" spellcheck="true" placeholder="Jot anything. It saves as you type. Lines starting with [ ] become a checklist you can send to Dusk."></textarea></section>
    <section class="card c-apps rise" style="--i:3"><h2 data-i="apps"></h2><div class="apps" id="grid"></div></section>
    <section class="card c-acct rise c-hidden" style="--i:4"><div class="acct-row">
      <div class="who"><div class="mono" data-i="signedas"></div><b id="who">&mdash;</b><small id="store"></small><div class="bar2"><i id="bar"></i></div></div>
@@ -659,7 +703,7 @@ function spacePaint() {
   var e = $('sspace'); e.hidden = SP.spaces.length < 2; e.querySelector('i').style.background = a.color; e.querySelector('span').textContent = a.name;
 }
 $('r-space').onclick = function () { var r = $('r-space').getBoundingClientRect(); lareon.spacesMenu({ x: Math.round(r.right + 6), y: Math.round(r.top) }); };
-lareon.onSpace(function (v) { SP = v; spacePaint(); lareon.apps().then(function (a) { APPS = a; tabs(); grid(); spotPaint(); }); if (!$('set').hidden) lareon.getSettings().then(function (x) { S = x; renderSet(); }); });
+lareon.onSpace(function (v) { SP = v; spacePaint(); ntLoad(); lareon.apps().then(function (a) { APPS = a; tabs(); grid(); spotPaint(); }); if (!$('set').hidden) lareon.getSettings().then(function (x) { S = x; renderSet(); }); });
 lareon.onSpaceNew(function () { lareon.spacesAdd({ name: t('spc.new') }).then(function (v) { SP = v; openSetNow(); }); });
 var DAYS = [1, 2, 3, 4, 5, 6, 0];
 function spacesGroup() {
@@ -748,6 +792,35 @@ function seg(opts, val, cb) { var d = mk('div', 'seg'); d.setAttribute('role', '
 function pick(opts, val, cb) { var s2 = mk('select', 'sel'); opts.forEach(function (o) { var op = mk('option', '', esc(o[1])); op.value = o[0]; if (String(o[0]) === String(val)) op.selected = true; s2.appendChild(op); }); s2.onchange = function () { cb(s2.value); }; return s2; }
 function put(p) { return lareon.setSettings(p).then(function (r) { if (r) S = r; return r; }); }
 function group(title, rows) { var g = mk('div', 'sg'); g.appendChild(mk('h3', '', esc(title))); var c = mk('div', 'card'); rows.forEach(function (r) { c.appendChild(r); }); g.appendChild(c); return g; }
+function textSize(v) { if (v && v !== 'normal') document.documentElement.setAttribute('data-size', v); else document.documentElement.removeAttribute('data-size'); }
+lareon.getSettings().then(function (x) { if (x) textSize(x.textSize); });
+// Lareon 2.0: a full-screen welcome, shown once
+function whatsNew() {
+  if (cur !== 'home') lareon.show('home');
+  var mac = /Mac/.test(navigator.platform), K = function (m, w) { return '<kbd>' + (mac ? m : w) + '</kbd>'; };
+  var F = [
+    ['cursor', 'Aster can use your computer', 'Say what you want done. Aster moves the cursor and types in any app, and asks you first.', K('⌘⌥A', 'Ctrl+Alt+A') + ' → Do it'],
+    ['eye', 'Ask about your screen', 'Errors, forms, charts, messages: Aster sees what you see and explains it.', K('⌘⌥A', 'Ctrl+Alt+A')],
+    ['pen', 'Rewrite anywhere', 'Select text in any app. Aster fixes, shortens or translates it and puts it back.', K('⌘⇧E', 'Ctrl+Shift+E')],
+    ['link', 'Drop to share', 'Drop any file on Lareon. You get a private link, already copied.', 'Drag & drop'],
+    ['clip', 'Shelf', 'Everything you copied, searchable. Kept in memory only, passwords skipped.', K('⌘⌥V', 'Ctrl+Alt+V')],
+    ['bolt', 'Jump to, smarter', 'Sums, unit conversions, time anywhere, and "remind me to…" right in the bar.', K('⌘K', 'Ctrl+K')],
+    ['note', 'Notes on Home', 'A notepad that saves as you type. Send any line to Dusk as a task.', 'On Home'],
+    ['sun', 'Easy to read, day and night', 'Text follows your wallpaper, a font for each look, and smooth motion all round.', 'Everywhere']
+  ];
+  var I = { cursor: '<path d="M5 3v15l4-4 3 7 3-1.3-3-6.7h6z"/>', eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', pen: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>', link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>', clip: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6"/>', bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>', note: '<path d="M5 3h10l4 4v14H5z"/><path d="M8 11h8M8 15h6"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>' };
+  var w = mk('div', '', '<div class="wn-bg"><i></i><i></i><i></i></div><div class="wn-intro"><div class="wn-rays"></div><div class="wn-logo"><img src="../build/art/lareon-icon.svg" alt="Lareon"></div><div class="wn-word">Lareon <span>2.0</span></div></div><div class="wn-in"><div class="wn-hd"><img src="../build/art/lareon-icon.svg" alt=""><span>Lareon</span><b>2.0</b></div><h1>Lareon, <em>everywhere you work.</em></h1><p class="wn-lede">The biggest Lareon update yet. Here’s what’s new.</p><div class="wn-g">' +
+    F.map(function (f, n) { return '<div class="wn-c" style="--d:' + (0.35 + n * 0.06) + 's"><svg viewBox="0 0 24 24">' + I[f[0]] + '</svg><b>' + f[1] + '</b><p>' + f[2] + '</p><small>' + f[3] + '</small></div>'; }).join('') +
+    '</div><div class="wn-ft"><button class="btn" id="wn-try">Try Aster on my screen</button><button class="btn pri" id="wn-go">Get started</button></div></div>');
+  w.id = 'wn'; document.body.appendChild(w); requestAnimationFrame(function () { w.className = 'on'; });
+  var introT = setTimeout(function () { w.classList.add('go'); }, 2600); w.querySelector('.wn-intro').onclick = function () { clearTimeout(introT); w.classList.add('go'); };
+  function close() { w.className = 'out'; setTimeout(function () { w.remove(); }, 450); document.removeEventListener('keydown', key); }
+  function key(e) { if (!w.classList.contains('go')) { clearTimeout(introT); w.classList.add('go'); return; } if (e.key === 'Escape' || e.key === 'Enter') close(); }
+  document.addEventListener('keydown', key);
+  $('wn-go').onclick = close; $('wn-try').onclick = function () { close(); setTimeout(function () { lareon.screenOpen(); }, 500); };
+}
+setTimeout(function () { try { if (!localStorage.getItem('lareon.v2')) { localStorage.setItem('lareon.v2', '1'); whatsNew(); } } catch (e) {} }, 900);
+lareon.onWhatsNew && lareon.onWhatsNew(whatsNew);
 function applyTheme(v) { if (window.setTheme) window.setTheme(v === 'system' ? '' : v, true); }
 function renderSet() {
   if (!S || $('set').hidden) return;
@@ -756,7 +829,8 @@ function renderSet() {
   b.appendChild(group(t('set.appearance'), [
     row(t('set.theme'), '', seg([['system', t('th.system')], ['light', t('th.light')], ['dark', t('th.dark')]], S.theme || 'system', function (v) { applyTheme(v); put({ theme: v }); })),
     row(t('set.lang'), '', (function () { var x = mk('button', 'btn lgsel', i18n.flag(i18n.lang) + '<span>' + esc(i18n.names[i18n.lang]) + '</span>'); x.onclick = function () { i18n.menu(x); }; return x; })()),
-    row(t('set.rail'), t('set.rail.d'), sw(!!S.railWide, function (v) { railWide(v); put({ railWide: v }); }))
+    row(t('set.rail'), t('set.rail.d'), sw(!!S.railWide, function (v) { railWide(v); put({ railWide: v }); })),
+    row('Text size', 'Makes every screen easier to read', seg([['normal', 'Default'], ['large', 'Large'], ['xl', 'Larger']], S.textSize || 'normal', function (v) { textSize(v); put({ textSize: v }); }))
   ]));
   b.appendChild(group(t('set.wall'), [wallPicker(), phasePicker(), row(t('set.tint'), t('set.tint.d'), sw(S.wallTint !== false, function (v) { S.wallTint = v; setWall(); put({ wallTint: v }); }))]));
   var paused = S.snoozeUntil && S.snoozeUntil > Date.now();
@@ -810,7 +884,12 @@ function renderSet() {
     row(t('pc.ics'), t('pc.ics.d'), null),
     row(t('pc.compose'), t('pc.compose.d', { k: mk2 + 'M' }), sw(S.composeKey !== false, function (v) { put({ composeKey: v }); })),
     row(t('pc.assist'), t('pc.assist.d', { k: mk2 + 'E' }), sw(S.assistKey !== false, function (v) { put({ assistKey: v }); })),
-    row(t('pc.capture'), t('pc.capture.d', { k: mk2 + 'X' }), sw(S.captureKey !== false, function (v) { put({ captureKey: v }); }))
+    row(t('pc.capture'), t('pc.capture.d', { k: mk2 + 'X' }), sw(S.captureKey !== false, function (v) { put({ captureKey: v }); })),
+    row('Shelf · clipboard history', 'Press ' + (mk2.indexOf('⌘') >= 0 ? '⌘⌥V' : 'Ctrl+Alt+V') + ' for everything you copied. Kept in memory only; passwords are skipped', sw(S.shelf !== false, function (v) { put({ shelf: v }); })),
+    row('Ask about my screen', 'Press ' + (mk2.indexOf('⌘') >= 0 ? '⌘⌥A' : 'Ctrl+Alt+A') + ' and Aster looks at your screen: errors, forms, charts, messages', sw(S.screenKey !== false, function (v) { put({ screenKey: v }); })),
+    S.platform === 'darwin' && !S.axOk ? row('Replace text in any app', 'Allow Lareon in System Settings → Privacy & Security → Accessibility, so Aster can rewrite the text you select and put it back', null) : null,
+    row('Aster can use your computer', 'In the screen window (' + (mk2.indexOf('⌘') >= 0 ? '⌘⌥A' : 'Ctrl+Alt+A') + '), Do it lets Aster move the cursor and type for you. It asks every time, and before sending, buying or deleting', sw(S.agent !== false, function (v) { put({ agent: v }); })),
+    row('Notes on Home', 'A notepad on your Home screen that saves as you type', sw(!(S.homeCards && S.homeCards.notes === false), function (v) { put({ homeCards: { notes: v } }).then(cards); }))
   ]));
   b.appendChild(group(t('set.updates'), [
     row(t('set.auto'), '', sw(S.autoUpdate, function (v) { put({ autoUpdate: v }); })),
@@ -854,7 +933,7 @@ function cards() {
   var hc = (S && S.homeCards) || {}, on = function (k) { return hc[k] !== false; };
   document.querySelector('.c-today').classList.toggle('c-hidden', !on('today')); document.querySelector('.c-mail').classList.toggle('c-hidden', !on('mail'));
   document.querySelector('.c-today').classList.toggle('solo', !on('mail')); document.querySelector('.c-mail').classList.toggle('solo', !on('today'));
-  $('briefc').classList.toggle('c-hidden', !on('brief')); if (data) acrossTiles(); document.querySelector('.c-focus').classList.toggle('c-hidden', !on('focus')); document.querySelector('.c-apps').classList.toggle('c-hidden', !on('apps'));
+  $('briefc').classList.toggle('c-hidden', !on('brief')); if (data) acrossTiles(); document.querySelector('.c-focus').classList.toggle('c-hidden', !on('focus')); document.querySelector('.c-apps').classList.toggle('c-hidden', !on('apps')); document.querySelector('.c-notes').classList.toggle('c-hidden', !on('notes'));
 }
 lareon.onWall(function (w) { if (S) { S.wall = w.wall; S.wallPhase = w.phase; S.wallTint = w.tint; } if (window.wallpapers) window.wallpapers.set(w); });
 // New, the activity bell, the lock screen
@@ -983,6 +1062,71 @@ function fseg() { var d = $('fseg'); d.innerHTML = ''; [15, 25, 50].forEach(func
 $('fgo').onclick = function () { fend ? fstop(false) : fstart(); };
 fseg(); if (fend) { frun(); lareon.focusState(fend); }
 
+// Drop to share: drop files on Lareon, get a private link copied
+(function () {
+  var ov = mk('div', '', '<div class="dz-b"><b>Drop to get a link</b><span>Saved to Cove · the link is copied for you · lasts 30 days</span></div>'); ov.id = 'dz'; document.body.appendChild(ov);
+  var n = 0, has = function (e) { return e.dataTransfer && [].indexOf.call(e.dataTransfer.types || [], 'Files') >= 0; };
+  window.addEventListener('dragenter', function (e) { if (!has(e) || !user) return; n++; ov.className = 'on'; });
+  window.addEventListener('dragleave', function () { if (--n <= 0) { n = 0; ov.className = ''; } });
+  window.addEventListener('dragover', function (e) { if (has(e)) e.preventDefault(); });
+  window.addEventListener('drop', function (e) { if (!has(e)) return; e.preventDefault(); n = 0; ov.className = ''; if (!user) return toast('Sign in to share files', true); lareon.shareFiles(e.dataTransfer.files); });
+  lareon.onShare(function (v) { if (v.busy) toast(v.n > 1 ? 'Uploading ' + v.n + ' files…' : 'Uploading…'); else if (v.links && v.links.length) toast(v.links.length > 1 ? v.links.length + ' links copied' : 'Link copied · ' + v.links[0].name); else toast('Couldn’t share that', true); });
+})();
+
+// Notes on Home: saved on this computer, one notepad per space
+function ntKey() { return 'lareon.notes.' + ((typeof SP !== 'undefined' && SP && SP.active) || 'main'); }
+function ntLoad() { try { $('nta').value = localStorage.getItem(ntKey()) || ''; } catch (e) {} }
+var ntT = 0;
+$('nta').oninput = function () { clearTimeout(ntT); ntT = setTimeout(function () { try { localStorage.setItem(ntKey(), $('nta').value); $('nts').textContent = 'Saved'; $('nts').className = 'nt-s on'; setTimeout(function () { $('nts').className = 'nt-s'; }, 1200); } catch (e) {} }, 350); };
+function ntAppend(x) { var v = $('nta').value; $('nta').value = v + (v && !/\n$/.test(v) ? '\n' : '') + x; $('nta').oninput(); }
+$('ntt').onclick = function () {
+  var a = $('nta'), v = a.value, p = a.selectionStart, s0 = v.lastIndexOf('\n', p - 1) + 1, e0 = v.indexOf('\n', p); if (e0 < 0) e0 = v.length;
+  var line = v.slice(s0, e0).replace(/^\s*(?:[-*•]\s*)?(?:\[[ xX]?\]\s*)?/, '').trim(); if (!line) return toast('Put your cursor on a line first', true);
+  lareon.addTask(line).then(function (r) { if (!r) return toast('Sign in to send tasks to Dusk', true); a.value = v.slice(0, s0) + '[x] ' + line + v.slice(e0); a.oninput(); toast(r === 'queued' ? 'Saved, will reach Dusk when you\'re online' : 'Added to Dusk · ' + line); });
+};
+ntLoad();
+
+// Jump to answers things on the spot: sums, conversions, world time, and quick actions
+var UNITS = { km: ['l', 1000], m: ['l', 1], cm: ['l', .01], mm: ['l', .001], mi: ['l', 1609.344], mile: ['l', 1609.344], miles: ['l', 1609.344], yd: ['l', .9144], ft: ['l', .3048], feet: ['l', .3048], in: ['l', .0254], inch: ['l', .0254], inches: ['l', .0254],
+  kg: ['w', 1], g: ['w', .001], lb: ['w', .45359237], lbs: ['w', .45359237], oz: ['w', .028349523], st: ['w', 6.35029318],
+  l: ['v', 1], ml: ['v', .001], gal: ['v', 3.785411784], cup: ['v', .2365882365], cups: ['v', .2365882365], floz: ['v', .0295735296],
+  kb: ['d', 1e3], mb: ['d', 1e6], gb: ['d', 1e9], tb: ['d', 1e12], b: ['d', 1],
+  kmh: ['s', 1], 'km/h': ['s', 1], mph: ['s', 1.609344], 'm/s': ['s', 3.6], kn: ['s', 1.852],
+  min: ['t', 60], h: ['t', 3600], hr: ['t', 3600], hours: ['t', 3600], days: ['t', 86400], day: ['t', 86400], weeks: ['t', 604800], s: ['t', 1], sec: ['t', 1] };
+var CITIES = { tokyo: 'Asia/Tokyo', seoul: 'Asia/Seoul', beijing: 'Asia/Shanghai', shanghai: 'Asia/Shanghai', 'hong kong': 'Asia/Hong_Kong', singapore: 'Asia/Singapore', delhi: 'Asia/Kolkata', mumbai: 'Asia/Kolkata', dubai: 'Asia/Dubai', tehran: 'Asia/Tehran', istanbul: 'Europe/Istanbul', moscow: 'Europe/Moscow',
+  algiers: 'Africa/Algiers', constantine: 'Africa/Algiers', cairo: 'Africa/Cairo', lagos: 'Africa/Lagos', nairobi: 'Africa/Nairobi', johannesburg: 'Africa/Johannesburg', casablanca: 'Africa/Casablanca', tindouf: 'Africa/Algiers',
+  paris: 'Europe/Paris', london: 'Europe/London', berlin: 'Europe/Berlin', madrid: 'Europe/Madrid', rome: 'Europe/Rome', stockholm: 'Europe/Stockholm', oslo: 'Europe/Oslo', lisbon: 'Europe/Lisbon', amsterdam: 'Europe/Amsterdam',
+  'new york': 'America/New_York', boston: 'America/New_York', chicago: 'America/Chicago', denver: 'America/Denver', boise: 'America/Boise', star: 'America/Boise', larsonia: 'America/Boise', 'los angeles': 'America/Los_Angeles', seattle: 'America/Los_Angeles', 'san francisco': 'America/Los_Angeles', toronto: 'America/Toronto', vancouver: 'America/Vancouver', 'mexico city': 'America/Mexico_City', 'sao paulo': 'America/Sao_Paulo', 'buenos aires': 'America/Argentina/Buenos_Aires', honolulu: 'Pacific/Honolulu', sydney: 'Australia/Sydney', auckland: 'Pacific/Auckland', ramallah: 'Asia/Hebron', gaza: 'Asia/Gaza', jerusalem: 'Asia/Hebron' };
+function calc(src) {
+  var s = src.replace(/×|x(?=\s*[\d(.])/g, '*').replace(/÷/g, '/').replace(/,/g, '').replace(/\s+/g, ''), i = 0;
+  if (!/^[\d.+\-*/^%()]+$/.test(s) || !/[+\-*/^%]/.test(s.replace(/^-/, '')) || !/\d/.test(s)) return null;
+  function num() { var m = /^\d*\.?\d+(e[+-]?\d+)?/.exec(s.slice(i)); if (!m) throw 0; i += m[0].length; return parseFloat(m[0]); }
+  function atom() { if (s[i] === '-') { i++; return -atom(); } if (s[i] === '+') { i++; return atom(); } var v; if (s[i] === '(') { i++; v = add(); if (s[i++] !== ')') throw 0; } else v = num(); if (s[i] === '%') { i++; v /= 100; } return v; }
+  function pow() { var v = atom(); if (s[i] === '^') { i++; v = Math.pow(v, pow()); } return v; }
+  function mul() { var v = pow(); while (s[i] === '*' || s[i] === '/') { var o = s[i++], r = pow(); v = o === '*' ? v * r : v / r; } return v; }
+  function add() { var v = mul(); while (s[i] === '+' || s[i] === '-') { var o = s[i++], r = mul(); v = o === '+' ? v + r : v - r; } return v; }
+  try { var v = add(); return i === s.length && isFinite(v) ? v : null; } catch (e) { return null; }
+}
+function nice(v) { return Math.abs(v) >= 1e15 || (Math.abs(v) < 1e-6 && v) ? v.toExponential(4) : (+v.toPrecision(10)).toLocaleString(undefined, { maximumFractionDigits: 4 }); }
+function answers(raw) {
+  var q = raw.trim(), lq = q.toLowerCase(), out = [], m, copy = function (v) { return function () { lareon.copyText(String(v)); toast('Copied ' + v); }; };
+  var c = calc(q); if (c !== null) out.push({ a: 1, n: nice(c), s: q + ' =', f: copy(nice(c).replace(/,/g, '')) });
+  if ((m = /^(-?[\d.,]+)\s*°?\s*([a-z/]+)\s+(?:to|in|=|as)\s+°?([a-z/]+)$/.exec(lq))) {
+    var n = parseFloat(m[1].replace(/,/g, '')), A = m[2], B = m[3], T = { c: 'c', celsius: 'c', f: 'f', fahrenheit: 'f', k: 'k', kelvin: 'k' };
+    if (T[A] && T[B]) { var cc = T[A] === 'c' ? n : T[A] === 'f' ? (n - 32) * 5 / 9 : n - 273.15, r = T[B] === 'c' ? cc : T[B] === 'f' ? cc * 9 / 5 + 32 : cc + 273.15; out.push({ a: 1, n: nice(r) + ' °' + T[B].toUpperCase(), s: n + ' °' + T[A].toUpperCase(), f: copy(nice(r)) }); }
+    else if (UNITS[A] && UNITS[B] && UNITS[A][0] === UNITS[B][0]) { var r2 = n * UNITS[A][1] / UNITS[B][1]; out.push({ a: 1, n: nice(r2) + ' ' + B, s: n + ' ' + A, f: copy(nice(r2)) }); }
+  }
+  if ((m = /^(?:time\s+in\s+|what time is it in\s+)?([a-z .]+?)(?:\s+time)?$/.exec(lq)) && CITIES[m[1].trim()] && (/time/.test(lq))) {
+    var z = CITIES[m[1].trim()], now = new Date(), tt = now.toLocaleTimeString([], { timeZone: z, hour: 'numeric', minute: '2-digit' }), dd = now.toLocaleDateString([], { timeZone: z, weekday: 'long' });
+    out.push({ a: 1, n: tt, s: m[1].replace(/\b\w/g, function (x) { return x.toUpperCase(); }) + ' · ' + dd, f: copy(tt) });
+  }
+  if ((m = /^(?:remind me to|todo|task|add task)\s+(.+)/i.exec(q))) out.push({ n: 'Add to Dusk: ' + m[1], f: function () { lareon.addTask(m[1]).then(function (r) { toast(r ? 'Added to Dusk · ' + m[1] : 'Sign in to add tasks', !r); }); } });
+  if ((m = /^(?:note|jot)\s+(.+)/i.exec(q))) out.push({ n: 'Add to Notes: ' + m[1], f: function () { lareon.show('home'); ntAppend(m[1]); toast('Added to Notes'); } });
+  if ((m = /^(?:timer|focus)\s+(\d{1,3})\s*(?:m|min|minutes)?$/i.exec(q)) && +m[1] > 0) out.push({ n: 'Focus for ' + m[1] + ' minutes', f: function () { lareon.show('home'); if (fend) fstop(false); fstart(+m[1]); } });
+  if (/^(clip|shelf|clipboard|copied|paste)/.test(lq)) out.push({ n: 'Open Shelf · everything you copied', f: function () { lareon.openShelf(); } });
+  return out;
+}
+
 // jump to anything (Cmd/Ctrl + K)
 var items = [], sel = 0;
 function palItems() {
@@ -991,14 +1135,14 @@ function palItems() {
   a.push({ n: t('set.title'), f: openSet }, { n: t('tm.toggle'), f: flipTheme }, { n: t('focus.t') + ' · ' + t('focus.min', { n: 25 }), f: function () { lareon.show('home'); if (!fend) fstart(25); } });
   a.push({ n: t('lang'), f: function () { i18n.menu($('lg')); } });
   if (SP && SP.spaces.length > 1) SP.spaces.forEach(function (x) { if (x.id !== SP.active) a.push({ n: t('spc.switch', { s: x.name }), f: function () { lareon.spacesSwitch(x.id); } }); });
-  a.push({ n: t('cp.t'), f: function () { lareon.homeAction('capture'); } });
+  a.push({ n: t('cp.t'), f: function () { lareon.homeAction('capture'); } }, { n: 'Shelf · clipboard history', f: function () { lareon.openShelf(); } }, { n: 'Ask Aster about my screen', f: function () { lareon.screenOpen(); } }, { n: 'Let Aster do something on my computer', f: function () { lareon.screenOpen(); } }, { n: 'What’s new in Lareon 2.0', f: whatsNew }, { n: 'Share a file · get a link', f: function () { lareon.sharePick(); } }, { n: 'Notes', f: function () { lareon.show('home'); setTimeout(function () { $('nta').focus(); }, 80); } });
   return a;
 }
 var found = [];
 function palRender() {
-  var q = $('pi').value.toLowerCase(); items = palItems().filter(function (x) { return x.n.toLowerCase().indexOf(q) >= 0; }).concat(q.length > 1 ? found : []); sel = Math.min(sel, Math.max(0, items.length - 1));
+  var q = $('pi').value.toLowerCase(); items = answers($('pi').value).concat(palItems().filter(function (x) { return x.n.toLowerCase().indexOf(q) >= 0; })).concat(q.length > 1 ? found : []); sel = Math.min(sel, Math.max(0, items.length - 1));
   var lastG = '';
-  $('pl').innerHTML = items.map(function (x, i) { var g = ''; if (x.g && x.g !== lastG) { lastG = x.g; g = '<li class="pg">' + esc(t(x.g)) + '</li>'; } return g + '<li data-i="' + i + '" aria-selected="' + (i === sel) + '">' + esc(x.n) + (x.s ? ' <span style="color:var(--fg3);font-size:13px">' + esc(x.s) + '</span>' : '') + '</li>'; }).join('') || '<li>' + esc(t('jump.none')) + '</li>';
+  $('pl').innerHTML = items.map(function (x, i) { var g = ''; if (x.g && x.g !== lastG) { lastG = x.g; g = '<li class="pg">' + esc(t(x.g)) + '</li>'; } if (x.a) return g + '<li class="ans" data-i="' + i + '" aria-selected="' + (i === sel) + '"><b>' + esc(x.n) + '</b><span style="color:var(--fg3)">' + esc(x.s) + '</span><small>Enter to copy</small></li>'; return g + '<li data-i="' + i + '" aria-selected="' + (i === sel) + '">' + esc(x.n) + (x.s ? ' <span style="color:var(--fg3);font-size:13px">' + esc(x.s) + '</span>' : '') + '</li>'; }).join('') || '<li>' + esc(t('jump.none')) + '</li>';
   [].forEach.call($('pl').querySelectorAll('li[data-i]'), function (li) { li.onclick = function () { run(+li.getAttribute('data-i')); }; });
 }
 function run(i) { var x = items[i]; if (!x) return; palClose(); if (x.f) x.f(); else if (x.u) lareon.openUrl(x.u); else lareon.show(x.k); }

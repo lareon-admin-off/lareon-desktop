@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 try { contextBridge.exposeInMainWorld('themePref', ipcRenderer.sendSync('theme:get')); } catch {}
 try { contextBridge.exposeInMainWorld('wallPref', ipcRenderer.sendSync('wall:get')); } catch {}
 // Only Lareon's own pages (Home and setup) get this bridge. The product sites inside the app do not.
@@ -13,7 +13,16 @@ contextBridge.exposeInMainWorld('lareon', {
   onInviteEvents: (cb) => ipcRenderer.on('invite:events', (_e, v) => cb(v)),
   inviteAdd: (picks) => ipcRenderer.invoke('invite:add', picks),
   inviteClose: (open) => ipcRenderer.send('invite:close', !!open),
-  onAssistText: (cb) => ipcRenderer.on('assist:text', (_e, v) => cb(v)),
+  onAssistText: (cb) => ipcRenderer.on('assist:text', (_e, v, sel) => cb(v, sel)),
+  assistReplace: (t) => ipcRenderer.invoke('assist:replace', t),
+  onScreenShot: (cb) => ipcRenderer.on('scr:shot', (_e, v) => cb(v)),
+  screenAsk: (q, h) => ipcRenderer.invoke('scr:ask', q, h),
+  screenClose: () => ipcRenderer.send('scr:close'),
+  screenAgain: () => ipcRenderer.send('scr:again'),
+  screenOpen: () => ipcRenderer.send('scr:open'),
+  shareFiles: (files) => ipcRenderer.invoke('share:files', [].map.call(files || [], (f) => { try { return webUtils.getPathForFile(f); } catch { return ''; } }).filter(Boolean)),
+  sharePick: () => ipcRenderer.send('share:pick'),
+  onShare: (cb) => ipcRenderer.on('share', (_e, v) => cb(v)),
   assistRun: (w, t, l) => ipcRenderer.invoke('assist:run', w, t, l),
   assistCopy: (t) => ipcRenderer.send('assist:copy', t),
   assistClose: () => ipcRenderer.send('assist:close'),
@@ -111,6 +120,18 @@ contextBridge.exposeInMainWorld('lareon', {
   notify: (t, b) => ipcRenderer.send('notify:show', t, b),
   setupAgain: () => ipcRenderer.send('setup:again'),
   onShowQuick: (cb) => ipcRenderer.on('quick:show', () => cb()),
+  onAgent: (cb) => ipcRenderer.on('agent', (_e, v) => cb(v)),
+  onAgentLog: (cb) => ipcRenderer.on('agent:log', (_e, v) => cb(v)),
+  agentStart: (t) => ipcRenderer.invoke('agent:start', t),
+  agentStop: () => ipcRenderer.send('agent:stop'),
+  agentHover: (on) => ipcRenderer.send('agent:hover', !!on),
+  onShowShelf: (cb) => ipcRenderer.on('shelf:show', () => cb()),
+  shelfList: () => ipcRenderer.invoke('shelf:list'),
+  shelfPick: (id) => ipcRenderer.invoke('shelf:pick', id),
+  shelfClear: () => ipcRenderer.invoke('shelf:clear'),
+  shelfClose: () => ipcRenderer.send('shelf:close'),
+  openShelf: () => ipcRenderer.send('shelf:open'),
+  copyText: (t) => ipcRenderer.invoke('clip:write', t),
   quickClose: () => ipcRenderer.send('quick:close'),
   onWhatsNew: (cb) => ipcRenderer.on('whatsnew', (_e, v) => cb(v)),
   seenWhatsNew: () => ipcRenderer.send('wn:seen'),
