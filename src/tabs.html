@@ -643,7 +643,7 @@ function discover() {
   if (APPS.dusk) h += card(art('dusk'), t('td.h'), t('td.p'), [t('td.t1'), t('td.t2')]);
   if (APPS.fledge) h += card(art('fledge'), t('tf.h'), t('tf.p'), [t('tf.t1'), t('tf.t2')]);
   if (APPS.aster) h += card(art('aster'), t('ta.h'), t('ta.p'), [t('ta.t1'), t('ta.t2'), t('pc.assist') + ': ' + sh + 'E']);
-  ['rustle', 'cove', 'verse', 'ward', 'sheen', 'lark', 'grove'].forEach(function (k) { if (APPS[k]) h += card(art(k), APPS[k].name, t('d.' + k), null); });
+  ['rustle', 'cove', 'verse', 'ward', 'sheen', 'lark', 'ridge', 'grove'].forEach(function (k) { if (APPS[k]) h += card(art(k), APPS[k].name, t('d.' + k), null); });
   h += card('', t('pv.h'), t('pv.p'), [t('pv.t1'), t('pv.t2'), t('pv.t3')], true);
   var keys = [[m + ' K', t('ks.jump')], [m + ' 1', t('ks.home')], ['Ctrl Tab', t('sc.next')], [m + ' \\', t('split.t')], [m + ' [  ]', t('nav.back') + ' / ' + t('nav.fwd')], [sh + 'Space', t('set.qk')], [sh + 'A', t('set.ask')], [sh + 'M', t('pc.compose')], [sh + 'E', t('pc.assist')], [m + ' R', t('ks.reload')]];
   h += '<div class="dc wide"><div class="ti"><h3>' + esc(t('ks.h')) + '</h3></div><div class="dk">' + keys.map(function (k) { return '<kbd>' + esc(k[0]) + '</kbd><span>' + esc(k[1]) + '</span>'; }).join('') + '</div></div></div>';
