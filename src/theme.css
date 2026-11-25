@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700;800&family=Geist:wght@400;450;500;600;700&display=swap");
 /* Lareon colors. Dark by default; follows the computer, or the choice made in setup (Electron applies it to prefers-color-scheme). */
 :root{color-scheme:dark light;
 --bg:#13111b;--bar:rgba(19,17,27,.72);--panel:rgba(27,24,38,.72);--panel2:rgba(46,41,66,.62);--solid:#1b1826;
@@ -33,7 +34,7 @@
 --sky1:#0b0914;--sky2:#1a1230;--sky3:#3b2360;--orb:#fff3df;--orb-glow:rgba(255,200,150,.28);--glow:rgba(255,124,31,.2);
 --m1a:#5a4a92;--m1b:#2c2250;--m2a:#3a2c66;--m2b:#1b1530;--m3a:#271d46;--m3b:#120f1d;--snow:rgba(185,170,240,.55);--star:1;}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased;overflow:hidden;-webkit-user-select:none;user-select:none}
+html,body{height:100%;background:var(--bg);color:var(--fg);font:var(--weight,450) 15px/1.55 var(--sans);letter-spacing:var(--track,0);-webkit-font-smoothing:antialiased;overflow:hidden;-webkit-user-select:none;user-select:none}
 button{font:inherit;color:inherit;cursor:pointer}
 :focus-visible{outline:2px solid var(--orange);outline-offset:2px;border-radius:6px}
 [hidden]{display:none!important}
@@ -41,7 +42,63 @@ button{font:inherit;color:inherit;cursor:pointer}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 ::view-transition-old(root),::view-transition-new(root){animation-duration:.9s;animation-timing-function:ease-in-out}
 .themeflash{transition:none}
-/* easier to read on every theme and wallpaper: brighter grey text, a little more weight, and a soft edge behind text that sits on the wallpaper */
-body{font-weight:450;letter-spacing:.005em}
-small,.sub,.muted,[class*=hint],[class*=meta]{font-weight:500}
-:root:not([data-theme=light]) body{text-shadow:0 1px 2px rgba(0,0,0,.35)}
+
+/* Lareon 2.0: two looks, each with its own font. Light uses Atkinson Hyperlegible Next (made by the Braille Institute to be easy to read);
+   dark uses Geist. The look also follows the wallpaper: a daytime or dawn wallpaper gets dark text, dusk and night get light text, so text
+   on the wallpaper is always readable whatever theme is picked. scene.js sets data-ink. */
+:root[data-theme=light]{color-scheme:light;
+--bg:#f3effa;--bar:rgba(246,243,252,.86);--panel:rgba(255,255,255,.84);--panel2:rgba(255,255,255,.9);--solid:#ffffff;
+--line:rgba(40,26,80,.16);--line2:rgba(40,26,80,.28);
+--fg:#0b0816;--fg2:#262138;--fg3:#3d3854;
+--orange:#c94f00;--violet:#7a2fd4;--green:#0d7f3f;--red:#c21f42;--field:rgba(255,255,255,.95);--fieldw:rgba(255,255,255,.97);--shadow:0 30px 70px -30px rgba(90,60,150,.4);
+--gradtext:linear-gradient(180deg,#c94f00,#b8246a 55%,#6a28c4);--hover:rgba(40,26,80,.08);
+--sans:"Atkinson Hyperlegible Next",Geist,ui-sans-serif,system-ui,-apple-system,"Segoe UI","Hiragino Sans","Yu Gothic UI","Noto Sans CJK JP",sans-serif;--weight:500;--halo:0 0 1px rgba(255,255,255,.9),0 1px 10px rgba(255,255,255,.55);--track:.01em}
+@media(prefers-color-scheme:light){:root:not([data-theme]):not([data-ink]){
+--bg:#f3effa;--bar:rgba(246,243,252,.86);--panel:rgba(255,255,255,.84);--panel2:rgba(255,255,255,.9);--solid:#ffffff;
+--line:rgba(40,26,80,.16);--line2:rgba(40,26,80,.28);
+--fg:#0b0816;--fg2:#262138;--fg3:#3d3854;
+--orange:#c94f00;--violet:#7a2fd4;--green:#0d7f3f;--red:#c21f42;--field:rgba(255,255,255,.95);--fieldw:rgba(255,255,255,.97);--shadow:0 30px 70px -30px rgba(90,60,150,.4);
+--gradtext:linear-gradient(180deg,#c94f00,#b8246a 55%,#6a28c4);--hover:rgba(40,26,80,.08);
+--sans:"Atkinson Hyperlegible Next",Geist,ui-sans-serif,system-ui,-apple-system,"Segoe UI","Hiragino Sans","Yu Gothic UI","Noto Sans CJK JP",sans-serif;--weight:500;--halo:0 0 1px rgba(255,255,255,.9),0 1px 10px rgba(255,255,255,.55);--track:.01em}}
+:root[data-theme=dark]{color-scheme:dark;
+--bg:#13111b;--bar:rgba(19,17,27,.8);--panel:rgba(24,21,34,.82);--panel2:rgba(46,41,66,.72);--solid:#1b1826;
+--line:rgba(255,255,255,.12);--line2:rgba(255,255,255,.22);
+--fg:#ffffff;--fg2:#dcd9ea;--fg3:#bbb7cf;
+--orange:#ff8a33;--violet:#b47cff;--green:#3ddc84;--red:#ff5c79;--field:rgba(10,8,18,.6);--fieldw:rgba(24,21,34,.96);--shadow:0 30px 80px -30px rgba(0,0,0,.75);
+--gradtext:linear-gradient(180deg,#ffd29a,#ff7aa2 55%,#c98bff);--hover:rgba(255,255,255,.08);
+--sans:Geist,ui-sans-serif,system-ui,-apple-system,"Segoe UI","Hiragino Sans","Yu Gothic UI","Noto Sans CJK JP",sans-serif;--weight:450;--halo:0 1px 2px rgba(0,0,0,.55),0 0 14px rgba(0,0,0,.35);--track:.004em}
+/* text on the wallpaper follows the wallpaper, not the theme, so it always contrasts with what is behind it; menus and bars keep the theme */
+html[data-ink=light] :is(#home,#today,#briefb,#signin){color:var(--fg);color-scheme:light;
+--bg:#f3effa;--bar:rgba(243,239,250,.72);--panel:rgba(255,255,255,.7);--panel2:rgba(255,255,255,.78);--solid:#ffffff;
+--line:rgba(48,32,92,.13);--line2:rgba(48,32,92,.24);
+--fg:#100c1f;--fg2:#36314d;--fg3:#514c69;
+--orange:#e8600a;--violet:#8a3fe0;--green:#12a150;--red:#d4274a;--field:rgba(255,255,255,.92);--fieldw:rgba(255,255,255,.95);--shadow:0 30px 70px -30px rgba(90,60,150,.4);
+--gradtext:linear-gradient(180deg,#e8600a,#d1387f 55%,#7d35d6);--hover:rgba(48,32,92,.07);
+--sky1:#aebbf2;--sky2:#d9c9f1;--sky3:#ffdcc4;--orb:#fff6e0;--orb-glow:rgba(255,168,92,.6);--glow:rgba(255,150,80,.35);
+--m1a:#a58bd6;--m1b:#8a72c0;--m2a:#8c72c6;--m2b:#7159ad;--m3a:#6f58a8;--m3b:#54418a;--snow:rgba(255,255,255,.8);--star:0}
+html[data-ink=dark] :is(#home,#today,#briefb,#signin){color:var(--fg);color-scheme:dark;
+--bg:#13111b;--bar:rgba(19,17,27,.72);--panel:rgba(27,24,38,.72);--panel2:rgba(46,41,66,.62);--solid:#1b1826;
+--line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.18);
+--fg:#ffffff;--fg2:#d6d3e6;--fg3:#b2aec6;
+--orange:#ff7c1f;--violet:#a35cf5;--green:#3ddc84;--red:#ff4466;--field:rgba(10,8,18,.55);--fieldw:rgba(24,21,34,.95);--shadow:0 30px 80px -30px rgba(0,0,0,.75);
+--grad:linear-gradient(90deg,#ff7c1f,#d94fc4 60%,#a35cf5);--gradtext:linear-gradient(180deg,#ffd29a,#ff7aa2 55%,#c98bff);--onacc:#fff;--hover:rgba(255,255,255,.07);
+--sky1:#0b0914;--sky2:#1a1230;--sky3:#3b2360;--orb:#fff3df;--orb-glow:rgba(255,200,150,.28);--glow:rgba(255,124,31,.2);
+--m1a:#5a4a92;--m1b:#2c2250;--m2a:#3a2c66;--m2b:#1b1530;--m3a:#271d46;--m3b:#120f1d;--snow:rgba(185,170,240,.55);--star:1;}
+/* text that sits right on the wallpaper gets a soft halo in its own colour */
+#home,#today,#briefb,#signin{text-shadow:var(--halo)}
+#home input,#home button,#home [class*=card],#home [class*=tile],#today [class*=card]{text-shadow:none}
+b,strong,h1,h2,h3{font-weight:700}
+/* smooth: colours glide when the look changes, controls respond gently, things slide in */
+body,body *{transition-property:color,background-color,border-color,box-shadow,opacity,transform,filter;transition-duration:.22s;transition-timing-function:var(--ease)}
+.wall,.wall *,canvas,video,svg *{transition:none}
+button:not([disabled]):active{transform:scale(.97)}
+@keyframes lx-in{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes lx-fade{from{opacity:0}to{opacity:1}}
+#home>*,#set .grp,#setb>*,#pal,#toast,[role=dialog],.menu,.pop{animation:lx-in .42s var(--ease) both}
+#home>*:nth-child(2){animation-delay:.05s}#home>*:nth-child(3){animation-delay:.1s}#home>*:nth-child(4){animation-delay:.15s}#home>*:nth-child(5){animation-delay:.2s}
+#setb>*:nth-child(2){animation-delay:.04s}#setb>*:nth-child(3){animation-delay:.08s}#setb>*:nth-child(4){animation-delay:.12s}#setb>*:nth-child(n+5){animation-delay:.16s}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.7s}
+@media(prefers-reduced-motion:reduce){body,body *{transition:none!important;animation:none!important}}
+/* bigger text, from Settings → Appearance (tabs.html sets data-size) */
+:root[data-size=large] body{font-size:16.5px}:root[data-size=xl] body{font-size:18px}
+:root[data-size=large]{zoom:1.08}:root[data-size=xl]{zoom:1.16}

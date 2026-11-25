@@ -253,6 +253,7 @@
   function build(name, ph, mini) {
     var S = P[name] || P.peaks, d = document.createElement('div');
     d.className = 'wall' + (mini ? ' mini' : ''); d.setAttribute('aria-hidden', 'true'); d.setAttribute('data-wall', name); d.setAttribute('data-phase', ph);
+    if (!mini) { var ink = ph === 'day' || ph === 'dawn' ? 'light' : 'dark'; if (document.documentElement.getAttribute('data-ink') !== ink) { var go = function () { document.documentElement.setAttribute('data-ink', ink); }; if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches && document.documentElement.hasAttribute('data-ink')) document.startViewTransition(go); else go(); } }
     d.innerHTML = S.draw(S[ph] || S.night, 'w' + (++uid) + '_') + (mini ? '' : '<div class="veil"></div>');
     return d;
   }

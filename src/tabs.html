@@ -748,6 +748,9 @@ function seg(opts, val, cb) { var d = mk('div', 'seg'); d.setAttribute('role', '
 function pick(opts, val, cb) { var s2 = mk('select', 'sel'); opts.forEach(function (o) { var op = mk('option', '', esc(o[1])); op.value = o[0]; if (String(o[0]) === String(val)) op.selected = true; s2.appendChild(op); }); s2.onchange = function () { cb(s2.value); }; return s2; }
 function put(p) { return lareon.setSettings(p).then(function (r) { if (r) S = r; return r; }); }
 function group(title, rows) { var g = mk('div', 'sg'); g.appendChild(mk('h3', '', esc(title))); var c = mk('div', 'card'); rows.forEach(function (r) { c.appendChild(r); }); g.appendChild(c); return g; }
+function textSize(v) { if (v && v !== 'normal') document.documentElement.setAttribute('data-size', v); else document.documentElement.removeAttribute('data-size'); }
+lareon.getSettings().then(function (x) { if (x) textSize(x.textSize); });
+setTimeout(function () { try { if (!localStorage.getItem('lareon.v2')) { localStorage.setItem('lareon.v2', '1'); toast('Welcome to Lareon 2.0 · clearer text on every wallpaper, smoother motion, and Text size in Settings'); } } catch (e) {} }, 1800);
 function applyTheme(v) { if (window.setTheme) window.setTheme(v === 'system' ? '' : v, true); }
 function renderSet() {
   if (!S || $('set').hidden) return;
@@ -756,7 +759,8 @@ function renderSet() {
   b.appendChild(group(t('set.appearance'), [
     row(t('set.theme'), '', seg([['system', t('th.system')], ['light', t('th.light')], ['dark', t('th.dark')]], S.theme || 'system', function (v) { applyTheme(v); put({ theme: v }); })),
     row(t('set.lang'), '', (function () { var x = mk('button', 'btn lgsel', i18n.flag(i18n.lang) + '<span>' + esc(i18n.names[i18n.lang]) + '</span>'); x.onclick = function () { i18n.menu(x); }; return x; })()),
-    row(t('set.rail'), t('set.rail.d'), sw(!!S.railWide, function (v) { railWide(v); put({ railWide: v }); }))
+    row(t('set.rail'), t('set.rail.d'), sw(!!S.railWide, function (v) { railWide(v); put({ railWide: v }); })),
+    row('Text size', 'Makes every screen easier to read', seg([['normal', 'Default'], ['large', 'Large'], ['xl', 'Larger']], S.textSize || 'normal', function (v) { textSize(v); put({ textSize: v }); }))
   ]));
   b.appendChild(group(t('set.wall'), [wallPicker(), phasePicker(), row(t('set.tint'), t('set.tint.d'), sw(S.wallTint !== false, function (v) { S.wallTint = v; setWall(); put({ wallTint: v }); }))]));
   var paused = S.snoozeUntil && S.snoozeUntil > Date.now();
