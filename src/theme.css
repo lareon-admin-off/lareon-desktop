@@ -89,8 +89,7 @@ html[data-ink=dark] :is(#home,#today,#briefb,#signin){color:var(--fg);color-sche
 #home input,#home button,#home [class*=card],#home [class*=tile],#today [class*=card]{text-shadow:none}
 b,strong,h1,h2,h3{font-weight:700}
 /* smooth: colours glide when the look changes, controls respond gently, things slide in */
-body,body *{transition-property:color,background-color,border-color,box-shadow,opacity,transform,filter;transition-duration:.22s;transition-timing-function:var(--ease)}
-.wall,.wall *,canvas,video,svg *{transition:none}
+button,a,input,select,textarea,[role=button],.card,.tile,.btn,li{transition:color .2s var(--ease),background-color .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease),opacity .2s var(--ease),transform .2s var(--ease)}
 button:not([disabled]):active{transform:scale(.97)}
 @keyframes lx-in{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
 @keyframes lx-fade{from{opacity:0}to{opacity:1}}
@@ -98,7 +97,7 @@ button:not([disabled]):active{transform:scale(.97)}
 #home>*:nth-child(2){animation-delay:.05s}#home>*:nth-child(3){animation-delay:.1s}#home>*:nth-child(4){animation-delay:.15s}#home>*:nth-child(5){animation-delay:.2s}
 #setb>*:nth-child(2){animation-delay:.04s}#setb>*:nth-child(3){animation-delay:.08s}#setb>*:nth-child(4){animation-delay:.12s}#setb>*:nth-child(n+5){animation-delay:.16s}
 ::view-transition-old(root),::view-transition-new(root){animation-duration:.7s}
-@media(prefers-reduced-motion:reduce){body,body *{transition:none!important;animation:none!important}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
 /* bigger text, from Settings → Appearance (tabs.html sets data-size) */
 :root[data-size=large] body{font-size:16.5px}:root[data-size=xl] body{font-size:18px}
 :root[data-size=large]{zoom:1.08}:root[data-size=xl]{zoom:1.16}
