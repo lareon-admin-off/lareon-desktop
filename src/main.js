@@ -22,7 +22,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 
 // ---- settings (chosen in the setup wizard) ----
 const DEFAULT_APPS = Object.fromEntries(Object.entries(apps).map(([k, a]) => [k, !a.off]));
-const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, wallPhase: '', wallTint: true, railWide: false, textSize: 'normal', notifyApps: { fledge: true, rustle: true, dusk: true }, quiet: { on: false, from: '22:00', to: '07:00' }, composeKey: true, assistKey: true, captureKey: true, shelf: true, spaces: null, space: '', lock: { pin: '', idle: 0, sleep: true, touch: true }, order: [], homeCards: { today: true, mail: true, brief: true, across: true, focus: false, apps: false, notes: true }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
+const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, wallPhase: '', wallTint: true, railWide: false, textSize: 'normal', notifyApps: { fledge: true, rustle: true, dusk: true }, quiet: { on: false, from: '22:00', to: '07:00' }, composeKey: true, assistKey: true, captureKey: true, shelf: true, screenKey: true, spaces: null, space: '', lock: { pin: '', idle: 0, sleep: true, touch: true }, order: [], homeCards: { today: true, mail: true, brief: true, across: true, focus: false, apps: false, notes: true }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 let settings = { ...DEFAULTS };
 function loadSettings() {
@@ -453,12 +453,15 @@ function makeTray() {
       { label: 'Today at a glance', click: togglePeek },
       { label: 'Ask Aster', click: openAsk },
       { label: 'Quick add a task', click: openQuick },
+      { label: 'Ask about my screen', click: () => openScreenAsk() },
+      { label: 'Share a file (get a link)…', click: () => pickAndShare() },
       { label: 'Lock Lareon', click: () => lockNow() },
       { type: 'separator' },
       { label: 'Quit Lareon', click: () => { quitting = true; app.quit(); } }
     ]);
     if (process.platform === 'linux') tray.setContextMenu(menu);
     else { tray.on('click', togglePeek); tray.on('right-click', () => tray.popUpContextMenu(menu)); }
+    try { tray.on('drop-files', (_e, files) => shareFiles(files)); } catch {}
   } catch {}
 }
 function makeQuick() {
@@ -510,6 +513,8 @@ ipcMain.handle('shelf:clear', () => { shelfItems = []; return true; });
 ipcMain.on('shelf:close', () => { if (shelf) shelf.hide(); });
 ipcMain.on('shelf:open', () => openShelf());
 function applyQuick() {
+  try { globalShortcut.unregister('CommandOrControl+Alt+A'); } catch {}
+  if (settings.screenKey !== false) { try { globalShortcut.register('CommandOrControl+Alt+A', () => openScreenAsk()); } catch {} }
   try { globalShortcut.unregister('CommandOrControl+Alt+V'); } catch {}
   if (settings.shelf !== false) { try { globalShortcut.register('CommandOrControl+Alt+V', openShelf); } catch {} }
   try { globalShortcut.unregister('CommandOrControl+Shift+Space'); } catch {}
@@ -526,10 +531,10 @@ function applyQuick() {
 ipcMain.on('quick:close', () => { if (quick) quick.hide(); });
 
 // ---- Aster from anywhere, tray peek, search, morning briefing ----
-async function askAster(message, history) {
+async function askAster(message, history, images) {
   if (!sess) return { error: 'signin' };
   try {
-    const r = await net.fetch(API + '/api/aster/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: 'Bearer ' + sess.token }, body: JSON.stringify({ message: String(message).slice(0, 4000), save: false, history: history || [] }) });
+    const r = await net.fetch(API + '/api/aster/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: 'Bearer ' + sess.token }, body: JSON.stringify({ ...(images && images.length ? { images } : {}), message: String(message).slice(0, 4000), save: false, history: history || [] }) });
     let j = null; try { j = await r.json(); } catch {}
     if (r.status === 401) { endSession('Your session ended. Sign in again.'); return { error: 'signin' }; }
     if (r.ok && j && j.reply) return { ok: true, text: String(j.reply), chat: j.chat_id || '' };
@@ -682,13 +687,13 @@ function createWindow() {
 }
 
 ipcMain.on('theme:get', (e) => { e.returnValue = ['light', 'dark'].includes(settings.theme) ? settings.theme : ''; });
-const publicSettings = () => ({ shelf: settings.shelf !== false, captureKey: settings.captureKey !== false, spaces: spacesOut(), composeKey: settings.composeKey !== false, assistKey: settings.assistKey !== false, mailDefault: isMailDefault(), catalog: apps, order: enabledKeys(), ...(() => { const w = wallNow(); return { wall: w.wall, wallPhase: w.phase, wallTint: w.tint }; })(), notifyApps: { ...DEFAULTS.notifyApps, ...(settings.notifyApps || {}) }, quiet: { ...DEFAULTS.quiet, ...(settings.quiet || {}) }, lock: { hasPin: !!(settings.lock && settings.lock.pin), idle: (settings.lock && settings.lock.idle) || 0, sleep: !settings.lock || settings.lock.sleep !== false, touch: !settings.lock || settings.lock.touch !== false, canTouch: canTouch() }, railWide: !!settings.railWide, textSize: settings.textSize || 'normal', homeCards: { ...DEFAULTS.homeCards, ...(settings.homeCards || {}) }, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
+const publicSettings = () => ({ shelf: settings.shelf !== false, screenKey: settings.screenKey !== false, axOk: isMac ? systemPreferences.isTrustedAccessibilityClient(false) : true, captureKey: settings.captureKey !== false, spaces: spacesOut(), composeKey: settings.composeKey !== false, assistKey: settings.assistKey !== false, mailDefault: isMailDefault(), catalog: apps, order: enabledKeys(), ...(() => { const w = wallNow(); return { wall: w.wall, wallPhase: w.phase, wallTint: w.tint }; })(), notifyApps: { ...DEFAULTS.notifyApps, ...(settings.notifyApps || {}) }, quiet: { ...DEFAULTS.quiet, ...(settings.quiet || {}) }, lock: { hasPin: !!(settings.lock && settings.lock.pin), idle: (settings.lock && settings.lock.idle) || 0, sleep: !settings.lock || settings.lock.sleep !== false, touch: !settings.lock || settings.lock.touch !== false, canTouch: canTouch() }, railWide: !!settings.railWide, textSize: settings.textSize || 'normal', homeCards: { ...DEFAULTS.homeCards, ...(settings.homeCards || {}) }, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
 ipcMain.handle('settings:get', () => publicSettings());
 ipcMain.handle('settings:set', (_e, p) => {
   p = p || {};
   const bool = (k) => { if (typeof p[k] === 'boolean') settings[k] = p[k]; };
-  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound', 'background', 'quickAdd', 'askKey', 'brief', 'focusMute', 'composeKey', 'assistKey', 'captureKey', 'shelf'].forEach(bool);
-  if (typeof p.composeKey === 'boolean' || typeof p.assistKey === 'boolean' || typeof p.captureKey === 'boolean' || typeof p.shelf === 'boolean') { applyQuick(); if (p.shelf === false) shelfItems = []; }
+  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound', 'background', 'quickAdd', 'askKey', 'brief', 'focusMute', 'composeKey', 'assistKey', 'captureKey', 'shelf', 'screenKey'].forEach(bool);
+  if (typeof p.composeKey === 'boolean' || typeof p.assistKey === 'boolean' || typeof p.captureKey === 'boolean' || typeof p.shelf === 'boolean' || typeof p.screenKey === 'boolean') { applyQuick(); if (p.shelf === false) shelfItems = []; }
   if (typeof p.launchAtLogin === 'boolean') { settings.launchAtLogin = p.launchAtLogin; applyLogin(); }
   if (['system', 'light', 'dark'].includes(p.theme)) { settings.theme = p.theme; nativeTheme.themeSource = p.theme; paintChrome(); }
   if (['en', 'es', 'fr', 'de', 'pt', 'it', 'ru', 'tr', 'sv', 'ja', 'ko', 'zh', 'hi', 'ar', 'fa', 'sw', 'ary'].includes(p.lang)) settings.lang = p.lang;
@@ -947,7 +952,7 @@ function handOff(x) {
   if (/^mailto:/i.test(x)) return openCompose(parseMailto(x)), true;
   if (/^lareon:\/\//i.test(x)) return openLink(x);
   if (/\.ics$/i.test(x)) return openInvite(x), true;
-  const m = x.match(/^--lareon=(compose|doc|task|ask|assist|capture)$/); if (m) return ({ compose: () => openCompose(), doc: () => newDoc(), task: () => openQuick(), ask: () => openAsk(), assist: () => openAssist(), capture: () => openCapture() })[m[1]](), true;
+  const m = x.match(/^--lareon=(compose|doc|task|ask|assist|capture|screen|share)$/); if (m) return ({ screen: () => openScreenAsk(), share: () => pickAndShare(), compose: () => openCompose(), doc: () => newDoc(), task: () => openQuick(), ask: () => openAsk(), assist: () => openAssist(), capture: () => openCapture() })[m[1]](), true;
   return false;
 }
 const later = (f) => { if (app.isReady() && win && !win.webContents.isLoading()) f(); else app.whenReady().then(() => setTimeout(f, 1500)); };
@@ -1042,13 +1047,48 @@ ipcMain.on('invite:close', (_e, open) => { if (invite && !invite.isDestroyed()) 
 
 // ---- Aster on any text: copy something anywhere, press the shortcut ----
 let assist = null;
-function openAssist() {
+// Press keys in the app the person is using (copy the selection, paste a result back).
+// Mac needs Accessibility permission for this; without it we fall back to the clipboard.
+const { execFile } = require('child_process');
+function sendKeys(k) {
+  return new Promise((res) => {
+    const done = () => res(true), no = () => res(false);
+    if (isMac) {
+      if (!systemPreferences.isTrustedAccessibilityClient(false)) return no();
+      execFile('osascript', ['-e', 'tell application "System Events" to keystroke "' + k + '" using command down'], { timeout: 3000 }, (e) => (e ? no() : done()));
+    } else if (process.platform === 'win32') {
+      execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', "(New-Object -ComObject WScript.Shell).SendKeys('^" + k + "')"], { timeout: 4000, windowsHide: true }, (e) => (e ? no() : done()));
+    } else execFile('xdotool', ['key', '--clearmodifiers', 'ctrl+' + k], { timeout: 3000 }, (e) => (e ? no() : done()));
+  });
+}
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+let assistFromSel = false;
+async function grabSelection() {
+  if (isMac && !systemPreferences.isTrustedAccessibilityClient(false)) { if (!settings.axAsked) { settings.axAsked = true; writeSettings(); try { systemPreferences.isTrustedAccessibilityClient(true); } catch {} } return ''; }
+  const before = clipboard.readText(); const mark = '\u2063lareon' + Date.now();
+  shelfLast = mark; clipboard.writeText(mark); await wait(260);
+  const ok = await sendKeys('c'); await wait(isMac ? 180 : 320);
+  const got = clipboard.readText();
+  if (!ok || got === mark) { clipboard.writeText(before || ''); return ''; }
+  shelfLast = got; clipboard.writeText(before || ''); shelfLast = before || '';
+  return got;
+}
+ipcMain.handle('assist:replace', async (_e, t) => {
+  t = String(t || ''); if (!t) return false;
+  shelfLast = t; clipboard.writeText(t);
+  if (assist && !assist.isDestroyed()) assist.hide();
+  if (isMac) { if (!win || !win.isFocused()) app.hide(); }
+  await wait(isMac ? 250 : 350);
+  return sendKeys('v');
+});
+async function openAssist() {
   if (!settings.setupDone || locked) return;
-  const text = String(clipboard.readText() || '').trim().slice(0, 8000);
+  const sel = String(await grabSelection() || '').trim(); assistFromSel = !!sel;
+  const text = (sel || String(clipboard.readText() || '').trim()).slice(0, 8000);
   if (!assist || assist.isDestroyed()) assist = floatWin('assist.html', 520, 440);
   const p = screen.getCursorScreenPoint(), d = screen.getDisplayNearestPoint(p).workArea;
   assist.setPosition(Math.round(Math.max(d.x + 8, Math.min(p.x - 260, d.x + d.width - 528))), Math.round(Math.max(d.y + 8, Math.min(p.y + 16, d.y + d.height - 448))));
-  const go2 = () => { assist.webContents.send('assist:text', text); assist.show(); assist.focus(); };
+  const go2 = () => { assist.webContents.send('assist:text', text, assistFromSel); assist.show(); assist.focus(); };
   if (assist.webContents.isLoading()) assist.webContents.once('did-finish-load', go2); else go2();
 }
 const ASSIST = {
@@ -1066,9 +1106,68 @@ ipcMain.on('assist:copy', (_e, t) => { try { clipboard.writeText(String(t || '')
 ipcMain.on('home:action', (_e, a) => { if (!inSetup && /^(compose|doc|task|ask|assist|capture)$/.test(String(a))) handOff('--lareon=' + a); });
 ipcMain.on('assist:close', () => { if (assist && !assist.isDestroyed()) assist.hide(); });
 
+// ---- Ask Aster about whatever is on screen ----
+let scr = null, scrImg = '';
+function shotJpeg(img) {
+  let im = img; const s0 = im.getSize(); if (s0.width > 1600) im = im.resize({ width: 1600 });
+  for (const q of [72, 60, 48, 36]) { const b = im.toJPEG(q); if (b.length < 950 * 1024) return 'data:image/jpeg;base64,' + b.toString('base64'); }
+  im = im.resize({ width: 1100 }); return 'data:image/jpeg;base64,' + im.toJPEG(45).toString('base64');
+}
+async function openScreenAsk() {
+  if (!settings.setupDone || locked) return;
+  if (scr && !scr.isDestroyed() && scr.isVisible()) { scr.hide(); return; }
+  if (typeof capAllowed === 'function' && !capAllowed()) return;
+  const disp = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  let img = null; try { img = await grabScreen(disp); } catch {}
+  if (!img || img.isEmpty()) return;
+  scrImg = shotJpeg(img);
+  if (!scr || scr.isDestroyed()) scr = floatWin('screen.html', 560, 560);
+  const d = disp.workArea; scr.setPosition(Math.round(d.x + d.width - 580), Math.round(d.y + 20));
+  const go2 = () => { scr.webContents.send('scr:shot', img.resize({ width: 520 }).toDataURL()); scr.show(); scr.focus(); };
+  if (scr.webContents.isLoading()) scr.webContents.once('did-finish-load', go2); else go2();
+}
+ipcMain.handle('scr:ask', async (_e, q, history) => {
+  if (!scrImg) return { error: 'Take a new look first.' };
+  q = String(q || '').trim().slice(0, 1500) || 'What is on my screen? Point out anything important.';
+  return askAster(q + '\n\n(This is a screenshot of my screen. Reply briefly in Markdown.)', Array.isArray(history) ? history.slice(-6) : [], [scrImg]);
+});
+ipcMain.on('scr:close', () => { if (scr && !scr.isDestroyed()) scr.hide(); });
+ipcMain.on('scr:again', () => { if (scr && !scr.isDestroyed()) scr.hide(); setTimeout(openScreenAsk, 250); });
+
+// ---- Drop to share: any file becomes a private Cove link, copied and ready to paste ----
+const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', heic: 'image/heic', pdf: 'application/pdf', mp4: 'video/mp4', mov: 'video/quicktime', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', zip: 'application/zip', txt: 'text/plain', md: 'text/markdown', csv: 'text/csv', json: 'application/json', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', svg: 'image/svg+xml' };
+const toast2 = (title, body) => { try { if (Notification.isSupported()) new Notification({ title, body, silent: true }).show(); } catch {} };
+async function shareFiles(files) {
+  files = (files || []).filter((f) => { try { const st = fs.statSync(f); return st.isFile() && st.size > 0 && st.size <= 500 * 1024 * 1024; } catch { return false; } }).slice(0, 10);
+  if (!files.length) { toast2('Nothing to share', 'Drop files up to 500 MB.'); return { error: 'none' }; }
+  if (!sess) { showMain(); toast2('Sign in to share', 'Sign in to Lareon, then drop the file again.'); return { error: 'signin' }; }
+  toast2(files.length > 1 ? 'Sharing ' + files.length + ' files…' : 'Sharing ' + path.basename(files[0]) + '…', 'Your link will be copied when it’s ready.');
+  send('share', { busy: true, n: files.length });
+  const links = [];
+  for (const f of files) {
+    const up = await coveUpload(f, MIME[path.extname(f).slice(1).toLowerCase()] || 'application/octet-stream');
+    if (!up.ok) { toast2('Couldn’t share ' + path.basename(f), up.error || ''); continue; }
+    try { const r = await api('/api/cove/items/' + up.id + '/link', { method: 'POST', token: sess.token, body: { days: 30 } }); if (r.status === 200 && r.j && r.j.link) links.push({ name: up.name, url: r.j.link.url }); } catch {}
+  }
+  send('share', { busy: false, links });
+  if (!links.length) return { error: 'failed' };
+  const txt = links.map((l) => l.url).join('\n'); shelfLast = txt; clipboard.writeText(txt);
+  toast2(links.length > 1 ? links.length + ' links copied' : 'Link copied', (links.length > 1 ? 'Paste them anywhere. ' : links[0].name + ' · paste it anywhere. ') + 'Links last 30 days; manage them in Cove.');
+  logActivity({ app: 'cove', title: links.length > 1 ? links.length + ' share links copied' : 'Share link copied', body: links.map((l) => l.name).join(', ') });
+  return { ok: true, links };
+}
+async function pickAndShare() {
+  if (!settings.setupDone || locked) return;
+  const r = await dialog.showOpenDialog({ title: 'Share files', buttonLabel: 'Get link', properties: ['openFile', 'multiSelections'] });
+  if (!r.canceled) shareFiles(r.filePaths);
+}
+ipcMain.handle('share:files', (_e, files) => (locked ? { error: 'locked' } : shareFiles(Array.isArray(files) ? files.map(String) : [])));
+ipcMain.on('share:pick', () => pickAndShare());
+ipcMain.on('scr:open', () => openScreenAsk());
+
 // ---- the Dock (Mac) and taskbar (Windows) menus ----
 function dockMenu() {
-  const items = [['New email', 'compose'], ['New document', 'doc'], ['Add a task', 'task'], ['Ask Aster', 'ask'], ['Aster on copied text', 'assist'], ['Capture the screen', 'capture']];
+  const items = [['New email', 'compose'], ['New document', 'doc'], ['Add a task', 'task'], ['Ask Aster', 'ask'], ['Aster on copied text', 'assist'], ['Ask about my screen', 'screen'], ['Share a file (get a link)', 'share'], ['Capture the screen', 'capture']];
   try {
     if (isMac && app.dock) app.dock.setMenu(Menu.buildFromTemplate(items.map(([label, a]) => ({ label, click: () => handOff('--lareon=' + a) }))));
     else if (process.platform === 'win32') app.setUserTasks(items.map(([title, a]) => ({ program: process.execPath, arguments: '--lareon=' + a, iconPath: process.execPath, iconIndex: 0, title, description: title })));

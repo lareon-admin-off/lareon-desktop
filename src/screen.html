@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aster · Your screen</title>
+<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="vendor/katex/katex.min.css"><link rel="stylesheet" href="md.css"><script src="theme.js"></script>
+<style>
+html,body{height:100%;overflow:hidden}
+body{background:radial-gradient(120% 80% at 100% 0%,rgba(180,124,255,.14),transparent 55%),var(--solid);display:flex;flex-direction:column;border:1px solid var(--line2);border-radius:16px;position:relative;padding:14px 16px 14px}
+body:before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--grad);border-radius:16px 16px 0 0}
+.hd{display:flex;align-items:center;gap:10px;margin-bottom:10px;-webkit-app-region:drag}.hd img{width:24px;height:24px}.hd b{font-size:15px;font-weight:700;flex:1}
+.hd button{-webkit-app-region:no-drag;font:inherit;font-size:12px;color:var(--fg2);background:none;border:1px solid var(--line);border-radius:7px;padding:3px 9px;cursor:pointer}.hd button:hover{background:var(--hover)}
+.k{font:500 11px var(--mono);color:var(--fg3);border:1px solid var(--line2);border-radius:6px;padding:1px 6px}
+.shot{position:relative;border-radius:12px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line);flex:none;height:150px;background:#000}
+.shot img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;opacity:.92}
+.shot:after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.28) 50%,transparent 70%);background-size:250% 100%;animation:scan 1.4s var(--ease) 1 both;pointer-events:none}
+@keyframes scan{from{background-position:120% 0}to{background-position:-60% 0}}
+.ch{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.ch button{font:inherit;border:1px solid var(--line);background:var(--panel2);color:var(--fg);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer}
+.ch button:hover{border-color:var(--violet)}
+#log{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:2px;-webkit-user-select:text;user-select:text}
+.q{align-self:flex-end;max-width:85%;background:var(--panel2);border:1px solid var(--line);border-radius:12px 12px 4px 12px;padding:7px 11px;font-size:14px;animation:lx-in .25s var(--ease) both}
+.a{padding:10px 12px;border-radius:12px;background:var(--hover);box-shadow:inset 0 0 0 1px var(--line);font-size:14px;animation:lx-in .3s var(--ease) both}
+.a.busy{color:var(--fg3);display:flex;gap:10px;align-items:center}.a.busy:before{content:"";width:14px;height:14px;border-radius:50%;border:2px solid var(--line2);border-top-color:var(--violet);animation:sp .8s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+form{display:flex;gap:8px;margin-top:10px}
+input{flex:1;font:inherit;font-size:14px;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:9px 12px;outline:0;-webkit-user-select:text;user-select:text}
+input:focus,input:focus-visible{border-color:var(--violet);outline:none;box-shadow:none}
+form button{font:inherit;font-size:13px;border:0;background:var(--grad);color:#fff;border-radius:10px;padding:0 14px;cursor:pointer}
+.ft{font-size:11.5px;color:var(--fg3);margin-top:8px;text-align:center}
+</style></head><body>
+<div class="hd"><img src="../build/art/aster-logo.svg" alt=""><b>Aster · your screen</b><button id="again" title="Take a new look">New look</button><span class="k">Esc</span></div>
+<div class="shot"><img id="img" alt="Your screen"></div>
+<div class="ch" id="ch"></div>
+<div id="log"></div>
+<form id="f"><input id="i" placeholder="Ask about what's on your screen" autocomplete="off" maxlength="1500"><button>Ask</button></form>
+<div class="ft">Only this screenshot is sent to Aster when you ask. It isn't saved.</div>
+<script src="vendor/katex/katex.min.js"></script><script src="md.js"></script>
+<script>
+var $=function(i){return document.getElementById(i)},H=[],busy=false;
+var CHIPS=[['What’s on my screen?','What is on my screen? Point out anything important.'],['Explain this error','Explain the error or problem on my screen and how to fix it, step by step.'],['Summarize','Summarize what I’m looking at in a few bullet points.'],['What should I reply?','Draft a short reply to the message on my screen.'],['Translate','Translate the text on my screen into English.']];
+function chips(){var c=$('ch');c.innerHTML='';CHIPS.forEach(function(x){var b=document.createElement('button');b.textContent=x[0];b.onclick=function(){ask(x[1],x[0])};c.appendChild(b)})}
+function add(cls,html){var d=document.createElement('div');d.className=cls;d.innerHTML=html;$('log').appendChild(d);d.scrollIntoView({block:'end',behavior:'smooth'});return d}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function ask(q,label){
+ if(busy||!q)return;busy=true;add('q',esc(label||q));var a=add('a busy','Looking at your screen…');
+ lareon.screenAsk(q,H).then(function(r){busy=false;
+  if(r&&r.ok){a.className='a md';a.innerHTML=window.mdRender(r.text);H.push({role:'user',content:q},{role:'assistant',content:r.text})}
+  else{a.className='a';a.textContent=r&&r.error==='signin'?'Sign in to Lareon to ask Aster.':r&&r.code==='net'?'You’re offline. Try again when you’re connected.':(r&&r.error)||'Aster couldn’t answer just now.'}
+  a.scrollIntoView({block:'end',behavior:'smooth'});
+ });
+}
+lareon.onScreenShot(function(src){$('img').src=src;H=[];$('log').innerHTML='';busy=false;var s=document.querySelector('.shot');s.style.animation='none';void s.offsetWidth;s.style.animation='';chips();setTimeout(function(){$('i').focus()},30)});
+$('f').onsubmit=function(e){e.preventDefault();var v=$('i').value.trim();if(!v)return;$('i').value='';ask(v)};
+$('again').onclick=function(){lareon.screenAgain()};
+document.addEventListener('keydown',function(e){if(e.key==='Escape')lareon.screenClose()});
+chips();
+</script></body></html>

@@ -67,9 +67,10 @@
       "extendInfo": {
         "NSMicrophoneUsageDescription": "Rustle uses the microphone for calls and voice messages.",
         "NSCameraUsageDescription": "Rustle uses the camera for video calls.",
-        "NSLocationUsageDescription": "Ridge shows where you are on the map and gives directions from there. Your location isn\u2019t kept.",
-        "NSLocationWhenInUseUsageDescription": "Ridge shows where you are on the map and gives directions from there. Your location isn\u2019t kept.",
-        "NSScreenCaptureUsageDescription": "Lareon takes screenshots and screen recordings when you ask it to."
+        "NSLocationUsageDescription": "Ridge shows where you are on the map and gives directions from there. Your location isn’t kept.",
+        "NSLocationWhenInUseUsageDescription": "Ridge shows where you are on the map and gives directions from there. Your location isn’t kept.",
+        "NSScreenCaptureUsageDescription": "Lareon takes screenshots and screen recordings when you ask it to.",
+        "NSAppleEventsUsageDescription": "Aster rewrites the text you select and puts it back, only when you ask it to."
       }
     },
     "dmg": {

@@ -118,7 +118,11 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
 .ib svg.fl{width:22px;height:16px;stroke:none}.lgsel{display:flex;align-items:center;gap:9px}.sk2{font:500 12px var(--mono);color:var(--fg2)}
 /* focus */
 .c-focus{grid-column:span 12}
-.c-notes{grid-column:span 12}.c-notes h2{display:flex;align-items:center;gap:10px}.c-notes h2 .link{margin-left:auto}
+.c-notes{grid-column:span 12}
+#dz{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(10,8,18,.5);backdrop-filter:blur(10px);opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}
+#dz.on{opacity:1}
+#dz .dz-b{display:flex;flex-direction:column;align-items:center;gap:8px;padding:46px 64px;border:2px dashed color-mix(in srgb,var(--orange) 70%,transparent);border-radius:24px;background:var(--solid);box-shadow:var(--shadow);transform:scale(.96);transition:transform .25s var(--ease)}
+#dz.on .dz-b{transform:none}#dz b{font-size:22px;font-weight:700}#dz span{color:var(--fg3);font-size:13px}.c-notes h2{display:flex;align-items:center;gap:10px}.c-notes h2 .link{margin-left:auto}
 .nt-s{font:500 11px var(--mono);color:var(--fg3);opacity:0;transition:opacity .3s}.nt-s.on{opacity:1}
 #nta{display:block;width:100%;min-height:120px;max-height:340px;resize:vertical;font:inherit;line-height:1.6;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:12px;padding:12px 14px;outline:0;-webkit-user-select:text;user-select:text}
 #nta:focus{border-color:var(--violet);box-shadow:0 0 0 3px color-mix(in srgb,var(--violet) 22%,transparent)}
@@ -756,7 +760,7 @@ function put(p) { return lareon.setSettings(p).then(function (r) { if (r) S = r;
 function group(title, rows) { var g = mk('div', 'sg'); g.appendChild(mk('h3', '', esc(title))); var c = mk('div', 'card'); rows.forEach(function (r) { c.appendChild(r); }); g.appendChild(c); return g; }
 function textSize(v) { if (v && v !== 'normal') document.documentElement.setAttribute('data-size', v); else document.documentElement.removeAttribute('data-size'); }
 lareon.getSettings().then(function (x) { if (x) textSize(x.textSize); });
-setTimeout(function () { try { if (!localStorage.getItem('lareon.v2')) { localStorage.setItem('lareon.v2', '1'); toast('Welcome to Lareon 2.0 · try Shelf (' + (/Mac/.test(navigator.platform) ? '⌘⌥V' : 'Ctrl+Alt+V') + '), Notes on Home, and typing sums or "5 km to mi" in Jump to'); } } catch (e) {} }, 1800);
+setTimeout(function () { try { if (!localStorage.getItem('lareon.v2')) { localStorage.setItem('lareon.v2', '1'); var mac = /Mac/.test(navigator.platform); toast('Welcome to Lareon 2.0 · ' + (mac ? '⌘⌥A' : 'Ctrl+Alt+A') + ' asks Aster about your screen, drop any file on Lareon to get a link, and ' + (mac ? '⌘⇧E' : 'Ctrl+Shift+E') + ' rewrites selected text in any app'); } } catch (e) {} }, 1800);
 function applyTheme(v) { if (window.setTheme) window.setTheme(v === 'system' ? '' : v, true); }
 function renderSet() {
   if (!S || $('set').hidden) return;
@@ -822,6 +826,8 @@ function renderSet() {
     row(t('pc.assist'), t('pc.assist.d', { k: mk2 + 'E' }), sw(S.assistKey !== false, function (v) { put({ assistKey: v }); })),
     row(t('pc.capture'), t('pc.capture.d', { k: mk2 + 'X' }), sw(S.captureKey !== false, function (v) { put({ captureKey: v }); })),
     row('Shelf · clipboard history', 'Press ' + (mk2.indexOf('⌘') >= 0 ? '⌘⌥V' : 'Ctrl+Alt+V') + ' for everything you copied. Kept in memory only; passwords are skipped', sw(S.shelf !== false, function (v) { put({ shelf: v }); })),
+    row('Ask about my screen', 'Press ' + (mk2.indexOf('⌘') >= 0 ? '⌘⌥A' : 'Ctrl+Alt+A') + ' and Aster looks at your screen: errors, forms, charts, messages', sw(S.screenKey !== false, function (v) { put({ screenKey: v }); })),
+    S.platform === 'darwin' && !S.axOk ? row('Replace text in any app', 'Allow Lareon in System Settings → Privacy & Security → Accessibility, so Aster can rewrite the text you select and put it back', null) : null,
     row('Notes on Home', 'A notepad on your Home screen that saves as you type', sw(!(S.homeCards && S.homeCards.notes === false), function (v) { put({ homeCards: { notes: v } }).then(cards); }))
   ]));
   b.appendChild(group(t('set.updates'), [
@@ -995,6 +1001,17 @@ function fseg() { var d = $('fseg'); d.innerHTML = ''; [15, 25, 50].forEach(func
 $('fgo').onclick = function () { fend ? fstop(false) : fstart(); };
 fseg(); if (fend) { frun(); lareon.focusState(fend); }
 
+// Drop to share: drop files on Lareon, get a private link copied
+(function () {
+  var ov = mk('div', '', '<div class="dz-b"><b>Drop to get a link</b><span>Saved to Cove · the link is copied for you · lasts 30 days</span></div>'); ov.id = 'dz'; document.body.appendChild(ov);
+  var n = 0, has = function (e) { return e.dataTransfer && [].indexOf.call(e.dataTransfer.types || [], 'Files') >= 0; };
+  window.addEventListener('dragenter', function (e) { if (!has(e) || !user) return; n++; ov.className = 'on'; });
+  window.addEventListener('dragleave', function () { if (--n <= 0) { n = 0; ov.className = ''; } });
+  window.addEventListener('dragover', function (e) { if (has(e)) e.preventDefault(); });
+  window.addEventListener('drop', function (e) { if (!has(e)) return; e.preventDefault(); n = 0; ov.className = ''; if (!user) return toast('Sign in to share files', true); lareon.shareFiles(e.dataTransfer.files); });
+  lareon.onShare(function (v) { if (v.busy) toast(v.n > 1 ? 'Uploading ' + v.n + ' files…' : 'Uploading…'); else if (v.links && v.links.length) toast(v.links.length > 1 ? v.links.length + ' links copied' : 'Link copied · ' + v.links[0].name); else toast('Couldn’t share that', true); });
+})();
+
 // Notes on Home: saved on this computer, one notepad per space
 function ntKey() { return 'lareon.notes.' + ((typeof SP !== 'undefined' && SP && SP.active) || 'main'); }
 function ntLoad() { try { $('nta').value = localStorage.getItem(ntKey()) || ''; } catch (e) {} }
@@ -1057,7 +1074,7 @@ function palItems() {
   a.push({ n: t('set.title'), f: openSet }, { n: t('tm.toggle'), f: flipTheme }, { n: t('focus.t') + ' · ' + t('focus.min', { n: 25 }), f: function () { lareon.show('home'); if (!fend) fstart(25); } });
   a.push({ n: t('lang'), f: function () { i18n.menu($('lg')); } });
   if (SP && SP.spaces.length > 1) SP.spaces.forEach(function (x) { if (x.id !== SP.active) a.push({ n: t('spc.switch', { s: x.name }), f: function () { lareon.spacesSwitch(x.id); } }); });
-  a.push({ n: t('cp.t'), f: function () { lareon.homeAction('capture'); } }, { n: 'Shelf · clipboard history', f: function () { lareon.openShelf(); } }, { n: 'Notes', f: function () { lareon.show('home'); setTimeout(function () { $('nta').focus(); }, 80); } });
+  a.push({ n: t('cp.t'), f: function () { lareon.homeAction('capture'); } }, { n: 'Shelf · clipboard history', f: function () { lareon.openShelf(); } }, { n: 'Ask Aster about my screen', f: function () { lareon.screenOpen(); } }, { n: 'Share a file · get a link', f: function () { lareon.sharePick(); } }, { n: 'Notes', f: function () { lareon.show('home'); setTimeout(function () { $('nta').focus(); }, 80); } });
   return a;
 }
 var found = [];
