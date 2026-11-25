@@ -154,30 +154,6 @@ h1{font-size:clamp(28px,4.4vw,42px);line-height:1.08;letter-spacing:-.04em;font-
 .mp-c.now{box-shadow:inset 0 0 0 2px var(--orange)}.mp-c.hl{transform:translateY(-2px);box-shadow:0 0 0 2px var(--violet)}
 .mp-add{position:relative;margin-top:12px;max-width:360px}.mp-add input{width:100%;font:inherit;font-size:14px;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:11px;padding:9px 12px;outline:0}.mp-add input:focus{border-color:var(--violet)}
 .mp-add ul{position:absolute;left:0;right:0;bottom:calc(100% + 6px);list-style:none;margin:0;padding:6px;background:var(--solid);border:1px solid var(--line2);border-radius:12px;box-shadow:var(--shadow);z-index:3}.mp-add li{padding:8px 11px;border-radius:8px;cursor:pointer;font-size:14px}.mp-add li:hover{background:var(--hover)}.mp-add li.no{color:var(--fg3)}
-/* Lareon 2.1.1: What's new for a point release (smaller than the 2.0 welcome, same look) */
-#l2p{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow:auto;padding:28px 18px;background:rgba(8,6,14,.62);-webkit-backdrop-filter:blur(14px) saturate(120%);backdrop-filter:blur(14px) saturate(120%);color:#fff;text-shadow:none;--fg:#fff;opacity:0;transition:opacity .4s var(--ease)}
-#l2p.on{opacity:1}#l2p.out{opacity:0;pointer-events:none;transition:opacity .35s var(--ease)}
-#l2p .pn{position:relative;width:min(860px,100%);overflow:hidden;border-radius:26px;background:#0d0a16;border:1px solid rgba(255,255,255,.12);box-shadow:0 40px 120px -30px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.03) inset;padding:34px 34px 26px;text-align:center;transform:translateY(14px) scale(.98);transition:transform .6s var(--ease)}
-#l2p.on .pn{transform:none}
-#l2p .wn-bg{position:absolute}#l2p .wn-bg i{opacity:.38}
-#l2p .in{position:relative}
-#l2p .hd{display:inline-flex;align-items:center;gap:10px;font:600 16px var(--sans);animation:lx-in .6s var(--ease) both}#l2p .hd img{width:28px;height:28px;filter:drop-shadow(0 6px 18px rgba(255,120,60,.5))}
-#l2p .hd b{font:800 12.5px var(--mono);padding:3px 9px;border-radius:999px;background:linear-gradient(135deg,#ff8a33,#c26bff)}
-#l2p h1{font:800 clamp(28px,4vw,44px)/1.06 var(--sans);letter-spacing:-.035em;margin:16px 0 8px;animation:lx-in .7s var(--ease) .06s both}
-#l2p h1 em{font-style:normal;background:linear-gradient(100deg,#ffc08a,#ff7aa2 45%,#c98bff);-webkit-background-clip:text;background-clip:text;color:transparent}
-#l2p .ld{color:#cfc9e6;font-size:15.5px;margin:0 0 24px;animation:lx-in .7s var(--ease) .12s both}
-#l2p .wn-g{grid-template-columns:repeat(3,1fr)}
-#l2p .wn-c{min-height:0}#l2p .wn-c small{display:flex;align-items:center;gap:6px}
-#l2p .wn-c .go{align-self:flex-start;margin-top:8px;font:600 13px var(--sans);color:#fff;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:7px 12px;cursor:pointer;transition:background .2s,border-color .2s}
-#l2p .wn-c .go:hover{background:rgba(255,255,255,.16);border-color:rgba(255,170,110,.5)}
-#l2p .wn-c .go.pri{border:0;background:linear-gradient(135deg,#ff8a33,#e2457e 55%,#9b5cff)}
-#l2p .vf{display:inline-block;font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#ffb067;border:1px solid rgba(255,176,103,.4);border-radius:999px;padding:1px 7px}
-#l2p .also{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 8px;margin-top:18px;font-size:13px;color:#a9a3c4;animation:lx-in .6s var(--ease) .6s both}
-#l2p .also span{color:#fff;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:3px 10px}
-#l2p .wn-ft{margin-top:22px;animation-delay:.7s}
-#l2p .wn-ft .btn.lk{background:none;border-color:transparent;color:#cfc9e6}#l2p .wn-ft .btn.lk:hover{color:#fff}
-@media(max-width:760px){#l2p .wn-g{grid-template-columns:1fr}#l2p .pn{padding:26px 18px 20px}}
-@media(prefers-reduced-motion:reduce){#l2p,#l2p *{animation:none!important;transition:none!important}}
 #l2{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow:auto;background:#0d0a16;color:#fff;opacity:0;transition:opacity .45s var(--ease);text-shadow:none;--fg:#fff}
 #l2.on{opacity:1}#l2.out{opacity:0;pointer-events:none;transform:scale(1.02);transition:opacity .4s var(--ease),transform .4s var(--ease)}
 .wn-bg{position:fixed;inset:0;overflow:hidden;pointer-events:none}.wn-bg i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;opacity:.55;will-change:transform;animation:wnf 18s ease-in-out infinite alternate}
@@ -1039,6 +1015,11 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$
 
 // ---- what's new ----
 var WN = {
+  "2.1.1": [
+    ["Aster Autopilot","Aster can now run jobs for you on Lareon’s servers, like a morning brief or a weekly plan. Find it in Aster. For verified citizens."],
+    ["Time zones and the sun in Ridge","Turn on Time zones in Ridge’s layers, then tap anywhere for sunrise and sunset."],
+    ["Do it","Aster’s Do it is now for verified Larsonian citizens."]
+  ],
   "1.6.0": [
     ["Spaces","Make separate setups like School, Work and Personal. Each keeps its own apps, wallpaper and alerts, and can switch on by itself on a schedule. Switch from the top of the sidebar."],
     ["Screenshots and recordings","Press Ctrl+Shift+X (⌘⇧X on Mac) to capture an area, a window or the whole screen, or record it. Then copy it, save it, put it in Cove, edit it in Sheen or email it."]
@@ -1103,54 +1084,9 @@ var WN = {
     ["What’s new, after every update","You’re looking at it. Find it again any time under Help, or in Settings under About."]
   ]
 };
-// Lareon 2.1.1 and later point releases: a What's new card in the 2.0 look (the big welcome is only for 2.0)
-var PT = {
-  '2.1.1': {
-    title: 'Aster works <em>while you’re away.</em>', lede: 'Lareon 2.1.1 brings Autopilot, the sun to Ridge, and a new home for Do it.',
-    cards: [
-      { i: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/><path d="M19.5 4.5l-1.8 1.8"/>', b: 'Aster Autopilot', p: 'Jobs Aster runs for you on Lareon’s servers, even with your computer off: a morning brief, receipts filed to Cove, a weekly plan in Dusk, or your own.', s: 'In Aster', v: 1, go: 'Open Autopilot', u: 'lareon://aster/chat#autopilot' },
-      { i: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', b: 'Time zones and the sun', p: 'Hour bands, the night side and city clocks on the map. Tap anywhere for sunrise, sunset, first light and the length of the day.', s: 'In Ridge → Layers', go: 'Open in Ridge', u: 'lareon://ridge/app#tz' },
-      { i: '<path d="M5 3v15l4-4 3 7 3-1.3-3-6.7h6z"/>', b: 'Do it, for citizens', p: 'Aster’s Do it is now for verified Larsonian citizens. Verifying also unlocks Autopilot and double the daily Aster messages.', s: K2('⌘⌥A', 'Ctrl+Alt+A') + ' → Do it', v: 1, go: 'Get verified', u: 'https://lareon.org/verify', ok: 'Try Do it' }
-    ],
-    since: { before: '2.1.0', label: 'Also new since 2.0', items: ['Larsonia Standard Time', 'Time zone map', 'Meeting planner', 'Countdowns', 'Timed reminders'] }
-  }
-};
-function K2(m, w) { return '<kbd>' + (/Mac/.test(navigator.platform) ? m : w) + '</kbd>'; }
-function vLess(a, b) { a = String(a || '0').split('.').map(Number); b = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) < (b[i] || 0); } return false; }
-function pointNew(v, prev) {
-  var P = PT[v]; if (!P || document.getElementById('l2p') || document.getElementById('l2')) return false;
-  if (cur !== 'home') lareon.show('home');
-  var since = P.since && (!prev || vLess(prev, P.since.before)) ? P.since : null;
-  var w = mk('div', '', '<div class="pn" role="dialog" aria-modal="true" aria-labelledby="l2p-t"><div class="wn-bg"><i></i><i></i><i></i></div><div class="in">' +
-    '<div class="hd"><img src="../build/art/lareon-icon.svg" alt=""><span>Lareon</span><b>' + esc(v) + '</b></div>' +
-    '<h1 id="l2p-t">' + P.title + '</h1><p class="ld">' + esc(P.lede) + '</p><div class="wn-g">' +
-    P.cards.map(function (c, n) { return '<div class="wn-c" style="--d:' + (0.2 + n * 0.08) + 's"><svg viewBox="0 0 24 24">' + c.i + '</svg><b>' + esc(c.b) + '</b><p>' + esc(c.p) + '</p><small>' + c.s + (c.v ? ' <span class="vf">Verified</span>' : '') + '</small>' + (c.go ? '<button class="go' + (n === 0 ? ' pri' : '') + '" data-n="' + n + '">' + esc(c.go) + '</button>' : '') + '</div>'; }).join('') +
-    '</div>' + (since ? '<div class="also">' + esc(since.label) + ': ' + since.items.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</div>' : '') +
-    '<div class="wn-ft"><button class="btn lk" id="l2p-notes">All release notes</button><button class="btn pri" id="l2p-ok">Got it</button></div></div></div>');
-  w.id = 'l2p'; document.body.appendChild(w); requestAnimationFrame(function () { requestAnimationFrame(function () { w.className = 'on'; }); });
-  function close(then) { if (w.__c) return; w.__c = 1; lareon.seenWhatsNew(); w.classList.add('out'); document.removeEventListener('keydown', key); setTimeout(function () { w.remove(); if (then) then(); }, 360); }
-  function key(e) { if (e.key === 'Escape' || (e.key === 'Enter' && document.activeElement === $('l2p-ok'))) close(); }
-  document.addEventListener('keydown', key);
-  w.addEventListener('click', function (e) { if (e.target === w) close(); });
-  $('l2p-ok').onclick = function () { close(); };
-  $('l2p-notes').onclick = function () { lareon.wnOpen('https://lareon.org/changelog'); };
-  // people who are already verified get "Try Do it" instead of "Get verified"
-  if (lareon.asterVerified) lareon.asterVerified().then(function (ok) { if (ok !== true) return; P.cards.forEach(function (c, n) { if (!c.ok) return; var b = w.querySelector('.go[data-n="' + n + '"]'); if (b) { b.textContent = c.ok; b.dataset.ok = '1'; } }); });
-  w.querySelectorAll('.go').forEach(function (b) { b.onclick = function () {
-    var c = P.cards[+b.dataset.n];
-    if (b.dataset.ok) return close(function () { lareon.screenOpen(); });
-    lareon.wnOpen(c.u).then(function (r) { if (r === false) toast('Turn on ' + c.b.split(' ')[0] + ' in Settings → Apps first.', true); else close(); });
-  }; });
-  setTimeout(function () { try { $('l2p-ok').focus({ preventScroll: true }); } catch (e) {} }, 400);
-  return true;
-}
-function showWN(v, prev) {
-  if (/^2\./.test(String(v))) {
-    var big = false; try { big = !localStorage.getItem('lareon.v2'); localStorage.setItem('lareon.v2', '1'); } catch (e) {}
-    if (big) { whatsNew(); lareon.seenWhatsNew(); return; }
-    if (!pointNew(v, prev)) lareon.seenWhatsNew();
-    return;
-  }
+function showWN(v) {
+  // 2.0 gets the big welcome once; later 2.x point releases use the small box below
+  if (/^2\./.test(String(v))) { var big = false; try { big = !localStorage.getItem('lareon.v2'); localStorage.setItem('lareon.v2', '1'); } catch (e) {} if (big || !WN[v] || document.getElementById('l2')) { if (big) whatsNew(); lareon.seenWhatsNew(); return; } }
   var items = WN[v] || WN['1.0.6'];
   $('wnv').textContent = t('wn.v', { v: v });
   $('wnl').innerHTML = items.map(function (x) { return '<li><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></li>'; }).join('');
