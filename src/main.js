@@ -22,7 +22,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 
 // ---- settings (chosen in the setup wizard) ----
 const DEFAULT_APPS = Object.fromEntries(Object.entries(apps).map(([k, a]) => [k, !a.off]));
-const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, wallPhase: '', wallTint: true, railWide: false, textSize: 'normal', notifyApps: { fledge: true, rustle: true, dusk: true }, quiet: { on: false, from: '22:00', to: '07:00' }, composeKey: true, assistKey: true, captureKey: true, shelf: true, screenKey: true, agent: true, spaces: null, space: '', lock: { pin: '', idle: 0, sleep: true, touch: true }, order: [], homeCards: { today: true, mail: true, brief: true, across: true, focus: false, apps: false, notes: true }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
+const DEFAULTS = { setupDone: false, apps: DEFAULT_APPS, notifications: true, remindEvents: true, remindLead: 5, snoozeUntil: 0, startApp: 'home', lastApp: 'home', badge: true, autoUpdate: true, notifSound: true, background: true, quickAdd: true, askKey: true, brief: true, focusMute: true, briefCache: null, lastSeen: '', taskQueue: [], wall: 'peaks', wallTime: false, wallPhase: '', wallTint: true, railWide: false, textSize: 'normal', notifyApps: { fledge: true, rustle: true, dusk: true }, quiet: { on: false, from: '22:00', to: '07:00' }, composeKey: true, assistKey: true, captureKey: true, lrtClock: true, tz: '', reminders: [], shelf: true, screenKey: true, agent: true, spaces: null, space: '', lock: { pin: '', idle: 0, sleep: true, touch: true }, order: [], homeCards: { today: true, mail: true, brief: true, across: true, focus: false, apps: false, notes: true }, launchAtLogin: false, theme: 'system', sess: null, lang: '', td: '' };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 let settings = { ...DEFAULTS };
 function loadSettings() {
@@ -393,9 +393,11 @@ async function flushQueue() {
   for (const q of settings.taskQueue) { try { if (!(await postTask(q.title, q.day))) { /* server said no: drop it */ } } catch { rest.push(q); } }
   settings.taskQueue = rest; writeSettings();
 }
-ipcMain.handle('home:add-task', async (_e, title) => {
+ipcMain.handle('home:add-task', async (_e, title, opt) => {
   title = String(title || '').trim().slice(0, 200); if (!sess || !title) return false;
-  const day = isoDay(new Date());
+  opt = opt && typeof opt === 'object' ? opt : {};
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(opt.day || '') ? opt.day : isoDay(new Date());
+  if (typeof opt.at === 'number' && opt.at > Date.now() && opt.at < Date.now() + 400 * 86400000) addReminder(title, opt.at);
   try { return await postTask(title, day); }
   catch { settings.taskQueue = (settings.taskQueue || []).concat([{ title, day }]).slice(-50); writeSettings(); return 'queued'; }
 });
@@ -688,12 +690,12 @@ function createWindow() {
 }
 
 ipcMain.on('theme:get', (e) => { e.returnValue = ['light', 'dark'].includes(settings.theme) ? settings.theme : ''; });
-const publicSettings = () => ({ agent: settings.agent !== false, shelf: settings.shelf !== false, screenKey: settings.screenKey !== false, axOk: isMac ? systemPreferences.isTrustedAccessibilityClient(false) : true, captureKey: settings.captureKey !== false, spaces: spacesOut(), composeKey: settings.composeKey !== false, assistKey: settings.assistKey !== false, mailDefault: isMailDefault(), catalog: apps, order: enabledKeys(), ...(() => { const w = wallNow(); return { wall: w.wall, wallPhase: w.phase, wallTint: w.tint }; })(), notifyApps: { ...DEFAULTS.notifyApps, ...(settings.notifyApps || {}) }, quiet: { ...DEFAULTS.quiet, ...(settings.quiet || {}) }, lock: { hasPin: !!(settings.lock && settings.lock.pin), idle: (settings.lock && settings.lock.idle) || 0, sleep: !settings.lock || settings.lock.sleep !== false, touch: !settings.lock || settings.lock.touch !== false, canTouch: canTouch() }, railWide: !!settings.railWide, textSize: settings.textSize || 'normal', homeCards: { ...DEFAULTS.homeCards, ...(settings.homeCards || {}) }, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
+const publicSettings = () => ({ tz: settings.tz || '', lrtClock: settings.lrtClock !== false, reminders: (settings.reminders || []).slice(0, 50), agent: settings.agent !== false, shelf: settings.shelf !== false, screenKey: settings.screenKey !== false, axOk: isMac ? systemPreferences.isTrustedAccessibilityClient(false) : true, captureKey: settings.captureKey !== false, spaces: spacesOut(), composeKey: settings.composeKey !== false, assistKey: settings.assistKey !== false, mailDefault: isMailDefault(), catalog: apps, order: enabledKeys(), ...(() => { const w = wallNow(); return { wall: w.wall, wallPhase: w.phase, wallTint: w.tint }; })(), notifyApps: { ...DEFAULTS.notifyApps, ...(settings.notifyApps || {}) }, quiet: { ...DEFAULTS.quiet, ...(settings.quiet || {}) }, lock: { hasPin: !!(settings.lock && settings.lock.pin), idle: (settings.lock && settings.lock.idle) || 0, sleep: !settings.lock || settings.lock.sleep !== false, touch: !settings.lock || settings.lock.touch !== false, canTouch: canTouch() }, railWide: !!settings.railWide, textSize: settings.textSize || 'normal', homeCards: { ...DEFAULTS.homeCards, ...(settings.homeCards || {}) }, theme: settings.theme, lang: settings.lang, notifications: settings.notifications !== false, remindEvents: settings.remindEvents !== false, remindLead: settings.remindLead, snoozeUntil: settings.snoozeUntil || 0, launchAtLogin: !!settings.launchAtLogin, startApp: settings.startApp, badge: settings.badge !== false, autoUpdate: settings.autoUpdate !== false, notifSound: settings.notifSound !== false, background: settings.background !== false, quickAdd: settings.quickAdd !== false, askKey: settings.askKey !== false, brief: settings.brief !== false, focusMute: settings.focusMute !== false, apps: { ...settings.apps }, version: app.getVersion(), platform: process.platform });
 ipcMain.handle('settings:get', () => publicSettings());
 ipcMain.handle('settings:set', (_e, p) => {
   p = p || {};
   const bool = (k) => { if (typeof p[k] === 'boolean') settings[k] = p[k]; };
-  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound', 'background', 'quickAdd', 'askKey', 'brief', 'focusMute', 'composeKey', 'assistKey', 'captureKey', 'shelf', 'screenKey', 'agent'].forEach(bool);
+  ['notifications', 'remindEvents', 'badge', 'autoUpdate', 'notifSound', 'background', 'quickAdd', 'askKey', 'brief', 'focusMute', 'composeKey', 'assistKey', 'captureKey', 'lrtClock', 'shelf', 'screenKey', 'agent'].forEach(bool);
   if (typeof p.composeKey === 'boolean' || typeof p.assistKey === 'boolean' || typeof p.captureKey === 'boolean' || typeof p.shelf === 'boolean' || typeof p.screenKey === 'boolean') { applyQuick(); if (p.shelf === false) shelfItems = []; }
   if (typeof p.launchAtLogin === 'boolean') { settings.launchAtLogin = p.launchAtLogin; applyLogin(); }
   if (['system', 'light', 'dark'].includes(p.theme)) { settings.theme = p.theme; nativeTheme.themeSource = p.theme; paintChrome(); }
@@ -726,6 +728,8 @@ ipcMain.handle('settings:set', (_e, p) => {
     settings.lock = l;
   }
   if (['normal', 'large', 'xl'].includes(p.textSize)) settings.textSize = p.textSize;
+  if (typeof p.lrtClock === 'boolean') setTimeout(lrtTick, 50);
+  if (typeof p.tz === 'string') { const z = p.tz.slice(0, 64); let ok = z === '' || z === 'LST'; if (!ok) { try { new Intl.DateTimeFormat('en', { timeZone: z }); ok = true; } catch {} } if (ok) settings.tz = z; }
   if (typeof p.railWide === 'boolean' && p.railWide !== settings.railWide) { settings.railWide = p.railWide; layout(); send('rail', p.railWide); }
   if (Array.isArray(p.order)) { settings.order = p.order.filter((k) => typeof k === 'string' && apps[k]).slice(0, 40); appsChanged = true; }
   if (p.homeCards && typeof p.homeCards === 'object') for (const k of ['today', 'mail', 'brief', 'across', 'focus', 'apps', 'notes']) if (typeof p.homeCards[k] === 'boolean') settings.homeCards = { ...settings.homeCards, [k]: p.homeCards[k] };
@@ -1136,6 +1140,33 @@ ipcMain.handle('scr:ask', async (_e, q, history) => {
 ipcMain.on('scr:close', () => { if (scr && !scr.isDestroyed()) scr.hide(); });
 ipcMain.on('scr:again', () => { if (scr && !scr.isDestroyed()) scr.hide(); setTimeout(openScreenAsk, 250); });
 
+// ---- Larsonia Time: Larsonia's national time, UTC−7:30 all year (no clock changes) ----
+const LRT_OFF = -7.5 * 3600000;
+const lrtNow = () => { const d = new Date(Date.now() + LRT_OFF); let h = d.getUTCHours(); const m = d.getUTCMinutes(); const ap = h < 12 ? 'AM' : 'PM'; h = h % 12 || 12; return h + ':' + String(m).padStart(2, '0') + ' ' + ap; };
+function lrtTick() {
+  if (!tray) return;
+  try {
+    if (settings.lrtClock === false) { if (isMac) tray.setTitle(''); tray.setToolTip('Lareon'); return; }
+    if (isMac) tray.setTitle(' LST ' + lrtNow().replace(' ', ' '), { fontType: 'monospacedDigit' });
+    tray.setToolTip('Lareon · Larsonia Standard Time ' + lrtNow());
+  } catch {}
+}
+setInterval(lrtTick, 5000); setTimeout(lrtTick, 3000);
+
+// ---- Reminders at a time: "remind me to call mom tomorrow at 5pm" from Jump to or Aster ----
+function addReminder(title, at) {
+  settings.reminders = (settings.reminders || []).filter((r) => r.at > Date.now() - 60000).concat([{ id: crypto.randomBytes(4).toString('hex'), title: String(title).slice(0, 200), at }]).sort((a, b) => a.at - b.at).slice(0, 100);
+  writeSettings(); send('reminders', settings.reminders);
+}
+function remindTick() {
+  const due = (settings.reminders || []).filter((r) => r.at <= Date.now()); if (!due.length) return;
+  settings.reminders = settings.reminders.filter((r) => r.at > Date.now()); writeSettings(); send('reminders', settings.reminders);
+  for (const r of due) if (Date.now() - r.at < 6 * 3600000) notify('Reminder', r.title, 'dusk', true);
+}
+setInterval(remindTick, 15000);
+ipcMain.handle('reminder:remove', (_e, id) => { settings.reminders = (settings.reminders || []).filter((r) => r.id !== id); writeSettings(); return settings.reminders; });
+if (typeof powerMonitor !== 'undefined') try { powerMonitor.on('resume', () => setTimeout(remindTick, 3000)); } catch {}
+
 // ---- Aster takes the cursor: does a task on your computer, only after you say yes ----
 // Each step: a screenshot goes to Aster, Aster answers with one action, Lareon shows Aster's cursor moving there, then does it.
 // Asks before anything that sends, buys, deletes, posts or signs in. Never types passwords. Stop button, Esc, or the shortcut stops it.
@@ -1149,6 +1180,7 @@ const LAREON_KNOW = () => 'About Lareon (the company and app the person uses; yo
   '- rustle: Rustle, private chat and calls (rustle.lareon.org).\n- cove: Cove, files and photos; share links; albums.\n- verse: Verse, documents.\n- ward: Ward, passwords and sign-in codes (never read or type these).\n' +
   '- sheen: Sheen, photo editor.\n- lark: Lark, games with no ads.\n- ridge: Ridge, maps and directions (ridge.lareon.org/app): search places, directions, live turn-by-turn, saved places.\n- grove: Grove, Bank of Larsonia for citizens (money: always risky).\n' +
   'Desktop shortcuts: ' + (isMac ? 'cmd' : 'ctrl') + '+shift+space quick add a task; +shift+m new email; +shift+e Aster on selected text; +alt+v Shelf (clipboard history); +shift+x screen capture.\n' +
+  'Larsonia Standard Time (LST) is Larsonia\'s national time, UTC−7:30 all year; right now it is ' + lrtNow() + ' LST. Larsonia\'s administrative center in Eagle, Idaho is like an embassy and keeps Idaho (Mountain) time.\n' +
   'Lareon\'s own map rules: Larsonia is a country (capital Larsonia City, in Star, Idaho); say Occupied Palestine, never Israel; Western Sahara is the Sahrawi Republic.\n' +
   'Only these apps are turned on for this person: ' + enabledKeys().join(', ') + '.';
 function frontApp() {
