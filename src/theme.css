@@ -93,7 +93,7 @@ button,a,input,select,textarea,[role=button],.card,.tile,.btn,li{transition:colo
 button:not([disabled]):active{transform:scale(.97)}
 @keyframes lx-in{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
 @keyframes lx-fade{from{opacity:0}to{opacity:1}}
-#home>*,#set .grp,#setb>*,#pal,#toast,[role=dialog],.menu,.pop{animation:lx-in .42s var(--ease) both}
+#home>*,#set .grp,#setb>*,#pal,[role=dialog],.menu,.pop{animation:lx-in .42s var(--ease) both}
 #home>*:nth-child(2){animation-delay:.05s}#home>*:nth-child(3){animation-delay:.1s}#home>*:nth-child(4){animation-delay:.15s}#home>*:nth-child(5){animation-delay:.2s}
 #setb>*:nth-child(2){animation-delay:.04s}#setb>*:nth-child(3){animation-delay:.08s}#setb>*:nth-child(4){animation-delay:.12s}#setb>*:nth-child(n+5){animation-delay:.16s}
 ::view-transition-old(root),::view-transition-new(root){animation-duration:.7s}
