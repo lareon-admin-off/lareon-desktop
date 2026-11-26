@@ -60,6 +60,7 @@ async function api(p, { method = 'GET', body, token } = {}) {
   if (token) headers.Authorization = 'Bearer ' + token;
   const r = await net.fetch(API + p, { method, headers, body: body ? JSON.stringify(body) : undefined });
   let j = null; try { j = await r.json(); } catch {}
+  if (token && token === (sess && sess.token)) { try { noticeHook(r.status, j, r.headers.get('x-lareon-notice')); } catch {} }
   if (r.status === 451 || (j && j.code === 'region')) j = { ...(j || {}), code: 'region' };
   else if (r.status === 503) j = { ...(j || {}), code: 'maint' };
   return { status: r.status, j };
@@ -229,7 +230,7 @@ function show(key) {
 async function finishLogin(token, user) {
   seen.mailTop = null; seen.unread = null;
   sess = { token, user };
-  saveSess();
+  saveSess(); setTimeout(checkNotice, 1500);
   dropViews();
   for (const k of warmKeys()) views[k] = makeView(k); // load the everyday apps quietly; the rest open when you first click them
   send('session', sessInfo());
@@ -249,6 +250,8 @@ ipcMain.handle('auth:login', async (_e, c) => {
     if (j && (j.code === 'region' || j.code === 'maint')) return { code: j.code };
     if (j && j.token) return finishLogin(j.token, j.user);
     if (j && j.requires2FA) { pending2fa = username; pendingTicket = String(j.ticket || ''); return { need2fa: true, contact: j.contact || '', app: !!j.app }; }
+    const nl = noticeOf(status, j, username);
+    if (nl) { showNotice(nl.level, nl.data); return { error: nl.say }; }
     if (status === 403 && j && j.error === 'banned') return { banned: { reason: j.reason === '__under13' ? '' : String(j.reason || ''), kind: j.reason === '__under13' ? 'u' : (j.export_token && j.delete_at ? 't' : 's'), token: j.export_token ? String(j.export_token) : '', deleteAt: j.delete_at || '' } };
     
     if (status === 429) return { error: 'Too many attempts. Wait a few minutes and try again.' };
@@ -259,7 +262,9 @@ ipcMain.handle('auth:verify', async (_e, c) => {
   if (!pending2fa) return { error: 'Start again from the sign-in screen.' };
   const code = typeof c === 'string' ? c : (c && c.code);
   try {
-    const { j } = await api('/api/auth/2fa/verify', { method: 'POST', body: { username: pending2fa, code: String(code || '').trim(), ticket: pendingTicket } });
+    const { status: st2, j } = await api('/api/auth/2fa/verify', { method: 'POST', body: { username: pending2fa, code: String(code || '').trim(), ticket: pendingTicket } });
+    const nl2 = noticeOf(st2, j, pending2fa);
+    if (nl2) { pending2fa = null; pendingTicket = ''; showNotice(nl2.level, nl2.data); return { error: nl2.say }; }
     if (j && j.code === 'relogin') { pending2fa = null; pendingTicket = ''; return { error: j.error || 'Your sign-in timed out. Enter your password again.' }; }
     if (j && j.token) {
       const user = pending2fa; pending2fa = null; pendingTicket = '';
@@ -1354,6 +1359,64 @@ async function isVerified() {
   try { const r = await api('/api/aster/status', { token: sess.token }); if (r.status === 200 && r.j && typeof r.j.verified === 'boolean') { verCache = { t: Date.now(), v: r.j.verified }; return r.j.verified; } } catch {}
   return null; // unknown (offline etc.): let the server decide
 }
+// ---- formal account notices: the same screen as lareon.org (reminder, warnings, restriction, suspension, termination,
+// network block, closed and reported). The website's notice script runs in its own window (notice.html); its few
+// requests go through 'notice:api'. Under-13 closures keep the sign-in screen's own page.
+let noticeWin = null, noticeAt = 0;
+const NOTICE_SAY = { short: 'This account is suspended.', long: 'This account is suspended.', review: 'This account is suspended until a person has reviewed it.', term: 'This account has been closed.', reported: 'This account has been closed.', network: 'Lareon is blocked on this network.', signup: 'New accounts are paused on this network.' };
+function noticeOf(status, j, username) {
+  if (status !== 403 || !j) return null;
+  let level = '', data = { ...j, username: j.username || username || '' };
+  if (j.code === 'suspended') level = j.level || (j.until ? 'long' : 'review');
+  else if (j.error === 'banned' && j.reported) level = 'reported';
+  else if (j.error === 'banned' && j.reason !== '__under13') { level = 'term'; data = { reason: j.reason, delete_at: j.delete_at, export_token: j.export_token, ref: j.ref, rule: j.rule, username: j.username || username || '' }; }
+  else if (j.code === 'network_blocked') level = 'network';
+  else if (j.code === 'closed_reported') level = 'reported';
+  else if (j.code === 'ip_blocked') level = 'signup';
+  else if (j.code === 'restricted') { level = 'restricted'; data.again = true; }
+  return level ? { level, data, say: NOTICE_SAY[level] || 'There’s a notice on this account.' } : null;
+}
+function noticeHook(status, j, waiting) {
+  if (waiting) setTimeout(checkNotice, 0);
+  const nl = noticeOf(status, j, sess && sess.user && sess.user.username);
+  if (nl) showNotice(nl.level, nl.data);
+}
+async function checkNotice() {
+  if (!sess || Date.now() - noticeAt < 20000) return; noticeAt = Date.now();
+  try {
+    const r = await net.fetch(API + '/api/account/notice', { headers: { Accept: 'application/json', Authorization: 'Bearer ' + sess.token } });
+    const j = r.ok ? await r.json() : null;
+    if (j && j.notice && j.notice.level) showNotice(j.notice.level, { ...j.notice, username: j.notice.username || (sess.user && sess.user.username) || '' });
+  } catch {}
+}
+setInterval(checkNotice, 10 * 60000);
+function showNotice(level, data) {
+  const x = { level: String(level), data: data || {} };
+  if (noticeWin && !noticeWin.isDestroyed()) { noticeWin.webContents.send('notice:show', x); noticeWin.show(); noticeWin.focus(); return; }
+  const parent = win && !win.isDestroyed() && win.isVisible() ? win : null;
+  const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  const b = parent ? parent.getBounds() : { width: Math.min(1100, area.width), height: Math.min(800, area.height), x: Math.round(area.x + (area.width - Math.min(1100, area.width)) / 2), y: Math.round(area.y + (area.height - Math.min(800, area.height)) / 2) };
+  noticeWin = new BrowserWindow({ ...b, show: false, frame: false, parent: parent || undefined, modal: !!parent, minimizable: false, fullscreenable: false, backgroundColor: '#13111b', title: 'Lareon notice', webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false } });
+  noticeWin.loadFile(path.join(__dirname, 'notice.html'), { query: { d: JSON.stringify({ ...x, user: (x.data && x.data.username) || (sess && sess.user && sess.user.username) || '' }) } });
+  const out = (u) => {
+    u = String(u || '');
+    const m = /^file:.*?\/(api\/banned\/export\?token=[\w.-]+|account|terms)$/.exec(u); if (m) u = 'https://lareon.org/' + m[1];
+    if (/^(mailto:|https:\/\/([a-z0-9-]+\.)?lareon\.org(\/|$))/i.test(u)) shell.openExternal(u);
+  };
+  noticeWin.webContents.on('will-navigate', (e, u) => { e.preventDefault(); out(u); });
+  noticeWin.webContents.setWindowOpenHandler(({ url }) => { out(url); return { action: 'deny' }; });
+  noticeWin.once('ready-to-show', () => { if (noticeWin && !noticeWin.isDestroyed()) { noticeWin.show(); noticeWin.focus(); } });
+  noticeWin.on('closed', () => { noticeWin = null; });
+}
+ipcMain.on('notice:close', () => { if (noticeWin && !noticeWin.isDestroyed()) noticeWin.close(); });
+ipcMain.handle('notice:api', async (_e, r) => {
+  const p = String((r && r.path) || ''), method = String((r && r.method) || 'GET').toUpperCase();
+  const ok = (p === '/api/appeals' && method === 'POST') || (p === '/api/account/notice' && method === 'GET') || (p === '/api/account/notice/seen' && method === 'POST');
+  if (!ok) return { status: 403, j: { error: 'Not allowed' } };
+  let body; try { body = r.body ? JSON.parse(r.body) : undefined; } catch {}
+  try { const x = await api(p, { method, body, token: p === '/api/appeals' ? undefined : sess && sess.token }); return { status: x.status, j: x.j }; } catch { return { status: 599, j: { error: 'You seem to be offline. Try again.' } }; }
+});
+
 function showVerifyLock() {
   if (lockWin && !lockWin.isDestroyed()) { lockWin.show(); lockWin.focus(); return; }
   const disp = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()), u = (sess && sess.user) || {};
@@ -1841,6 +1904,7 @@ function startUpdater() {
 
 app.whenReady().then(() => {
   loadSettings(); loadSess(); nativeTheme.themeSource = settings.theme || 'system'; applyLogin();
+  setTimeout(checkNotice, 4000); app.on('browser-window-focus', () => { if (Date.now() - noticeAt > 5 * 60000) checkNotice(); });
   // Clipboard and full screen are fine for Lareon pages; the mic and camera only for Rustle (calls and voice messages); location only for Ridge (maps); the rest is refused.
   try { session.fromPartition('persist:lareon').on('will-download', (_e, item, wc) => trackDownload(item, wc)); } catch {}
   session.fromPartition('persist:lareon').setPermissionRequestHandler((wc, perm, cb) => {
