@@ -227,6 +227,15 @@ body.wide .ri .rn{opacity:1}
 .ri .bd{position:absolute;left:30px;top:5px;margin:0;font-size:10px;padding:0 5px;line-height:16px;min-width:16px;text-align:center;box-shadow:0 0 0 2px var(--bar)}
 .ri.drag{opacity:.35}.ri.over{box-shadow:inset 0 2px 0 var(--orange)}
 .rsep{height:1px;background:var(--line);margin:4px 6px;flex:none}
+/* apps in groups (Every day, Make, Keep, More); a thin line when the sidebar is narrow, a name you can click to fold when it's wide */
+#rlist{gap:2px}#rlist .ri{height:40px}
+.rgh{position:relative;flex:none;height:13px;margin:3px 0;border:0;background:none;padding:0;text-align:left;color:var(--fg3);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;cursor:default}
+.rgh:before{content:"";position:absolute;left:8px;right:8px;top:6px;height:1px;background:var(--line);transition:opacity .25s}
+.rgh span{opacity:0;transition:opacity .25s;white-space:nowrap;display:flex;align-items:center;gap:6px;padding-left:12px}
+.rgh span i{font-style:normal;transition:transform .2s;display:inline-block;font-size:9px}
+body.wide .rgh{height:24px;cursor:pointer;margin:6px 0 0}body.wide .rgh:before{opacity:0}body.wide .rgh span{opacity:1}body.wide .rgh:hover{color:var(--fg2)}
+body.wide .rgh.shut span i{transform:rotate(-90deg)}
+.rgh.first{display:none}body.wide .rgh.first{display:block;margin-top:0}
 .rbot{display:flex;flex-direction:column;gap:4px;flex:none;padding-top:6px;border-top:1px solid var(--line)}
 .rbot .ri{height:40px}.rbot .ri[aria-pressed=true]{color:var(--orange)}
 /* the title area: which app you're in, back / forward / reload */
@@ -267,7 +276,7 @@ body.wide .ri .rn{opacity:1}
 #lock input:focus{border-color:var(--orange);box-shadow:0 0 0 3px color-mix(in srgb,var(--orange) 22%,transparent)}
 #lock .err{color:var(--red);font-size:13px;min-height:18px;margin-top:-6px}
 #lock.shake .lk{animation:shake .4s}@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
-#lock .btn{width:100%;padding:10px}
+#lock .btn{width:100%;padding:10px}#lock .lkfg,.pinf .lkfg{background:none;border:0;color:var(--fg2);font:inherit;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:2px 4px}#lock .lkfg:hover,.pinf .lkfg:hover{color:var(--fg)}
 body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.locked #divider,body.locked .bar>*:not(.brand){visibility:hidden!important}
 .pinf{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.pinf input{width:110px;font:500 14px var(--mono);letter-spacing:.2em;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:9px;padding:6px 10px;outline:0;-webkit-user-select:text;user-select:text}.pinf input:focus{border-color:var(--orange)}
 
@@ -390,7 +399,7 @@ body.locked #home,body.locked #rail,body.locked #set,body.locked #opening,body.l
 <div id="divider" title=""><i></i></div>
 <div id="lock" hidden><div class="lk"><img src="../build/art/lareon-icon.svg" alt=""><h2 data-i="lk.h"></h2><p data-i="lk.p"></p>
  <form id="lkf" style="width:100%;display:flex;flex-direction:column;gap:12px"><input id="lki" type="password" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="PIN"><div class="err" id="lke"></div><button class="btn pri" type="submit" data-i="lk.go"></button></form>
- <button class="btn" id="lkt" hidden data-i="lk.touch"></button></div></div>
+ <button class="btn" id="lkt" hidden data-i="lk.touch"></button><button class="lkfg" id="lkfg" type="button" data-i="lk.forgot"></button></div></div>
 <div class="load" id="load"><i></i></div>
 <div id="ban" role="status" data-i="net.banner"></div><div id="toast" role="status"></div>
 
@@ -460,18 +469,34 @@ mountScene();
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 // ---- the apps sidebar (drag to reorder, right-click for more) ----
 var SPLIT = null, NAV = { back: false, fwd: false }, dragK = null;
+var GROUPS = ['daily', 'make', 'keep', 'more'], SHUT = {};
+try { SHUT = JSON.parse(localStorage.getItem('lx-rail-shut') || '{}') || {}; } catch (e) {}
+function groupOf(k) { var g = APPS[k] && APPS[k].group; return GROUPS.indexOf(g) >= 0 ? g : 'more'; }
 function tabs() {
   var L = $('rlist'); L.innerHTML = '';
-  Object.keys(APPS).forEach(function (k) {
+  // keep the apps in their groups (your own order inside each group), so ⌘1–9 match what you see
+  var ordered = []; GROUPS.forEach(function (g) { Object.keys(APPS).forEach(function (k) { if (groupOf(k) === g) ordered.push(k); }); });
+  var o = {}; ordered.forEach(function (x) { o[x] = APPS[x]; }); APPS = o;
+  var wide = document.body.classList.contains('wide'), lastG = null, firstG = true;
+  ordered.forEach(function (k) {
+    var g = groupOf(k);
+    if (g !== lastG) {
+      lastG = g; var h = document.createElement('button'); h.className = 'rgh' + (firstG ? ' first' : '') + (SHUT[g] ? ' shut' : ''); h.setAttribute('data-g', g); h.tabIndex = wide ? 0 : -1;
+      h.innerHTML = '<span><i>▾</i></span>'; h.querySelector('span').appendChild(document.createTextNode(t('grp.' + g))); h.title = t('grp.' + g);
+      h.onclick = function () { if (!document.body.classList.contains('wide')) return; SHUT[g] = !SHUT[g]; try { localStorage.setItem('lx-rail-shut', JSON.stringify(SHUT)); } catch (e) {} tabs(); };
+      L.appendChild(h); firstG = false;
+    }
+    if (wide && SHUT[g] && k !== cur && !inSplit(k)) return;
     var b = document.createElement('button'); b.className = 'ri'; b.id = 't-' + k; b.setAttribute('role', 'tab'); b.title = APPS[k].name; b.draggable = true; b.setAttribute('data-k', k);
     b.innerHTML = '<img src="' + art(k) + '" alt=""><span class="rn"></span>'; b.querySelector('.rn').textContent = APPS[k].name;
     b.onclick = function () { lareon.show(k); };
     b.oncontextmenu = function (e) { e.preventDefault(); lareon.railMenu(k, { x: Math.round(e.clientX), y: Math.round(e.clientY) }); };
     b.ondragstart = function (e) { dragK = k; b.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', k); } catch (x) {} };
     b.ondragend = function () { dragK = null; b.classList.remove('drag'); [].forEach.call(L.children, function (c) { c.classList.remove('over'); }); };
-    b.ondragover = function (e) { if (!dragK || dragK === k) return; e.preventDefault(); [].forEach.call(L.children, function (c) { c.classList.toggle('over', c === b); }); };
+    b.ondragover = function (e) { if (!dragK || dragK === k || groupOf(dragK) !== groupOf(k)) return; e.preventDefault(); [].forEach.call(L.children, function (c) { c.classList.toggle('over', c === b); }); };
     b.ondrop = function (e) {
       e.preventDefault(); if (!dragK || dragK === k) return;
+      if (groupOf(dragK) !== groupOf(k)) return; // apps move within their group
       var ks = Object.keys(APPS).filter(function (x) { return x !== dragK; }); ks.splice(ks.indexOf(k), 0, dragK);
       var o = {}; ks.forEach(function (x) { o[x] = APPS[x]; }); APPS = o; tabs(); grid(); put({ order: ks });
     };
@@ -515,6 +540,7 @@ function title() {
 function railWide(on) {
   document.body.classList.toggle('wide', !!on); document.documentElement.style.setProperty('--rail', on ? '208px' : '68px');
   $('r-wide-i').innerHTML = on ? '<path d="M15 6l-6 6 6 6"/>' : '<path d="M9 6l6 6-6 6"/>';
+  try { if (APPS && Object.keys(APPS).length) tabs(); } catch (e) {}
   [].forEach.call(document.querySelectorAll('[data-i="rail.less"],[data-i="rail.more"]'), function (x) { x.setAttribute('data-i', on ? 'rail.less' : 'rail.more'); x.textContent = t(on ? 'rail.less' : 'rail.more'); });
   placeDivider();
 }
@@ -964,6 +990,7 @@ function pinForm(has) {
   function done(r) { if (r && r.ok) { toast('✓'); lareon.getSettings().then(function (x) { S = x; renderSet(); }); } else toast(t(r && r.error === 'old' ? 'pin.bad' : 'pin.rule'), true); }
   f.onsubmit = function (e) { e.preventDefault(); lareon.lockSet({ old: o ? o.value : '', pin: n.value }).then(done); };
   if (rm) rm.onclick = function () { lareon.lockSet({ old: o.value, pin: '' }).then(done); };
+  if (has) { var fg = mk('button', 'lkfg', esc(t('lk.forgot'))); fg.type = 'button'; fg.onclick = function () { lareon.lockForgot(); }; f.appendChild(fg); }
   return f;
 }
 function wallPicker() {
@@ -1001,6 +1028,7 @@ $('lkf').onsubmit = function (e) {
   });
 };
 $('lkt').onclick = function () { lareon.lockTouch(); };
+$('lkfg').onclick = function () { lareon.lockForgot(); };
 lareon.onLock(showLock); lareon.lockState().then(showLock);
 function openSetNow() { lareon.getSettings().then(function (r) { S = r; $('set').hidden = false; renderSet(); $('set').focus(); }); }
 function openSet() { if (cur !== 'home') { lareon.show('home'); setTimeout(openSetNow, 80); } else openSetNow(); }

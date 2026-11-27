@@ -67,6 +67,7 @@ contextBridge.exposeInMainWorld('lareon', {
   lockTouch: () => ipcRenderer.invoke('lock:touch'),
   lockSet: (d) => ipcRenderer.invoke('lock:set', d),
   lockNow: () => ipcRenderer.send('lock:now'),
+  lockForgot: () => ipcRenderer.invoke('lock:forgot'),
   lockState: () => ipcRenderer.invoke('lock:state'),
   onLock: (cb) => ipcRenderer.on('lock', (_e, v) => cb(v)),
   newMenu: (pos) => ipcRenderer.send('new:menu', pos),
