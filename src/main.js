@@ -912,6 +912,14 @@ ipcMain.handle('lock:set', (_e, d) => {
   if (!/^\d{4,8}$/.test(String(d.pin || ''))) return { error: 'pin' };
   settings.lock = { ...DEFAULTS.lock, ...(settings.lock || {}), pin: pinHash(d.pin) }; writeSettings(); buildMenu(); return { ok: true };
 });
+ipcMain.handle('lock:forgot', async () => {
+  if (!hasPin()) return { ok: true };
+  const r = await dialog.showMessageBox(win && !win.isDestroyed() ? win : undefined, { type: 'warning', message: 'Forgot your PIN?', detail: 'Lareon will sign you out and remove the PIN. Sign in again with your Lareon password, then set a new PIN in Settings if you want one.\n\nNothing in your account is deleted.', buttons: ['Sign out and reset PIN', 'Cancel'], defaultId: 1, cancelId: 1, noLink: true });
+  if (r.response !== 0) return { ok: false };
+  settings.lock = { ...DEFAULTS.lock, ...(settings.lock || {}), pin: '' }; writeSettings(); buildMenu();
+  locked = false; unlockTries = 0; unlockWait = 0; send('lock', { on: false });
+  await signOut(); return { ok: true };
+});
 ipcMain.on('lock:now', () => lockNow());
 ipcMain.handle('lock:state', () => ({ on: locked, touch: canTouch() && settings.lock && settings.lock.touch !== false }));
 setInterval(() => { try { const m = settings.lock && settings.lock.idle; if (m && hasPin() && !locked && powerMonitor.getSystemIdleTime() >= m * 60) lockNow(); } catch {} }, 20000);
@@ -1421,14 +1429,14 @@ function showVerifyLock() {
   if (lockWin && !lockWin.isDestroyed()) { lockWin.show(); lockWin.focus(); return; }
   const disp = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()), u = (sess && sess.user) || {};
   lockWin = new BrowserWindow({ ...disp.bounds, show: false, frame: false, resizable: false, movable: false, minimizable: false, maximizable: false, fullscreenable: false, alwaysOnTop: true, skipTaskbar: false, backgroundColor: '#13111b', title: 'Verified citizens only', webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false } });
-  lockWin.setAlwaysOnTop(true, 'floating'); try { lockWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch {}
+  lockWin.setAlwaysOnTop(true, 'floating'); try { lockWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true }); } catch {}
   lockWin.loadFile(path.join(__dirname, 'verify-lock.html'), { query: { name: String(u.display_name || u.username || '').slice(0, 80) } });
   lockWin.once('ready-to-show', () => { if (lockWin && !lockWin.isDestroyed()) { lockWin.show(); lockWin.focus(); } });
-  lockWin.on('closed', () => { lockWin = null; });
+  lockWin.on('closed', () => { const back = !lockWin || !lockWin._toWeb; lockWin = null; if (back) showMain(); });
 }
 function closeVerifyLock() { if (lockWin && !lockWin.isDestroyed()) lockWin.close(); }
 ipcMain.on('lock:close', closeVerifyLock);
-ipcMain.on('lock:verify', () => { shell.openExternal('https://lareon.org/verify'); verCache = { t: 0, v: null }; closeVerifyLock(); });
+ipcMain.on('lock:verify', () => { shell.openExternal('https://lareon.org/verify'); verCache = { t: 0, v: null }; if (lockWin) lockWin._toWeb = true; closeVerifyLock(); });
 ipcMain.handle('aster:verified', () => isVerified());
 async function agentStart(task) {
   task = String(task || '').trim().slice(0, 600); if (!task) return { error: 'Say what you want Aster to do.' };
@@ -1445,7 +1453,7 @@ async function agentStart(task) {
   if (!agentWin || agentWin.isDestroyed()) {
     agentWin = new BrowserWindow({ ...disp.bounds, show: false, frame: false, transparent: true, resizable: false, movable: false, focusable: false, alwaysOnTop: true, skipTaskbar: true, hasShadow: false, fullscreenable: false, enableLargerThanScreen: true, backgroundColor: '#00000000', webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false } });
     agentWin.loadFile(path.join(__dirname, 'agent.html'));
-    agentWin.setAlwaysOnTop(true, 'screen-saver'); try { agentWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch {}
+    agentWin.setAlwaysOnTop(true, 'screen-saver'); try { agentWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true }); } catch {}
     agentWin.setContentProtection(true); // keeps Aster's own cursor and pill out of the screenshots
     agentWin.on('closed', () => { agentWin = null; });
     await new Promise((r) => agentWin.webContents.once('did-finish-load', r));
@@ -1604,7 +1612,7 @@ ipcMain.on('cap:area', async () => {
     const img = await grabScreen(disp); if (!img || img.isEmpty()) return; capShot = { img, disp };
     if (capArea && !capArea.isDestroyed()) capArea.destroy();
     capArea = capWin('capture-area.html', { x: disp.bounds.x, y: disp.bounds.y, width: disp.bounds.width, height: disp.bounds.height, enableLargerThanScreen: true, hasShadow: false, movable: false });
-    capArea.setAlwaysOnTop(true, 'screen-saver'); try { capArea.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch {}
+    capArea.setAlwaysOnTop(true, 'screen-saver'); try { capArea.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true }); } catch {}
     capArea.webContents.once('did-finish-load', () => { capArea.webContents.send('cap:frozen', img.toDataURL()); capArea.show(); capArea.focus(); });
   } catch {}
 });
@@ -1921,6 +1929,6 @@ app.whenReady().then(() => {
   if (sess && settings.setupDone) for (const k of warmKeys()) views[k] = makeView(k); // ready in the background
   startUpdater();
   setTimeout(pollNotifications, 12000); setInterval(pollNotifications, 60000);
-  app.on('activate', () => { if (!BrowserWindow.getAllWindows().length) createWindow(); });
+  app.on('activate', () => { if (lockWin && !lockWin.isDestroyed()) { lockWin.show(); lockWin.focus(); return; } showMain(); });
 });
 app.on('window-all-closed', () => { if (!isMac) app.quit(); });
