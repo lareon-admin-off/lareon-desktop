@@ -227,6 +227,15 @@ body.wide .ri .rn{opacity:1}
 .ri .bd{position:absolute;left:30px;top:5px;margin:0;font-size:10px;padding:0 5px;line-height:16px;min-width:16px;text-align:center;box-shadow:0 0 0 2px var(--bar)}
 .ri.drag{opacity:.35}.ri.over{box-shadow:inset 0 2px 0 var(--orange)}
 .rsep{height:1px;background:var(--line);margin:4px 6px;flex:none}
+/* apps in groups (Every day, Make, Keep, More); a thin line when the sidebar is narrow, a name you can click to fold when it's wide */
+#rlist{gap:2px}#rlist .ri{height:40px}
+.rgh{position:relative;flex:none;height:13px;margin:3px 0;border:0;background:none;padding:0;text-align:left;color:var(--fg3);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;cursor:default}
+.rgh:before{content:"";position:absolute;left:8px;right:8px;top:6px;height:1px;background:var(--line);transition:opacity .25s}
+.rgh span{opacity:0;transition:opacity .25s;white-space:nowrap;display:flex;align-items:center;gap:6px;padding-left:12px}
+.rgh span i{font-style:normal;transition:transform .2s;display:inline-block;font-size:9px}
+body.wide .rgh{height:24px;cursor:pointer;margin:6px 0 0}body.wide .rgh:before{opacity:0}body.wide .rgh span{opacity:1}body.wide .rgh:hover{color:var(--fg2)}
+body.wide .rgh.shut span i{transform:rotate(-90deg)}
+.rgh.first{display:none}body.wide .rgh.first{display:block;margin-top:0}
 .rbot{display:flex;flex-direction:column;gap:4px;flex:none;padding-top:6px;border-top:1px solid var(--line)}
 .rbot .ri{height:40px}.rbot .ri[aria-pressed=true]{color:var(--orange)}
 /* the title area: which app you're in, back / forward / reload */
@@ -460,18 +469,34 @@ mountScene();
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 // ---- the apps sidebar (drag to reorder, right-click for more) ----
 var SPLIT = null, NAV = { back: false, fwd: false }, dragK = null;
+var GROUPS = ['daily', 'make', 'keep', 'more'], SHUT = {};
+try { SHUT = JSON.parse(localStorage.getItem('lx-rail-shut') || '{}') || {}; } catch (e) {}
+function groupOf(k) { var g = APPS[k] && APPS[k].group; return GROUPS.indexOf(g) >= 0 ? g : 'more'; }
 function tabs() {
   var L = $('rlist'); L.innerHTML = '';
-  Object.keys(APPS).forEach(function (k) {
+  // keep the apps in their groups (your own order inside each group), so ⌘1–9 match what you see
+  var ordered = []; GROUPS.forEach(function (g) { Object.keys(APPS).forEach(function (k) { if (groupOf(k) === g) ordered.push(k); }); });
+  var o = {}; ordered.forEach(function (x) { o[x] = APPS[x]; }); APPS = o;
+  var wide = document.body.classList.contains('wide'), lastG = null, firstG = true;
+  ordered.forEach(function (k) {
+    var g = groupOf(k);
+    if (g !== lastG) {
+      lastG = g; var h = document.createElement('button'); h.className = 'rgh' + (firstG ? ' first' : '') + (SHUT[g] ? ' shut' : ''); h.setAttribute('data-g', g); h.tabIndex = wide ? 0 : -1;
+      h.innerHTML = '<span><i>▾</i></span>'; h.querySelector('span').appendChild(document.createTextNode(t('grp.' + g))); h.title = t('grp.' + g);
+      h.onclick = function () { if (!document.body.classList.contains('wide')) return; SHUT[g] = !SHUT[g]; try { localStorage.setItem('lx-rail-shut', JSON.stringify(SHUT)); } catch (e) {} tabs(); };
+      L.appendChild(h); firstG = false;
+    }
+    if (wide && SHUT[g] && k !== cur && !inSplit(k)) return;
     var b = document.createElement('button'); b.className = 'ri'; b.id = 't-' + k; b.setAttribute('role', 'tab'); b.title = APPS[k].name; b.draggable = true; b.setAttribute('data-k', k);
     b.innerHTML = '<img src="' + art(k) + '" alt=""><span class="rn"></span>'; b.querySelector('.rn').textContent = APPS[k].name;
     b.onclick = function () { lareon.show(k); };
     b.oncontextmenu = function (e) { e.preventDefault(); lareon.railMenu(k, { x: Math.round(e.clientX), y: Math.round(e.clientY) }); };
     b.ondragstart = function (e) { dragK = k; b.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', k); } catch (x) {} };
     b.ondragend = function () { dragK = null; b.classList.remove('drag'); [].forEach.call(L.children, function (c) { c.classList.remove('over'); }); };
-    b.ondragover = function (e) { if (!dragK || dragK === k) return; e.preventDefault(); [].forEach.call(L.children, function (c) { c.classList.toggle('over', c === b); }); };
+    b.ondragover = function (e) { if (!dragK || dragK === k || groupOf(dragK) !== groupOf(k)) return; e.preventDefault(); [].forEach.call(L.children, function (c) { c.classList.toggle('over', c === b); }); };
     b.ondrop = function (e) {
       e.preventDefault(); if (!dragK || dragK === k) return;
+      if (groupOf(dragK) !== groupOf(k)) return; // apps move within their group
       var ks = Object.keys(APPS).filter(function (x) { return x !== dragK; }); ks.splice(ks.indexOf(k), 0, dragK);
       var o = {}; ks.forEach(function (x) { o[x] = APPS[x]; }); APPS = o; tabs(); grid(); put({ order: ks });
     };
@@ -515,6 +540,7 @@ function title() {
 function railWide(on) {
   document.body.classList.toggle('wide', !!on); document.documentElement.style.setProperty('--rail', on ? '208px' : '68px');
   $('r-wide-i').innerHTML = on ? '<path d="M15 6l-6 6 6 6"/>' : '<path d="M9 6l6 6-6 6"/>';
+  try { if (APPS && Object.keys(APPS).length) tabs(); } catch (e) {}
   [].forEach.call(document.querySelectorAll('[data-i="rail.less"],[data-i="rail.more"]'), function (x) { x.setAttribute('data-i', on ? 'rail.less' : 'rail.more'); x.textContent = t(on ? 'rail.less' : 'rail.more'); });
   placeDivider();
 }
